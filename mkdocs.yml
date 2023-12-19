@@ -1,0 +1,54 @@
+site_name: tidal-dl-ng
+repo_url: https://github.com/exislow/tidal-dl-ng
+site_url: https://exislow.github.io/tidal-dl-ng
+site_description: TIDAL Medial Downloader Next Generation!
+site_author: Robert Honz
+edit_uri: edit/main/docs/
+repo_name: exislow/tidal-dl-ng
+copyright: Maintained by <a href="https://example.com">Robby</a>.
+
+nav:
+  - Home: index.md
+  - Modules: modules.md
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - import sys
+            - sys.path.append('../')
+theme:
+  name: material
+  feature:
+    tabs: true
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: white
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/exislow/tidal-dl-ng
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/tidal-dl-ng
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true

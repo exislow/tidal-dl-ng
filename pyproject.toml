@@ -1,0 +1,191 @@
+[project]
+name = "tidal-dl-ng"
+version = "0.4.11"
+description = "TIDAL Medial Downloader Next Generation!"
+authors = ["Robert Honz <cen.sored@gmail.com>"]
+repository = "https://github.com/exislow/tidal-dl-ng"
+documentation = "https://exislow.github.io/tidal-dl-ng/"
+readme = "README.md"
+packages = [
+  { include = "tidal_dl_ng" }
+]
+
+[tool.poetry]
+name = "tidal-dl-ng"
+authors = ["Robert Honz <cen.sored@gmail.com>"]
+version = "0.4.11"
+description = "TIDAL Medial Downloader Next Generation!"
+repository = "https://github.com/exislow/tidal-dl-ng"
+documentation = "https://exislow.github.io/tidal-dl-ng/"
+readme = "README.md"
+packages = [
+  { include = "tidal_dl_ng" }
+]
+
+[tool.poetry.scripts]
+tidal-dl-ng = "tidal_dl_ng.cli:app"
+tidal-dl-ng-gui = "tidal_dl_ng.gui:gui_activate"
+tdn = "tidal_dl_ng.cli:app"
+tdng = "tidal_dl_ng.gui:gui_activate"
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.12"
+requests = "2.31.0"
+mutagen = "1.47.0"
+pycryptodome = "3.19.0"
+tidalapi = "0.7.3"
+dataclasses-json = "^0.6.3"
+pathvalidate = "^3.2.0"
+typer = {extras = ["all"], version = "^0.9.0"}
+m3u8 = "^4.0.0"
+ffmpeg-python = "^0.2.0"
+coloredlogs = "^15.0.1"
+pyside6 = {version = "^6.6.1", optional = true}
+pyqtdarktheme = {version = "^2.1.0", optional = true}
+
+[tool.poetry.extras]
+gui = ["pyside6", "pyqtdarktheme"]
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.3"
+deptry = "^0.12.0"
+mypy = "^1.7.1"
+pre-commit = "^3.5.0"
+tox = "^4.11.4"
+pyupgrade = "^3.15.0"
+bandit = "^1.7.5"
+black = "^23.11.0"
+darglint = "^1.8.1"
+isort = { extras = ["colors"], version = "^5.12.0" }
+mypy-extensions = "^1.0.0"
+pydocstyle = "^6.3.0"
+pylint = "^3.0.2"
+pyinstaller = "^6.3.0"
+pillow = "^10.1.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = "^1.5.3"
+mkdocs-material = "^9.4.14"
+mkdocstrings = { extras = ["python"], version = "^0.24.0" }
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+fix = true
+select = [
+  # flake8-2020
+  "YTT",
+  # flake8-bandit
+  "S",
+  # flake8-bugbear
+  "B",
+  # flake8-builtins
+  "A",
+  # flake8-comprehensions
+  "C4",
+  # flake8-debugger
+  "T10",
+  # flake8-simplify
+  "SIM",
+  # isort
+  "I",
+  # mccabe
+  "C90",
+  # pycodestyle
+  "E", "W",
+  # pyflakes
+  "F",
+  # pygrep-hooks
+  "PGH",
+  # pyupgrade
+  "UP",
+  # ruff
+  "RUF",
+  # tryceratops
+  "TRY",
+]
+ignore = [
+  # LineTooLong
+  "E501",
+  # DoNotAssignLambda
+  "E731",
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.black]
+# https://github.com/psf/black
+target-version = ["py311"]
+line-length = 120
+color = true
+preview = true
+
+exclude = '''
+/(
+    \.git
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+    | env
+    | venv
+)/
+'''
+
+[tool.isort]
+# https://github.com/timothycrosley/isort/
+py_version = 311
+line_length = 120
+known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
+sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
+include_trailing_comma = true
+profile = "black"
+multi_line_output = 3
+indent = 4
+color_output = true
+
+[tool.mypy]
+# https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
+files = ["tidal_dl_ng"]
+python_version = "3.11"
+pretty = true
+show_traceback = true
+color_output = true
+allow_redefinition = false
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+ignore_missing_imports = true
+implicit_reexport = false
+no_implicit_optional = true
+show_column_numbers = true
+show_error_codes = true
+show_error_context = true
+strict_equality = true
+strict_optional = true
+warn_no_return = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+disallow_untyped_defs = "True"
+disallow_any_unimported = "True"
