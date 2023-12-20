@@ -108,7 +108,7 @@ jobs:
               source .venv/bin/activate &&
               poetry run make gui-macos &&
               cd dist &&
-              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}_${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
           # TODO: Use M1 runner.
           #          - os: "macos-13"
@@ -127,18 +127,19 @@ jobs:
               source .venv/bin/activate &&
               poetry run make gui &&
               cd dist &&
-              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}_${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
           - os: "windows-2019"
             TARGET: "windows-2019"
             OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_X64}}
             CMD_BUILD: >
               choco feature enable -n=allowGlobalConfirmation
-              choco install zip make
-              source .venv/bin/activate &&
-              C:/Users/runneradmin/.local/bin/poetry run make gui &&
+              choco install zip
+              choco install make
+              source .venv/scripts/activate &&
+              C:\Users\runneradmin\.local\bin\poetry run make gui &&
               cd dist &&
-              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}_${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
               cd ..
     runs-on: ${{ matrix.os }}
     steps:
@@ -161,8 +162,16 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies
-        run: C:/Users/runneradmin/.local/bin/poetry install --no-interaction --all-extras --with dev
+      - name: Install dependencies Windows
+        run: |
+          source .venv/scripts/activate
+          poetry install --no-interaction --all-extras --with dev
+        if: runner.os == 'Windows'
+      - name: Install dependencies NOT Windows
+        run: |
+          source .venv/bin/activate
+          poetry install --no-interaction --all-extras --with dev
+        if: runner.os != 'Windows'
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Load Release URL File from release job
