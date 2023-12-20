@@ -68,7 +68,7 @@ gui: ## Build GUI app with PyInstaller
 
 # TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 .PHONY: gui-macos
-gui-mac: gui ## Package GUI in a *.dmg file
+gui-macos: gui ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
 	@poetry run mv "$(app_path_dist)/$(app_name).app" $(app_path_dist)/dmg
 	@poetry run create-dmg \
@@ -82,7 +82,5 @@ gui-mac: gui ## Package GUI in a *.dmg file
                 --app-drop-link 425 120 \
                 "$(app_path_dist)/$(app_name).dmg" \
                 "$(app_path_dist)/dmg/"
-
-
 
 .DEFAULT_GOAL := help
