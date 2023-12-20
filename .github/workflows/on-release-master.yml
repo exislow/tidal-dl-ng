@@ -165,7 +165,7 @@ jobs:
       - name: Install dependencies Windows
         run: |
           dir
-          dir C:\Users\runneradmin\.local\bin
+          dir C:/Users/runneradmin/.local/bin
           poetry install --no-interaction --all-extras --with dev
           C:\Users\runneradmin\.local\bin\poetry install --no-interaction --all-extras --with dev
         if: runner.os == 'Windows'
