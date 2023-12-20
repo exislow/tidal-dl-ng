@@ -1,3 +1,7 @@
+app_name = "TIDAL-Downloader-NG"
+app_path_dist = "dist"
+path_asset = "tidal_dl_ng/ui"
+
 .PHONY: install
 install: ## Install the poetry environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
@@ -53,14 +57,32 @@ docs: ## Build and serve the documentation
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-# TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 .PHONY: gui
-gui: ## Build and serve the documentation
+gui: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
 		--windowed --onefile \
 		--name "TIDAL Downloader NG" \
 		--noupx \
-		--icon tidal_dl_ng/ui/icon.png \
+		--icon $(path_asset)/icon.png \
 		tidal_dl_ng/gui.py
+
+# TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
+.PHONY: gui-macos
+gui-mac: gui ## Package GUI in a *.dmg file
+	@poetry run mkdir -p $(app_path_dist)/dmg
+	@poetry run mv "$(app_path_dist)/$(app_name).app" $(app_path_dist)/dmg
+	@poetry run create-dmg \
+                --volname "$(app_name)" \
+                --volicon "$(path_asset)/icon.icns" \
+                --window-pos 200 120 \
+                --window-size 800 600 \
+                --icon-size 100 \
+                --icon "$(app_name).app" 175 120 \
+                --hide-extension "$(app_name).app" \
+                --app-drop-link 425 120 \
+                "$(app_path_dist)/$(app_name).dmg" \
+                "$(app_path_dist)/dmg/"
+
+
 
 .DEFAULT_GOAL := help

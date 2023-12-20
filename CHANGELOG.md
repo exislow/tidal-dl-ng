@@ -1,3 +1,10 @@
+# v0.4.11
+
+- Fixes regarding empty metadata tags (also fixes #1).
+- CLI downloader extended to handle playlists and mixes.
+- `Download.track()` now handles logger functions.
+- GUI build for macOS and asset upload.
+
 # v0.4.9
 
 - Fixed: Exception on missing file read (config, token) instead of creation.
