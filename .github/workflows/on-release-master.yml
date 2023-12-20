@@ -137,9 +137,7 @@ jobs:
             TARGET: "windows-2019"
             OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_X64}}
             CMD_BUILD: >
-              choco feature enable -n=allowGlobalConfirmation
-              choco install zip
-              choco install make
+              choco install zip make -y
               source $VENV &&
               C:\Users\runneradmin\.local\bin\poetry run make gui &&
               cd dist &&
