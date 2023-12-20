@@ -6,12 +6,16 @@ import shutil
 import tempfile
 import time
 from logging import Logger
-from requests.exceptions import HTTPError
 from uuid import uuid4
 
 import ffmpeg
 import m3u8
 import requests
+from pathvalidate import sanitize_filepath
+from requests.exceptions import HTTPError
+from rich.progress import Progress
+from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import MediaType
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
@@ -20,9 +24,6 @@ from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_v
 from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
-from pathvalidate import sanitize_filepath
-from rich.progress import Progress
-from tidalapi import Album, Playlist, Session, Track, UserPlaylist, Video, Mix
 
 
 # TODO: Set appropriate client string and use it for video download.
@@ -81,7 +82,7 @@ class Download:
         media_type: MediaType = None,
         video_download: bool = True,
         progress_gui: ProgressBars = None,
-        progress: Progress = None
+        progress: Progress = None,
     ) -> (bool, str):
         if id:
             if media_type == MediaType.Track:
@@ -201,12 +202,14 @@ class Download:
         result: bool = False
         release_date: str = track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
         copy_right: str = track.copyright if track.copyright else ""
+        isrc: str = track.isrc if track.isrc else ""
 
         try:
             lyrics: str = track.lyrics().text if hasattr(track, "lyrics") else ""
         except HTTPError:
             lyrics: str = ""
 
+        # TODO: Check if it is possible to pass "None" values.
         m: Metadata = Metadata(
             path_file=path_file,
             lyrics=lyrics,
@@ -216,7 +219,7 @@ class Download:
             album=track.album.name,
             tracknumber=track.track_num,
             date=release_date,
-            isrc=track.isrc,
+            isrc=isrc,
             albumartist=track.artist.name,
             totaltrack=track.album.num_tracks if track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album.num_volumes else 1,
@@ -288,7 +291,7 @@ class Download:
                     media=media,
                     progress_gui=progress_gui,
                     progress=progress,
-                    fn_logger=fn_logger
+                    fn_logger=fn_logger,
                 )
                 progress.advance(p_task1)
 
