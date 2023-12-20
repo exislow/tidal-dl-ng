@@ -1,4 +1,4 @@
-app_name = "TIDAL-Downloader-NG"
+APP_NAME = "TIDAL-Downloader-NG"
 app_path_dist = "dist"
 path_asset = "tidal_dl_ng/ui"
 
@@ -61,7 +61,7 @@ help:
 gui: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
 		--windowed --onefile \
-		--name "$(app_name)" \
+		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.png \
 		tidal_dl_ng/gui.py
@@ -70,17 +70,17 @@ gui: ## Build GUI app with PyInstaller
 .PHONY: gui-macos
 gui-macos: gui ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
-	@poetry run mv "$(app_path_dist)/$(app_name).app" $(app_path_dist)/dmg
+	@poetry run mv "$(app_path_dist)/$(APP_NAME).app" $(app_path_dist)/dmg
 	@poetry run create-dmg \
-                --volname "$(app_name)" \
+                --volname "$(APP_NAME)" \
                 --volicon "$(path_asset)/icon.icns" \
                 --window-pos 200 120 \
                 --window-size 800 600 \
                 --icon-size 100 \
-                --icon "$(app_name).app" 175 120 \
-                --hide-extension "$(app_name).app" \
+                --icon "$(APP_NAME).app" 175 120 \
+                --hide-extension "$(APP_NAME).app" \
                 --app-drop-link 425 120 \
-                "$(app_path_dist)/$(app_name).dmg" \
+                "$(app_path_dist)/$(APP_NAME).dmg" \
                 "$(app_path_dist)/dmg/"
 
 .DEFAULT_GOAL := help

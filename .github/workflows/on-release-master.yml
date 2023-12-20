@@ -110,7 +110,7 @@ jobs:
             CMD_BUILD: >
               brew install create-dmg &&
               source $VENV &&
-              poetry run make gui-macos &&
+              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
@@ -129,7 +129,7 @@ jobs:
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
               source $VENV &&
-              poetry run make gui &&
+              poetry run make gui APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
@@ -137,9 +137,10 @@ jobs:
             TARGET: "windows-2019"
             OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_X64}}
             CMD_BUILD: >
-              choco install zip make -y
+              choco install zip make -y &&
+              ls &&
               source $VENV &&
-              C:\Users\runneradmin\.local\bin\poetry run make gui &&
+              poetry run make gui APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
               cd ..
@@ -174,7 +175,6 @@ jobs:
           name: ${{env.RELEASE_UPLOAD_URL}}
       - name: Get Release File Name & Upload URL
         id: get_release_info
-        shell: bash
         run: |
           VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}/${{env.RELEASE_UPLOAD_URL}}.txt`
           echo "upload_url=$VALUE" >> $GITHUB_OUTPUT
