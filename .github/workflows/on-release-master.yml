@@ -78,6 +78,8 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
         run: poetry install --no-interaction --with docs
+      - name: Deploy documentation
+        run: poetry run mkdocs gh-deploy --force
 
   build-gui-and-upload-assets:
     needs: publish
@@ -95,6 +97,8 @@ jobs:
               source .venv/bin/activate &&
               poetry run make gui-macos &&
               cd dist &&
+              pwd &&
+              echo zip -r ${{inputs.out_name_file}}${{inputs.asset_extension}} ${{inputs.out_name_file}}.dmg -x "*.DS_Store"
               zip -r ${{inputs.out_name_file}}${{inputs.asset_extension}} ${{inputs.out_name_file}}.dmg -x "*.DS_Store"
     #          - os: "windows-2019"
     #            TARGET: "windows-2019"
