@@ -21,6 +21,9 @@ on:
     tags:
       - "v*.*.*"
 
+env:
+  RELEASE_UPLOAD_URL: "release_upload_url"
+
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -48,17 +51,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Output Release URL File
-        run: echo "${{ steps.release_create.outputs.upload_url }}" > release_upload_url.txt
-      - name: Save Release URL File for publish
-        uses: actions/upload-artifact@v1
-        with:
-          name: release_url
-          path: release_url.txt
+        run: echo "${{steps.release_create.outputs.upload_url}}" > ${{env.RELEASE_UPLOAD_URL}}.txt
       - name: Save Upload URL File for publish
         uses: actions/upload-artifact@v1
         with:
-          name: release_release_upload_url
-          path: release_upload_url.txt
+          name: ${{env.RELEASE_UPLOAD_URL}}
+          path: ${{env.RELEASE_UPLOAD_URL}}.txt
 
   deploy-docs:
     needs: publish
@@ -119,20 +117,20 @@ jobs:
       - name: Load Release URL File from release job
         uses: actions/download-artifact@v1
         with:
-          name: release_url
+          name: ${{env.RELEASE_UPLOAD_URL}}
       - name: Get Release File Name & Upload URL
         id: get_release_info
         shell: bash
         run: |
-          value=`cat release_url/release_url.txt`
-          echo ::set-output name=release_upload_url::$value
+          value=`cat ${{env.RELEASE_UPLOAD_URL}}/${{env.RELEASE_UPLOAD_URL}}.txt`
+          echo ::set-output name=upload_url::$value
       - name: Upload Release Asset
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
-          upload_url: ${{steps.get_release_info.outputs.release_upload_url}}
+          upload_url: ${{steps.get_release_info.outputs.upload_url}}
           asset_path: ./dist/${{inputs.out_name_file}}${{inputs.asset_extension}}
           asset_name: ${{inputs.out_name_file}}${{inputs.asset_extension}}
           asset_content_type: ${{env.ASSET_MIME}}
