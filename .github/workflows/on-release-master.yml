@@ -111,8 +111,8 @@ jobs:
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
           # TODO: Use M1 runner.
-          #          - os: "macos-13"
-          #            TARGET: "macos-13"
+          #          - os: "macos-latest-xlarge"
+          #            TARGET: "macos-latest-xlarge"
           #            CMD_BUILD: >
           #              brew install create-dmg &&
           #              source .venv/bin/activate &&
@@ -164,9 +164,13 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies Windows
         run: |
+          source $VENV
           dir
+          dir C:\Users\runneradmin\.local\bin
           poetry install --no-interaction --all-extras --with dev
+          C:\Users\runneradmin\.local\bin\poetry install --no-interaction --all-extras --with dev
         if: runner.os == 'Windows'
+        shell: bash
       - name: Install dependencies NOT Windows
         run: poetry install --no-interaction --all-extras --with dev
         if: runner.os != 'Windows'
