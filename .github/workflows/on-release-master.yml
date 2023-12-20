@@ -146,6 +146,6 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{steps.get_release_info.outputs.upload_url}}
-          asset_path: ./dist/${{inputs.out_name_file}}${{inputs.asset_extension}}
-          asset_name: ${{inputs.out_name_file}}${{inputs.asset_extension}}
+          asset_path: ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}}
+          asset_name: ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}}
           asset_content_type: ${{env.ASSET_MIME}}
