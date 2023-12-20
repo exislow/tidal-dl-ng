@@ -41,6 +41,10 @@ tdng
 tidal-dl-ng gui
 ```
 
+If you like to have the GUI version only, have a look at the 
+[release page](https://github.com/exislow/tidal-dl-ng/releases) and download the correct version for your platform.
+
+
 ## 🧁 Features
 
 - Download Tracks, Videos, Albums, Playlists
@@ -49,7 +53,7 @@ tidal-dl-ng gui
 
 ## ▶️ Getting started with development
 
-### 🚰 Install dependecies
+### 🚰 Install dependencies
 
 Clone this repository and install the dependencies:
 
