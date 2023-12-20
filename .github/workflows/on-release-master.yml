@@ -72,6 +72,7 @@ jobs:
       - name: Deploy documentation
         run: poetry run mkdocs gh-deploy --force
   compute:
+    # Workaround to be able to use variables in matrix.
     runs-on: ubuntu-latest
     outputs:
       ASSET_EXTENSION: ${{ env.ASSET_EXTENSION }}
@@ -81,7 +82,6 @@ jobs:
         run: |
           echo "ASSET_EXTENSION=${{ env.ASSET_EXTENSION }}" >> $GITHUB_OUTPUT
           echo "OUT_NAME_FILE=${{ env.OUT_NAME_FILE }}" >> $GITHUB_OUTPUT
-
   build-gui-and-upload-assets:
     needs: ["publish", "compute"]
     env:
@@ -98,12 +98,35 @@ jobs:
               source .venv/bin/activate &&
               poetry run make gui-macos &&
               cd dist &&
-              pwd &&
-              echo zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store"
-              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg/ -x "*.DS_Store"
-    #          - os: "windows-2019"
-    #            TARGET: "windows-2019"
-    #            CMD_BUILD: pyinstaller -F -w -n clipster -i resources/clipster.ico cli.py
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg/ -x "*.DS_Store" &&
+              cd ..
+          - os: "macos-13"
+            TARGET: "macos-13"
+            CMD_BUILD: >
+              brew install create-dmg &&
+              source .venv/bin/activate &&
+              poetry run make gui-macos &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg/ -x "*.DS_Store" &&
+              cd ..
+          - os: "ubuntu-20.04"
+            TARGET: "ubuntu-20.04"
+            CMD_BUILD: >
+              source .venv/bin/activate &&
+              poetry run make gui &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd ..
+          - os: "windows-2019"
+            TARGET: "windows-2019"
+            CMD_BUILD: >
+              choco feature enable -n=allowGlobalConfirmation
+              choco install zip make
+              source .venv/bin/activate &&
+              poetry run make gui &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
+              cd ..
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out

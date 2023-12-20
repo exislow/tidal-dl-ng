@@ -25,6 +25,7 @@ from tidal_dl_ng.worker import Worker
 
 
 # TODO: Make more use of Exceptions
+# TODO: Add File -> Version
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     settings: Settings = None
     tidal: Tidal = None
