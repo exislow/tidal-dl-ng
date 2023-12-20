@@ -3,6 +3,10 @@ name: release-master
 permissions:
   contents: write
 
+defaults:
+  run:
+    shell: bash
+
 on:
   #  release:
   #    types: [published]
@@ -162,17 +166,8 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies Windows
-        run: |
-          dir
-          dir C:/Users/runneradmin/.local/bin
-          poetry install --no-interaction --all-extras --with dev
-          C:\Users\runneradmin\.local\bin\poetry install --no-interaction --all-extras --with dev
-        if: runner.os == 'Windows'
-        shell: bash
       - name: Install dependencies NOT Windows
         run: poetry install --no-interaction --all-extras --with dev
-        if: runner.os != 'Windows'
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Load Release URL File from release job
