@@ -41,9 +41,8 @@ tdng
 tidal-dl-ng gui
 ```
 
-If you like to have the GUI version only, have a look at the 
+If you like to have the GUI version only, have a look at the
 [release page](https://github.com/exislow/tidal-dl-ng/releases) and download the correct version for your platform.
-
 
 ## 🧁 Features
 
@@ -100,12 +99,12 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 
 - Create an API Token on [Pypi](https://pypi.org/).
 - Add the API Token to your projects secrets with the name `PYPI_TOKEN` by visiting [this page](https://github.com/exislow/tidal-dl-ng/settings/secrets/actions/new).
-- Create a [new release](https://github.com/exislow/tidal-dl-ng/releases/new) on Github.
+- Create a [new release](https://github.com/exislow/tidal-dl-ng/releases/new) on GitHub.
 - Create a new tag in the form `*.*.*`.
 
 For more details, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/cicd/#how-to-trigger-a-release).
 
-## ‼️ Dislaimer
+## ‼️ Disclaimer
 
 - For educational purposes only. I am not liable and responsible for any damage that happens.
 - You should not use this method to distribute or pirate music.
@@ -114,5 +113,5 @@ For more details, see [here](https://fpgmaas.github.io/cookiecutter-poetry/featu
 ## 🫂 Contributors
 
 Thanks to all, who have contributed to this project!
-1
+
 <a href="https://github.com/exislow/tidal-dl-ng/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=exislow/tidal-dl-ng" /></a>
