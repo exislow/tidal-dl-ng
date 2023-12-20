@@ -61,7 +61,7 @@ help:
 gui: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
 		--windowed --onefile \
-		--name "TIDAL Downloader NG" \
+		--name "$(app_name)" \
 		--noupx \
 		--icon $(path_asset)/icon.png \
 		tidal_dl_ng/gui.py
