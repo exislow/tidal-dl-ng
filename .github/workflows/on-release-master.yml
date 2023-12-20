@@ -105,7 +105,7 @@ jobs:
             OS_ARCH: ${{needs.compute.outputs.ARCH_MACOS_X64}}
             CMD_BUILD: >
               brew install create-dmg &&
-              source .venv/bin/activate &&
+              source $VENV &&
               poetry run make gui-macos &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
@@ -124,7 +124,7 @@ jobs:
             TARGET: "ubuntu-20.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
-              source .venv/bin/activate &&
+              source $VENV &&
               poetry run make gui &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
@@ -136,7 +136,7 @@ jobs:
               choco feature enable -n=allowGlobalConfirmation
               choco install zip
               choco install make
-              source .venv/scripts/activate &&
+              source $VENV &&
               C:\Users\runneradmin\.local\bin\poetry run make gui &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
@@ -164,7 +164,6 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies Windows
         run: |
-          source $VENV
           dir
           dir C:\Users\runneradmin\.local\bin
           poetry install --no-interaction --all-extras --with dev
