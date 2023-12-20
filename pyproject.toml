@@ -1,6 +1,6 @@
 [project]
 name = "tidal-dl-ng"
-version = "0.4.30"
+version = "0.4.31"
 description = "TIDAL Medial Downloader Next Generation!"
 authors = ["Robert Honz <cen.sored@gmail.com>"]
 repository = "https://github.com/exislow/tidal-dl-ng"
@@ -13,7 +13,7 @@ packages = [
 [tool.poetry]
 name = "tidal-dl-ng"
 authors = ["Robert Honz <cen.sored@gmail.com>"]
-version = "0.4.30"
+version = "0.4.31"
 description = "TIDAL Medial Downloader Next Generation!"
 repository = "https://github.com/exislow/tidal-dl-ng"
 documentation = "https://exislow.github.io/tidal-dl-ng/"

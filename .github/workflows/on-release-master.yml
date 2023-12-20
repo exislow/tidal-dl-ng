@@ -80,6 +80,7 @@ jobs:
         run: poetry run mkdocs gh-deploy --force
   compute:
     # Workaround to be able to use variables in matrix.
+    # See: https://stackoverflow.com/questions/74072206/github-actions-use-variables-in-matrix-definition
     runs-on: ubuntu-latest
     outputs:
       ASSET_EXTENSION: ${{ env.ASSET_EXTENSION }}
@@ -114,16 +115,15 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
-          # TODO: Use M1 runner.
-          #          - os: "macos-latest-xlarge"
-          #            TARGET: "macos-latest-xlarge"
-          #            CMD_BUILD: >
-          #              brew install create-dmg &&
-          #              source .venv/bin/activate &&
-          #              poetry run make gui-macos &&
-          #              cd dist &&
-          #              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
-          #              cd ..
+          - os: "macos-latest-xlarge"
+            TARGET: "macos-latest-xlarge M1"
+            CMD_BUILD: >
+              brew install create-dmg &&
+              source $VENV &&
+              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
+              cd ..
           - os: "ubuntu-20.04"
             TARGET: "ubuntu-20.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
@@ -138,7 +138,6 @@ jobs:
             OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_X64}}
             CMD_BUILD: >
               choco install zip make -y &&
-              ls &&
               source $VENV &&
               poetry run make gui APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
@@ -179,6 +178,7 @@ jobs:
           VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}/${{env.RELEASE_UPLOAD_URL}}.txt`
           echo "upload_url=$VALUE" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
+        # TODO: Switch to https://github.com/softprops/action-gh-release
         id: upload-release-asset
         uses: actions/upload-release-asset@v1
         env:
