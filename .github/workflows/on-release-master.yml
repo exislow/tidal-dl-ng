@@ -136,7 +136,7 @@ jobs:
               choco feature enable -n=allowGlobalConfirmation
               choco install zip make
               source .venv/bin/activate &&
-              C:\Users\runneradmin\.local\bin\poetry run make gui &&
+              C:/Users/runneradmin/.local/bin/poetry run make gui &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}_${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
               cd ..
@@ -162,7 +162,7 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies
-        run: poetry install --no-interaction --all-extras --with dev
+        run: C:/Users/runneradmin/.local/bin/poetry install --no-interaction --all-extras --with dev
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Load Release URL File from release job
@@ -182,6 +182,6 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{steps.get_release_info.outputs.upload_url}}
-          asset_path: ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}_${{needs.compute.outputs.ASSET_EXTENSION}}
-          asset_name: ${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}_${{needs.compute.outputs.ASSET_EXTENSION}}
+          asset_path: ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
+          asset_name: ${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
           asset_content_type: ${{env.ASSET_MIME}}
