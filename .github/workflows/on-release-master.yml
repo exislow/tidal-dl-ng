@@ -7,22 +7,14 @@ on:
   #  release:
   #    types: [published]
   #    branches: [master]
-  workflow_dispatch: # or workflow_call
-    inputs:
-      asset_mime:
-        description: "MIME Type"
-        required: false
-        default: "application/zip"
-      out_name_file:
-        description: "App file name"
-        required: false
-        default: "TIDAL-Downloader-NG"
   push:
     tags:
       - "v*.*.*"
 
 env:
   RELEASE_UPLOAD_URL: "release_upload_url"
+  ASSET_EXTENSION: ".zip"
+  OUT_NAME_FILE: "TIDAL-Downloader-NG"
 
 jobs:
   publish:
@@ -57,7 +49,6 @@ jobs:
         with:
           name: ${{env.RELEASE_UPLOAD_URL}}
           path: ${{env.RELEASE_UPLOAD_URL}}.txt
-
   deploy-docs:
     needs: publish
     runs-on: ubuntu-latest
@@ -80,9 +71,19 @@ jobs:
         run: poetry install --no-interaction --with docs
       - name: Deploy documentation
         run: poetry run mkdocs gh-deploy --force
+  compute:
+    runs-on: ubuntu-latest
+    outputs:
+      ASSET_EXTENSION: ${{ env.ASSET_EXTENSION }}
+      OUT_NAME_FILE: ${{ env.OUT_NAME_FILE }}
+    steps:
+      - name: Compute outputs
+        run: |
+          echo "ASSET_EXTENSION=${{ env.ASSET_EXTENSION }}" >> $GITHUB_OUTPUT
+          echo "OUT_NAME_FILE=${{ env.OUT_NAME_FILE }}" >> $GITHUB_OUTPUT
 
   build-gui-and-upload-assets:
-    needs: publish
+    needs: ["publish", "compute"]
     env:
       ASSET_MIME: "application/zip"
     strategy:
@@ -98,8 +99,8 @@ jobs:
               poetry run make gui-macos &&
               cd dist &&
               pwd &&
-              echo zip -r ${{inputs.out_name_file}}${{inputs.asset_extension}} ${{inputs.out_name_file}}.dmg -x "*.DS_Store"
-              zip -r ${{inputs.out_name_file}}${{inputs.asset_extension}} ${{inputs.out_name_file}}.dmg -x "*.DS_Store"
+              echo zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store"
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg/ -x "*.DS_Store"
     #          - os: "windows-2019"
     #            TARGET: "windows-2019"
     #            CMD_BUILD: pyinstaller -F -w -n clipster -i resources/clipster.ico cli.py
