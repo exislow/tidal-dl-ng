@@ -7,6 +7,16 @@ on:
   #  release:
   #    types: [published]
   #    branches: [master]
+  workflow_dispatch: # or workflow_call
+    inputs:
+      asset_mime:
+        description: "MIME Type"
+        required: false
+        default: "application/zip"
+      out_name_file:
+        description: "App file name"
+        required: false
+        default: "TIDAL-Downloader-NG"
   push:
     tags:
       - "v*.*.*"
@@ -64,9 +74,7 @@ jobs:
   build-gui-and-upload-assets:
     needs: publish
     env:
-      OUT_NAME_FILE: "TIDAL-Downloader-NG"
       ASSET_MIME: "application/zip"
-      ASSET_EXTENSION: ".zip"
     strategy:
       fail-fast: false
       matrix:
@@ -79,7 +87,7 @@ jobs:
               source .venv/bin/activate &&
               poetry run make gui-macos &&
               cd dist &&
-              zip -r ${{env.OUT_NAME_FILE}}${{env.ASSET_EXTENSION}} ${{env.OUT_NAME_FILE}}.dmg -x "*.DS_Store"
+              zip -r ${{inputs.out_name_file}}${{inputs.asset_extension}} ${{inputs.out_name_file}}.dmg -x "*.DS_Store"
     #          - os: "windows-2019"
     #            TARGET: "windows-2019"
     #            CMD_BUILD: pyinstaller -F -w -n clipster -i resources/clipster.ico cli.py
@@ -125,6 +133,6 @@ jobs:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
           upload_url: ${{steps.get_release_info.outputs.release_upload_url}}
-          asset_path: ./dist/${{env.OUT_NAME_FILE}}${{env.ASSET_EXTENSION}}
-          asset_name: ${{env.OUT_NAME_FILE}}${{env.ASSET_EXTENSION}}
+          asset_path: ./dist/${{inputs.out_name_file}}${{inputs.asset_extension}}
+          asset_name: ${{inputs.out_name_file}}${{inputs.asset_extension}}
           asset_content_type: ${{env.ASSET_MIME}}
