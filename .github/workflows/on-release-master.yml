@@ -164,13 +164,11 @@ jobs:
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
       - name: Install dependencies Windows
         run: |
-          source .venv/scripts/activate
+          dir
           poetry install --no-interaction --all-extras --with dev
         if: runner.os == 'Windows'
       - name: Install dependencies NOT Windows
-        run: |
-          source .venv/bin/activate
-          poetry install --no-interaction --all-extras --with dev
+        run: poetry install --no-interaction --all-extras --with dev
         if: runner.os != 'Windows'
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
