@@ -36,7 +36,6 @@ class RequestsClient:
 
 
 class Download:
-    # TODO: Implement download cover 1280.
     session: Session = None
     skip_existing: bool = False
 
@@ -188,16 +187,6 @@ class Download:
 
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{int(width)}x{int(height)}.jpg"
 
-    def cover_data(self, sid, width: int = 320, height: int = 320):
-        url = self.cover_url(sid, width, height)
-
-        try:
-            result: str = requests.get(url).content
-        except:
-            result: str = ""
-
-        return result
-
     def metadata_write(self, track: Track, path_file: str):
         result: bool = False
         release_date: str = track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
@@ -224,7 +213,7 @@ class Download:
             totaltrack=track.album.num_tracks if track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album.num_volumes else 1,
             discnumber=track.volume_num,
-            url_cover=self.cover_url(track.album.cover),
+            url_cover=self.cover_url(track.album.cover, 1280, 1280),
         )
 
         m.save()
