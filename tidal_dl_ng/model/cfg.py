@@ -21,7 +21,7 @@ class Settings:
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
     use_playlist_folder: bool = True
-    format_album: str = "Albums/{artist_name} - {title}/{track_num}. {artist_name} - {track_title}"
+    format_album: str = "Albums/{artist_name} - {album_title}/{track_num}. {artist_name} - {track_title}"
     format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}"
     format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}"
     format_track: str = "Tracks/{artist_name} - {track_title}"
