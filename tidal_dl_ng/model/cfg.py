@@ -17,7 +17,7 @@ class Settings:
     video_download: bool = True
     multi_thread: bool = False
     download_delay: bool = True
-    download_base_path: str = "./download/"
+    download_base_path: str = "./download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
     use_playlist_folder: bool = True

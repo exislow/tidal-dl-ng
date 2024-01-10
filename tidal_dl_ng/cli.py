@@ -37,7 +37,7 @@ def callback_app(
 
 @app.command(name="cfg")
 def settings_management(
-    names: list[str] = None,
+    names: Annotated[Optional[list[str]], typer.Argument()] = None,
     editor: Annotated[
         bool, typer.Option("--editor", "-e", help="Open the settings file in your default editor.")
     ] = False,
