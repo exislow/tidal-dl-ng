@@ -72,17 +72,8 @@ class Metadata:
         self.m: mutagen.MP4.MP4 | mutagen.m4a.M4A | mutagen.flac.FLAC | mutagen.mp3.MP3 = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
-        result = False
-        data_cover = None
-
-        if self.url_cover:
-            try:
-                data_cover = requests.get(self.url_cover).content
-            except:
-                data_cover = ""
-        elif self.path_cover:
-            with open(self.path_cover, "rb") as f:
-                data_cover = f.read()
+        result: bool = False
+        data_cover: str | bytes = self.cover_data(url=self.url_cover, path_file=self.path_cover)
 
         if data_cover:
             if self.type_audio == "flac":
@@ -161,3 +152,20 @@ class Metadata:
         self.m.tags["\xa9day"] = self.date
         self.m.tags["\xa9wrt"] = ", ".join(self.composer)
         self.m.tags["\xa9lyr"] = self.lyrics
+
+    def cover_data(self, url: str = None, path_file: str = None) -> str | bytes:
+        result: str | bytes = ""
+
+        if url:
+            try:
+                result = requests.get(url).content
+            except:
+                pass
+        elif path_file:
+            try:
+                with open(path_file, "rb") as f:
+                    result = f.read()
+            except OSError:
+                pass
+
+        return result

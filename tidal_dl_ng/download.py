@@ -188,16 +188,6 @@ class Download:
 
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{int(width)}x{int(height)}.jpg"
 
-    def cover_data(self, sid, width: int = 320, height: int = 320):
-        url = self.cover_url(sid, width, height)
-
-        try:
-            result: str = requests.get(url).content
-        except:
-            result: str = ""
-
-        return result
-
     def metadata_write(self, track: Track, path_file: str):
         result: bool = False
         release_date: str = track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
