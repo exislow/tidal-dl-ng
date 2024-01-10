@@ -275,7 +275,7 @@ class Download:
             for media in items:
                 Progress()
                 # TODO: Handle return value of `track` method.
-                self.item(
+                status_download, result_path_file = self.item(
                     path_base=path_file,
                     file_template=file_name_relative,
                     media=media,
@@ -288,7 +288,7 @@ class Download:
                 if not progress_stdout:
                     progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
 
-                if download_delay:
+                if download_delay and status_download:
                     time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
 
                     # TODO: Fix logging. Is not displayed in debug window.
