@@ -270,7 +270,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(item, Track):
                 result_item: ResultSearch = ResultSearch(
                     position=idx,
-                    artist=item.artist.name,
+                    artist=", ".join(artist.name for artist in item.artists),
                     title=item.name,
                     album=item.album.name,
                     duration_sec=item.duration,
@@ -281,7 +281,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif isinstance(item, Video):
                 result_item: ResultSearch = ResultSearch(
                     position=idx,
-                    artist=item.artist.name,
+                    artist=", ".join(artist.name for artist in item.artists),
                     title=item.name,
                     album=item.album.name if item.album else "",
                     duration_sec=item.duration,
@@ -292,7 +292,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif isinstance(item, Playlist):
                 result_item: ResultSearch = ResultSearch(
                     position=idx,
-                    artist=f"{item.promoted_artists[0].name}, ..." if item.promoted_artists else "",
+                    artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
                     title=item.name,
                     album="",
                     duration_sec=item.duration,
@@ -303,7 +303,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif isinstance(item, Album):
                 result_item: ResultSearch = ResultSearch(
                     position=idx,
-                    artist=item.artist.name,
+                    artist=", ".join(artist.name for artist in item.artists),
                     title="",
                     album=item.name,
                     duration_sec=item.duration,
