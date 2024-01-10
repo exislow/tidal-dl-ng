@@ -195,7 +195,7 @@ class Download:
         isrc: str = track.isrc if track.isrc else ""
 
         try:
-            lyrics: str = track.lyrics().text if hasattr(track, "lyrics") else ""
+            lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
         except HTTPError:
             lyrics: str = ""
 
