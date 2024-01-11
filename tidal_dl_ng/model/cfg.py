@@ -27,6 +27,8 @@ class Settings:
     format_track: str = "Tracks/{artist_name} - {track_title}"
     format_video: str = "Videos/{artist_name} - {track_title}"
     video_convert_mp4: bool = True
+    metadata_cover_width: int = 320
+    metadata_cover_height: int = 320
 
 
 @dataclass_json
@@ -60,6 +62,8 @@ class HelpSettings:
         "Videos are downloaded as MPEG Transport Stream (TS) files. With this option each video "
         "will be converted to MP4. FFMPEG must be installed and added to your 'PATH' variable."
     )
+    metadata_cover_width: str = "The width of the cover image embedded into the track."
+    metadata_cover_height: str = "The height of the cover image embedded into the track."
 
 
 @dataclass_json

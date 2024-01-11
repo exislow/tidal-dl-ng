@@ -95,15 +95,6 @@ To finalize the set-up for publishing to PyPi or Artifactory, see [here](https:/
 For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
 
-## ✨ Releasing a new version
-
-- Create an API Token on [Pypi](https://pypi.org/).
-- Add the API Token to your projects secrets with the name `PYPI_TOKEN` by visiting [this page](https://github.com/exislow/tidal-dl-ng/settings/secrets/actions/new).
-- Create a [new release](https://github.com/exislow/tidal-dl-ng/releases/new) on GitHub.
-- Create a new tag in the form `*.*.*`.
-
-For more details, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/cicd/#how-to-trigger-a-release).
-
 ## ‼️ Disclaimer
 
 - For educational purposes only. I am not liable and responsible for any damage that happens.
@@ -113,5 +104,9 @@ For more details, see [here](https://fpgmaas.github.io/cookiecutter-poetry/featu
 ## 🫂 Contributors
 
 Thanks to all, who have contributed to this project!
+
+This project is based on:
+
+- https://fpgmaas.github.io/cookiecutter-poetry/
 
 <a href="https://github.com/exislow/tidal-dl-ng/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=exislow/tidal-dl-ng" /></a>
