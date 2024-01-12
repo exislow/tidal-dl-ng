@@ -160,9 +160,9 @@ class Metadata:
         if url:
             try:
                 result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
-            except:
-                # TODO: Implement logging.
-                pass
+            except Exception as e:
+                # TODO: Implement propper logging.
+                print(e)
         elif path_file:
             try:
                 with open(path_file, "rb") as f:
