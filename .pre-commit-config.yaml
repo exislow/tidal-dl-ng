@@ -4,15 +4,15 @@ default_language_version:
 default_stages: [commit, push]
 
 repos:
-  #  - repo: https://github.com/pre-commit/pre-commit-hooks
-  #    rev: "v4.4.0"
-  #    hooks:
-  #      - id: check-case-conflict
-  #      - id: check-merge-conflict
-  #      - id: check-toml
-  #      - id: check-yaml
-  #      - id: end-of-file-fixer
-  #      - id: trailing-whitespace
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v4.4.0"
+    hooks:
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: "v0.0.230"
@@ -39,6 +39,7 @@ repos:
   #        entry: poetry run pyupgrade --py310-plus
   #        types: [python]
   #        language: system
+
   - repo: local
     hooks:
       - id: isort
@@ -46,11 +47,11 @@ repos:
         entry: poetry run isort --settings-path pyproject.toml
         types: [python]
         language: system
-#
-#  - repo: local
-#    hooks:
-#      - id: black
-#        name: black
-#        entry: poetry run black --config pyproject.toml
-#        types: [python]
-#        language: system
+
+  - repo: local
+    hooks:
+      - id: black
+        name: black
+        entry: poetry run black --config pyproject.toml
+        types: [python]
+        language: system
