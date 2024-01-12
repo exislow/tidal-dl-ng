@@ -61,3 +61,4 @@ repos:
         entry: poetry run black --config pyproject.toml
         types: [python]
         language: system
+# TODO: Use https://github.com/pre-commit/mirrors-mypy

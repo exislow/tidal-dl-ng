@@ -65,6 +65,7 @@ pydocstyle = "^6.3.0"
 pylint = "^3.0.3"
 pyinstaller = "^6.3.0"
 pillow = "^10.2.0"
+pytest-cov = "^4.1.0"
 
 [tool.poetry.group.docs]
 optional = true
