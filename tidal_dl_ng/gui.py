@@ -409,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         progress: Progress = Progress()
 
-        if isinstance(media, (Track, Video)):
+        if isinstance(media, Track | Video):
             if isinstance(media, Track):
                 file_template: str = self.settings.data.format_track
             elif isinstance(media, Video):
@@ -428,7 +428,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.info(f"Download successful: {download_path_file}")
             else:
                 logger_gui.info(f"Download skipped (file exists): {download_path_file}")
-        elif isinstance(media, (Album, Playlist, Mix)):
+        elif isinstance(media, Album | Playlist | Mix):
             file_template: str | bool = False
 
             if isinstance(media, Album):

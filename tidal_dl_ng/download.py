@@ -29,7 +29,9 @@ from tidal_dl_ng.model.gui_data import ProgressBars
 # TODO: Set appropriate client string and use it for video download.
 # https://github.com/globocom/m3u8#using-different-http-clients
 class RequestsClient:
-    def download(self, uri: str, timeout: int = None, headers: dict | None = None, verify_ssl: bool = True):
+    def download(
+        self, uri: str, timeout: int = REQUESTS_TIMEOUT_SEC, headers: dict | None = None, verify_ssl: bool = True
+    ):
         if not headers:
             headers = {}
 

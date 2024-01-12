@@ -111,7 +111,7 @@ def get_fn_format(media: Track | Album | Playlist | UserPlaylist | Video | Mix) 
         result = format_str_track
     elif isinstance(media, Album):
         result = format_str_album
-    elif isinstance(media, (Playlist, UserPlaylist)):
+    elif isinstance(media, Playlist | UserPlaylist):
         result = format_str_playlist
     elif isinstance(media, Mix):
         result = format_str_mix
@@ -128,8 +128,9 @@ def length_max_name_file() -> int:
     try:
         if system in ["Darwin", "Linux"]:
             result: int = os.pathconf("/", "PC_NAME_MAX")
-    except Exception:
-        pass
+    except Exception as e:
+        # TODO: Implement propper logging.
+        print(e)
 
     return result
 
@@ -141,8 +142,9 @@ def length_max_name_path() -> int:
     try:
         if system in ["Darwin", "Linux"]:
             result: int = os.pathconf("/", "PC_PATH_MAX")
-    except Exception:
-        pass
+    except Exception as e:
+        # TODO: Implement propper logging.
+        print(e)
 
     return result
 

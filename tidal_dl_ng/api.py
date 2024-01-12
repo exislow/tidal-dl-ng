@@ -102,5 +102,7 @@ try:
     if respond.status_code == 200:
         content = respond.json()["files"]["tidal-api-key.json"]["content"]
         __API_KEYS__ = json.loads(content)
-except:
+except Exception as e:
+    # TODO: Implement proper logging.
+    print(e)
     pass
