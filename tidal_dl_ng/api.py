@@ -96,8 +96,9 @@ def getVersion():
 
 # Load from gist
 try:
-    respond = requests.get("https://api.github.com/gists/48d01f5a24b4b7b37f19443977c22cd6",
-                           timeout=REQUESTS_TIMEOUT_SEC)
+    respond = requests.get(
+        "https://api.github.com/gists/48d01f5a24b4b7b37f19443977c22cd6", timeout=REQUESTS_TIMEOUT_SEC
+    )
     if respond.status_code == 200:
         content = respond.json()["files"]["tidal-api-key.json"]["content"]
         __API_KEYS__ = json.loads(content)

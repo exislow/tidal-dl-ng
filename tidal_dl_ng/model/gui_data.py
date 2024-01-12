@@ -8,7 +8,9 @@ try:
         item: QtCore.Signal
         item_name: QtCore.Signal
         list_item: QtCore.Signal
+
 except ModuleNotFoundError:
+
     class ProgressBars:
         pass
 

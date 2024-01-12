@@ -126,8 +126,8 @@ def length_max_name_file() -> int:
     result: int = 255
 
     try:
-        if system in ['Darwin', 'Linux']:
-            result: int = os.pathconf('/', 'PC_NAME_MAX')
+        if system in ["Darwin", "Linux"]:
+            result: int = os.pathconf("/", "PC_NAME_MAX")
     except Exception:
         pass
 
@@ -139,8 +139,8 @@ def length_max_name_path() -> int:
     result: int = 255
 
     try:
-        if system in ['Darwin', 'Linux']:
-            result: int = os.pathconf('/', 'PC_PATH_MAX')
+        if system in ["Darwin", "Linux"]:
+            result: int = os.pathconf("/", "PC_PATH_MAX")
     except Exception:
         pass
 

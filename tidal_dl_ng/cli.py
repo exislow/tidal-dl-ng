@@ -30,7 +30,9 @@ def version_callback(value: bool):
 @app.callback()
 def callback_app(
     ctx: typer.Context,
-    version: Annotated[Optional[bool], typer.Option("--version", "-v", callback=version_callback, is_eager=True)] = None,
+    version: Annotated[
+        Optional[bool], typer.Option("--version", "-v", callback=version_callback, is_eager=True)
+    ] = None,
 ):
     ctx.obj = {"tidal": None}
 
@@ -173,7 +175,7 @@ def download(
                     path_base=settings.data.download_base_path,
                     file_template=file_template,
                     progress=progress,
-                    fn_logger=fn_logger
+                    fn_logger=fn_logger,
                 )
             elif media_name in ["album", "playlist", "mix"]:
                 # TODO: Handle mixes.

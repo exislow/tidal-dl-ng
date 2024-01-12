@@ -421,7 +421,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 file_template=file_template,
                 progress_gui=data_pb,
                 progress=progress,
-                fn_logger=logger_gui
+                fn_logger=logger_gui,
             )
 
             if result_download:
