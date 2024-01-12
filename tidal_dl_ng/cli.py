@@ -1,22 +1,21 @@
 #!/usr/bin/env python
+from pathlib import Path
 from typing import Annotated, Optional
 
-from pathlib import Path
-
 import typer
-from tidal_dl_ng.config import Settings, Tidal
-from tidal_dl_ng.constants import CTX_TIDAL, MediaType
-from tidal_dl_ng.helper.path import path_file_settings
-from tidal_dl_ng.helper.url import get_tidal_media_id, get_tidal_media_type
-from tidal_dl_ng.helper.wrapper import WrapperLogger
-from tidal_dl_ng.model.cfg import HelpSettings
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import BarColumn, Console, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from tidal_dl_ng.download import Download
 from tidal_dl_ng import __version__
+from tidal_dl_ng.config import Settings, Tidal
+from tidal_dl_ng.constants import CTX_TIDAL, MediaType
+from tidal_dl_ng.download import Download
+from tidal_dl_ng.helper.path import path_file_settings
+from tidal_dl_ng.helper.url import get_tidal_media_id, get_tidal_media_type
+from tidal_dl_ng.helper.wrapper import WrapperLogger
+from tidal_dl_ng.model.cfg import HelpSettings
 
 app = typer.Typer()
 
