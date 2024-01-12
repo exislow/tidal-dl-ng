@@ -29,7 +29,10 @@ from tidal_dl_ng.model.gui_data import ProgressBars
 # TODO: Set appropriate client string and use it for video download.
 # https://github.com/globocom/m3u8#using-different-http-clients
 class RequestsClient:
-    def download(self, uri, timeout=None, headers={}, verify_ssl=True):
+    def download(self, uri: str, timeout: int = None, headers: dict | None = None, verify_ssl: bool = True):
+        if not headers:
+            headers = {}
+
         o = requests.get(uri, timeout=timeout, headers=headers)
 
         return o.text, o.url
@@ -64,7 +67,7 @@ class Download:
                 with open(path_file, "wb") as f:
                     for segment in m3u8_playlist.data["segments"]:
                         url = segment["uri"]
-                        r = requests.get(url)
+                        r = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
 
                         f.write(r.content)
 
@@ -76,7 +79,7 @@ class Download:
         self,
         path_base: str,
         fn_logger: Logger | WrapperLogger,
-        id: str = None,
+        id_media: str = None,
         file_template: str = None,
         media: Track | Video = None,
         media_type: MediaType = None,
@@ -84,11 +87,11 @@ class Download:
         progress_gui: ProgressBars = None,
         progress: Progress = None,
     ) -> (bool, str):
-        if id:
+        if id_media:
             if media_type == MediaType.Track:
-                media = Track(self.session, id)
+                media = Track(self.session, id_media)
             elif media_type == MediaType.Video:
-                media = Video(self.session, id)
+                media = Video(self.session, id_media)
 
                 # If video download is not allowed
                 if not video_download:
@@ -225,7 +228,7 @@ class Download:
 
         return result
 
-    def list(
+    def items(
         self,
         path_base: str,
         fn_logger: Logger | WrapperLogger,

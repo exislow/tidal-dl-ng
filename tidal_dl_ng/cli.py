@@ -167,7 +167,7 @@ def download(
                     media_type = MediaType.Video
 
                 dl.item(
-                    id=id_item,
+                    id_media=id_item,
                     media_type=media_type,
                     path_base=settings.data.download_base_path,
                     file_template=file_template,
@@ -188,7 +188,7 @@ def download(
                     file_template = settings.data.format_mix
                     media_type = MediaType.Mix
 
-                dl.list(
+                dl.items(
                     id_media=id_item,
                     media_type=media_type,
                     path_base=settings.data.download_base_path,

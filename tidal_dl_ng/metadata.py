@@ -34,13 +34,13 @@ class Metadata:
         type_audio: str = "",
         album: str = "",
         title: str = "",
-        artists: [str] = [""],
+        artists: [str] | None = None,
         copy_right: str = "",
         tracknumber: int = 0,
         discnumber: int = 0,
         totaltrack: int = 0,
         totaldisc: int = 0,
-        composer: [str] = [""],
+        composer: [str] | None = None,
         isrc: str = "",
         albumartist: str = "",
         date: str = "",
@@ -114,14 +114,14 @@ class Metadata:
         self.m.tags["title"] = self.title
         self.m.tags["album"] = self.album
         self.m.tags["albumartist"] = self.albumartist
-        self.m.tags["artist"] = ", ".join(self.artists)
+        self.m.tags["artist"] = ", ".join(self.artists) if self.artists else ""
         self.m.tags["copyright"] = self.copy_right
         self.m.tags["tracknumber"] = str(self.tracknumber)
         self.m.tags["tracktotal"] = str(self.totaltrack)
         self.m.tags["discnumber"] = str(self.discnumber)
         self.m.tags["disctotal"] = str(self.totaldisc)
         self.m.tags["date"] = self.date
-        self.m.tags["composer"] = ", ".join(self.composer)
+        self.m.tags["composer"] = ", ".join(self.composer) if self.composer else ""
         self.m.tags["isrc"] = self.isrc
         self.m.tags["lyrics"] = self.lyrics
 
@@ -132,12 +132,12 @@ class Metadata:
         self.m.tags.add(TIT2(encoding=3, text=self.title))
         self.m.tags.add(TALB(encoding=3, text=self.album))
         self.m.tags.add(TOPE(encoding=3, text=self.albumartist))
-        self.m.tags.add(TPE1(encoding=3, text=", ".join(self.artists)))
+        self.m.tags.add(TPE1(encoding=3, text=", ".join(self.artists) if self.artists else ""))
         self.m.tags.add(TCOP(encoding=3, text=self.copy_right))
         self.m.tags.add(TRCK(encoding=3, text=str(self.tracknumber)))
         self.m.tags.add(TRCK(encoding=3, text=self.discnumber))
         self.m.tags.add(TDRC(encoding=3, text=self.date))
-        self.m.tags.add(TCOM(encoding=3, text=", ".join(self.composer)))
+        self.m.tags.add(TCOM(encoding=3, text=", ".join(self.composer) if self.composer else ""))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
         self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
 
@@ -145,13 +145,13 @@ class Metadata:
         self.m.tags["\xa9nam"] = self.title
         self.m.tags["\xa9alb"] = self.album
         self.m.tags["aART"] = self.albumartist
-        self.m.tags["\xa9ART"] = ", ".join(self.artists)
+        self.m.tags["\xa9ART"] = ", ".join(self.artists) if self.artists else ""
         self.m.tags["cprt"] = self.copy_right
         self.m.tags["trkn"] = [[self.tracknumber, self.totaltrack]]
         self.m.tags["disk"] = [[self.discnumber, self.totaldisc]]
         # self.m.tags['\xa9gen'] = self.genre
         self.m.tags["\xa9day"] = self.date
-        self.m.tags["\xa9wrt"] = ", ".join(self.composer)
+        self.m.tags["\xa9wrt"] = ", ".join(self.composer) if self.composer else ""
         self.m.tags["\xa9lyr"] = self.lyrics
 
     def cover_data(self, url: str = None, path_file: str = None) -> str | bytes:
@@ -161,12 +161,14 @@ class Metadata:
             try:
                 result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
             except:
+                # TODO: Implement logging.
                 pass
         elif path_file:
             try:
                 with open(path_file, "rb") as f:
                     result = f.read()
             except OSError:
+                # TODO: Implement logging.
                 pass
 
         return result

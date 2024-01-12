@@ -14,10 +14,11 @@ import coloredlogs.converter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.session import SearchTypes
+
 from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import QualityVideo
 from tidal_dl_ng.download import Download
-from tidal_dl_ng.logger import XStream, logger_cli, logger_gui
+from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, ResultSearch
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
@@ -46,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Gen!")
         # TODO: Fix icons (make them visible).
-        my_pixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
+        # my_pixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
         my_icon = QtGui.QIcon("tidal_dl_ng/ui/icon.png")
         self.setWindowIcon(my_icon)
         tray = QtWidgets.QSystemTrayIcon()
@@ -124,7 +125,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: SearchTypes):
         for item in options:
-            if item and not item.__name__ == "Artist":
+            if item and item.__name__ != "Artist":
                 ui_target.addItem(item.__name__, item)
 
         self.cb_search_type.setCurrentIndex(1)
@@ -213,7 +214,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # We build the menu.
         menu = QtWidgets.QMenu()
-        action = menu.addAction("Dowloading Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction("Dowloading Playlist", lambda: self.thread_download_list_media(point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
@@ -254,10 +255,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tr_results.addTopLevelItem(child)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultSearch]:
-        result_search: [dict[str, *SearchTypes]] = self.tidal.session.search(query, models=types_media, limit=999)
+        result_search: [dict[str, SearchTypes]] = self.tidal.session.search(query, models=types_media, limit=999)
         result: [ResultSearch] = []
 
-        for media_type, l_media in result_search.items():
+        for _media_type, l_media in result_search.items():
             if isinstance(l_media, list):
                 result = result + self.search_result_to_model(l_media)
 
@@ -383,7 +384,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_download_results(self):
         self.b_download.setEnabled(False)
-        self.b_download.setText(f"Downloading...")
+        self.b_download.setText("Downloading...")
 
         items: [QtWidgets.QTreeWidgetItem] = self.tr_results.selectedItems()
 
@@ -393,9 +394,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for item in items:
                 media: Track | Album | Playlist | Video = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
 
-                result_dl: bool = self.download_item(media, self.download)
+                self.download_item(media, self.download)
 
-        self.b_download.setText(f"Download")
+        self.b_download.setText("Download")
         self.b_download.setEnabled(True)
 
     def download_item(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> bool:
@@ -408,7 +409,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         progress: Progress = Progress()
 
-        if isinstance(media, Track) or isinstance(media, Video):
+        if isinstance(media, (Track, Video)):
             if isinstance(media, Track):
                 file_template: str = self.settings.data.format_track
             elif isinstance(media, Video):
@@ -427,7 +428,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.info(f"Download successful: {download_path_file}")
             else:
                 logger_gui.info(f"Download skipped (file exists): {download_path_file}")
-        elif isinstance(media, Album) or isinstance(media, Playlist) or isinstance(media, Mix):
+        elif isinstance(media, (Album, Playlist, Mix)):
             file_template: str | bool = False
 
             if isinstance(media, Album):
@@ -444,7 +445,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             self.progress_list_name(progress_name)
 
-            dl.list(
+            dl.items(
                 path_base=self.settings.data.download_base_path,
                 file_template=file_template,
                 list_media=media,
@@ -460,10 +461,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # TODO: Refactor to useful return value.
         return True
-
-    def progress_reset(self):
-        self.pb_list.setValue(0)
-        self.pb_item.setValue(0)
 
 
 # TODO: Comment with Google Docstrings.

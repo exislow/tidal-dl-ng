@@ -123,6 +123,8 @@ ignore = [
   "E501",
   # DoNotAssignLambda
   "E731",
+  # Do not use bare `except`
+  "E722"
 ]
 
 [tool.ruff.per-file-ignores]
