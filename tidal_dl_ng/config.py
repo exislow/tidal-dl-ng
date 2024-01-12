@@ -1,7 +1,6 @@
-from typing import Any
-
 from collections.abc import Callable
 from json import JSONDecodeError
+from typing import Any
 
 import tidalapi
 from requests import HTTPError
