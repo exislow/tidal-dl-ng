@@ -63,20 +63,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies
-        run: poetry install --no-interaction --with docs
+      - name: Set up the environment
+        uses: ./.github/actions/setup-poetry-env
       - name: Deploy documentation
         run: poetry run mkdocs gh-deploy --force
   compute:
@@ -150,25 +138,8 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@v4
-      - name: Set up python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      #          architecture: "x64"
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-      - name: Load cached venv
-        id: cached-poetry-dependencies
-        uses: actions/cache@v3
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Install dependencies NOT Windows
-        run: poetry install --no-interaction --all-extras --with dev
+      - name: Set up the environment
+        uses: ./.github/actions/setup-poetry-env
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Load Release URL File from release job

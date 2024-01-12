@@ -11,7 +11,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
 
@@ -19,6 +19,8 @@ runs:
       uses: snok/install-poetry@v1
       with:
         virtualenvs-in-project: true
+        virtualenvs-create: true
+        installer-parallel: true
 
     - name: Load cached venv
       id: cached-poetry-dependencies
@@ -29,5 +31,5 @@ runs:
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction
+      run: poetry install --no-interaction --all-extras --with dev,docs
       shell: bash
