@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up the environment
         uses: ./.github/actions/setup-poetry-env
       - name: Export tag
@@ -53,7 +53,7 @@ jobs:
       - name: Output Release URL File
         run: echo "${{steps.release_create.outputs.upload_url}}" > ${{env.RELEASE_UPLOAD_URL}}.txt
       - name: Save Upload URL File for publish
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: ${{env.RELEASE_UPLOAD_URL}}
           path: ${{env.RELEASE_UPLOAD_URL}}.txt
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Install Poetry
         uses: snok/install-poetry@v1
         with:
@@ -149,9 +149,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       #          architecture: "x64"
@@ -172,7 +172,7 @@ jobs:
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Load Release URL File from release job
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v4
         with:
           name: ${{env.RELEASE_UPLOAD_URL}}
       - name: Get Release File Name & Upload URL
