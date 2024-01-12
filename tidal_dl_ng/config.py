@@ -36,7 +36,10 @@ class BaseConfig:
             result = True
         except (JSONDecodeError, TypeError, FileNotFoundError):
             self.data = self.cls_model()
-            self.save()
+
+        # Call save in case of we need to update the saved config, due to changes in code.
+        # TODO: Compare if config in memory and on disk is different. Otherwise no write operation.
+        self.save()
 
         return result
 

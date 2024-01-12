@@ -189,6 +189,7 @@ class Download:
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{int(width)}x{int(height)}.jpg"
 
     def metadata_write(self, track: Track, path_file: str):
+        settings: Settings = Settings()
         result: bool = False
         release_date: str = track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
         copy_right: str = track.copyright if track.copyright else ""
@@ -214,7 +215,8 @@ class Download:
             totaltrack=track.album.num_tracks if track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album.num_volumes else 1,
             discnumber=track.volume_num,
-            url_cover=self.cover_url(track.album.cover),
+            url_cover=self.cover_url(track.album.cover, settings.data.metadata_cover_width,
+                                     settings.data.metadata_cover_height),
         )
 
         m.save()
