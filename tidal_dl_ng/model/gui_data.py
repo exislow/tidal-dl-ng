@@ -29,4 +29,3 @@ class ResultSearch:
     album: str
     duration_sec: int
     obj: object
-

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from pathlib import Path
 from typing import Annotated, Optional
+
+from pathlib import Path
 
 import typer
 from rich.live import Live
