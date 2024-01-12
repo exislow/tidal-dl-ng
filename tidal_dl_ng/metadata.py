@@ -2,6 +2,7 @@ import pathlib
 
 import mutagen
 import requests
+from constants import REQUESTS_TIMEOUT_SEC
 from mutagen import flac, mp4
 from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, USLT
 
@@ -158,7 +159,7 @@ class Metadata:
 
         if url:
             try:
-                result = requests.get(url).content
+                result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
             except:
                 pass
         elif path_file:

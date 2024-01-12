@@ -17,7 +17,7 @@ from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import MediaType
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaUnknown
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_validate
@@ -134,7 +134,7 @@ class Download:
 
                     try:
                         # Streaming, so we can iterate over the response.
-                        r = requests.get(stream_url, stream=True)
+                        r = requests.get(stream_url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
                         r.raise_for_status()
                         total_size_in_bytes = int(r.headers.get("content-length", 0))
                         block_size = 4096
