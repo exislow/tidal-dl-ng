@@ -1,14 +1,14 @@
-from typing import Any
-
 from collections.abc import Callable
 from json import JSONDecodeError
+from typing import Any
 
 import tidalapi
+from requests import HTTPError
+
 from tidal_dl_ng.helper.decorator import SingletonMeta
 from tidal_dl_ng.helper.path import path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.cfg import Token as ModelToken
-from requests import HTTPError
 
 
 class BaseConfig:

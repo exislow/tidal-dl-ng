@@ -6,7 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from pathvalidate import sanitize_filename
-from tidalapi import Album, Playlist, Track, UserPlaylist, Video, Mix
+from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 
 def path_base():
@@ -128,7 +128,7 @@ def length_max_name_file() -> int:
     try:
         if system in ['Darwin', 'Linux']:
             result: int = os.pathconf('/', 'PC_NAME_MAX')
-    except Exception as e:
+    except Exception:
         pass
 
     return result
@@ -141,7 +141,7 @@ def length_max_name_path() -> int:
     try:
         if system in ['Darwin', 'Linux']:
             result: int = os.pathconf('/', 'PC_PATH_MAX')
-    except Exception as e:
+    except Exception:
         pass
 
     return result

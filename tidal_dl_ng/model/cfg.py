@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 
-from tidal_dl_ng.constants import QualityVideo
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
+
+from tidal_dl_ng.constants import QualityVideo
 
 
 @dataclass_json
