@@ -177,7 +177,6 @@ def download(
                     fn_logger=fn_logger,
                 )
             elif media_name in ["album", "playlist", "mix"]:
-                # TODO: Handle mixes.
                 file_template: str | bool = False
 
                 if media_name == "album":

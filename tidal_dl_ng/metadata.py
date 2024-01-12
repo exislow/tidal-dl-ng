@@ -167,8 +167,8 @@ class Metadata:
             try:
                 with open(path_file, "rb") as f:
                     result = f.read()
-            except OSError:
-                # TODO: Implement logging.
-                pass
+            except OSError as e:
+                # TODO: Implement propper logging.
+                print(e)
 
         return result
