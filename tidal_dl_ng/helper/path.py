@@ -128,12 +128,12 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
     # Sanitize path
     try:
         pathname_sanitized = sanitize_filepath(pathname, replacement_text=" ", validate_after_sanitize=True)
-    except ValidationError as e:
+    except ValidationError:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
             pathname_sanitized = Path.home()
         else:
-            raise e
+            raise
 
     # Sanitize filename
     try:
@@ -146,7 +146,10 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
             file_extension = "_" + Path(path_file).suffix
             filename_sanitized = filename_sanitized[: -len(file_extension)] + file_extension
     except ValidationError as e:
-        raise e
+        # TODO: Implement proper exception handling and logging.
+        print(e)
+
+        raise
 
     # Join path and filename
     result = os.path.join(pathname_sanitized, filename_sanitized)
@@ -158,6 +161,7 @@ def check_file_exists(path_file: str, extension_ignore: bool = False):
     if extension_ignore:
         path_file = Path(path_file).stem + ".*"
 
-    result = True if glob.glob(path_file) else False
+    # TODO: Check what happens is (no) files .
+    result = bool(glob.glob(path_file))
 
     return result

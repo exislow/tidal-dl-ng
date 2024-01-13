@@ -137,11 +137,7 @@ class Download:
 
         # Compute if and how downloads need to be skipped.
         if self.skip_existing:
-            if self.skip_existing == SkipExisting.ExtensionIgnore:
-                extension_ignore = True
-            else:
-                extension_ignore = False
-
+            extension_ignore = self.skip_existing == SkipExisting.ExtensionIgnore
             # TODO: Check if extension is already in `path_file` or not.
             download_skip = check_file_exists(path_file, extension_ignore=extension_ignore)
         else:
