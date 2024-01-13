@@ -5,7 +5,6 @@ import random
 import shutil
 import tempfile
 import time
-import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from logging import Logger
 from uuid import uuid4
@@ -13,15 +12,15 @@ from uuid import uuid4
 import ffmpeg
 import m3u8
 import requests
-from helper.format import is_json, is_xml
 from helper.tidal import name_builder_item
 from model.tidal import StreamManifest
 from requests.exceptions import HTTPError
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+from mpegdash.parser import MPEGDASHParser
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting, StreamManifestMimeType
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
@@ -53,39 +52,134 @@ class Download:
         self.session = session
         self.skip_existing = skip_existing
 
-    def _audio_mpeg_dash(self, audio: Track, path_file: str) -> str | None:
-        pass
+    def _audio_stream(
+        self,
+        fn_logger: Callable,
+        media: Track,
+        progress: Progress,
+        progress_gui: ProgressBars,
+        stream_manifest: StreamManifest,
+        path_file: str,
+    ):
+        media_name: str = name_builder_item(media)
+
+        # Set the correct progress output channel.
+        if progress_gui is None:
+            progress_stdout: bool = True
+        else:
+            progress_stdout: bool = False
+            progress_gui.item_name.emit(media_name)
+
+        try:
+            # Download the media as stream, so we can iterate over the response.
+            r = requests.get(stream_manifest.stream_urls, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+
+            r.raise_for_status()
+
+            # Get file size and compute progress steps
+            total_size_in_bytes = int(r.headers.get("content-length", 0))
+            block_size = 4096
+            p_task = progress.add_task(
+                f"[blue]Item '{media_name[:30]}'",
+                total=total_size_in_bytes / block_size,
+                visible=progress_stdout,
+            )
+
+            # Write content to file until progress is finished.
+            while not progress.tasks[p_task].finished:
+                with open(path_file, "wb") as f:
+                    for data in r.iter_content(chunk_size=block_size):
+                        f.write(data)
+                        # Advance progress bar.
+                        progress.advance(p_task)
+
+                        # To send the progress to the GUI, we need to emit the percentage.
+                        if not progress_stdout:
+                            progress_gui.item.emit(progress.tasks[p_task].percentage)
+        except HTTPError as e:
+            # TODO: Handle Exception...
+            fn_logger(e)
+
+        # Check if file is encrypted.
+        needs_decryption = self.is_encrypted(stream_manifest.encryption_type)
+
+        if needs_decryption:
+            key, nonce = decrypt_security_token(stream_manifest.encryption_key)
+            tmp_path_file_decrypted = path_file + "_decrypted"
+            decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
+        else:
+            tmp_path_file_decrypted = path_file
+
+        # Write metadata to file.
+        self.metadata_write(media, tmp_path_file_decrypted)
+
+        return tmp_path_file_decrypted
+
+    def _mpeg_segments(
+        self,
+        fn_logger: Callable,
+        media: Track,
+        progress: Progress,
+        progress_gui: ProgressBars,
+        stream_manifest: StreamManifest,
+        path_file: str,
+    ):
+        media_name: str = name_builder_item(media)
+
+        # Set the correct progress output channel.
+        if progress_gui is None:
+            progress_stdout: bool = True
+        else:
+            progress_stdout: bool = False
+            progress_gui.item_name.emit(media_name)
+
+        try:
+            total_iterations = stream_manifest.segments_count
+            p_task = progress.add_task(
+                f"[blue]Item '{media.name[:30]}'",
+                total=total_iterations,
+                visible=progress_stdout,
+            )
+
+            # Write content to file until progress is finished.
+            while not progress.tasks[p_task].finished:
+                with open(path_file, "wb") as f:
+                    for index in range(total_iterations):
+                        # Download the media.
+                        segment_url = stream_manifest.stream_urls.replace('$Number$', str(index))
+                        r = requests.get(segment_url, timeout=REQUESTS_TIMEOUT_SEC)
+
+                        r.raise_for_status()
+                        # Write data
+                        f.write(r.content)
+                        # Advance progress bar.
+                        progress.advance(p_task)
+
+                        # To send the progress to the GUI, we need to emit the percentage.
+                        if not progress_stdout:
+                            progress_gui.item.emit(progress.tasks[p_task].percentage)
+        except HTTPError as e:
+            # TODO: Handle Exception...
+            fn_logger(e)
+
+        return path_file
 
     def _video(self, video: Video, path_file: str) -> str | None:
         result: str | None = None
-        m3u8_variant: m3u8.M3U8 = m3u8.load(video.get_url())
-        m3u8_playlist: m3u8.M3U8 | bool = False
-        settings: Settings = Settings()
-        resolution_best: int = 0
 
-        if m3u8_variant.is_variant:
-            for playlist in m3u8_variant.playlists:
-                if resolution_best < playlist.stream_info.resolution[1]:
-                    resolution_best = playlist.stream_info.resolution[1]
-                    m3u8_playlist = m3u8.load(playlist.uri)
+        with open(path_file, "wb") as f:
+            for segment in m3u8_playlist.data["segments"]:
+                url = segment["uri"]
+                r = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
 
-                    if settings.data.quality_video.value == playlist.stream_info.resolution[1]:
-                        break
+                f.write(r.content)
 
-            if m3u8_playlist:
-                with open(path_file, "wb") as f:
-                    for segment in m3u8_playlist.data["segments"]:
-                        url = segment["uri"]
-                        r = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
-
-                        f.write(r.content)
-
-                result = path_file
+        result = path_file
 
         return result
 
     def instantiate_media(
-        self, session: Session, media_type: MediaType.Track | MediaType.Video, id_media: str
+        self, session: Session, media_type: type[MediaType.Track, MediaType.Video], id_media: str
     ) -> Track | Video:
         if media_type == MediaType.Track:
             media = Track(session, id_media)
@@ -126,17 +220,22 @@ class Download:
         file_name_relative = format_path_media(file_template, media)
         path_file = os.path.abspath(os.path.normpath(os.path.join(path_base, file_name_relative)))
 
-        # Compute the file extension
-        # TODO: Move further down?
+        # Populate StreamManifest for further download.
         if isinstance(media, Track):
             stream = media.stream()
-            stream_manifest = self.stream_manifest_parse(stream.manifest)
+            manifest: str = stream.manifest
+            mime_type: str = stream.manifest_mime_type
+        else:
+            manifest: str = media.get_url()
+            mime_type: str = StreamManifestMimeType.VIDEO.value
+
+        stream_manifest = self.stream_manifest_parse(manifest, mime_type)
 
         # Sanitize final path_file to fit into OS boundaries.
-        path_file = path_file_sanitize(path_file, adapt=True)
+        path_file = path_file_sanitize(path_file + stream_manifest.file_extension, adapt=True)
 
         # Compute if and how downloads need to be skipped.
-        if self.skip_existing:
+        if self.skip_existing.value:
             extension_ignore = self.skip_existing == SkipExisting.ExtensionIgnore
             # TODO: Check if extension is already in `path_file` or not.
             download_skip = check_file_exists(path_file, extension_ignore=extension_ignore)
@@ -149,9 +248,12 @@ class Download:
                 tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
 
                 if isinstance(media, Track):
-                    tmp_path_file = self._audio_stream(
-                        fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file
-                    )
+                    if stream_manifest.segments_count > 0:
+                        tmp_path_file = self._mpeg_segments(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
+                    else:
+                        tmp_path_file = self._audio_stream(
+                            fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file
+                        )
                 elif isinstance(media, Video):
                     tmp_path_file = self._video(media, tmp_path_file)
 
@@ -169,67 +271,6 @@ class Download:
             fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
 
         return not download_skip, path_file
-
-    def _audio_stream(
-        self,
-        fn_logger: Callable,
-        media: Track,
-        progress: Progress,
-        progress_gui: ProgressBars,
-        stream_manifest: StreamManifest,
-        path_file: str,
-    ):
-        # Set the correct progress output channel.
-        if progress_gui is None:
-            progress_stdout: bool = True
-        else:
-            progress_stdout: bool = False
-            progress_gui.item_name.emit(media.name)
-
-        try:
-            # Download the media as stream, so we can iterate over the response.
-            r = requests.get(stream_manifest.stream_url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
-
-            r.raise_for_status()
-
-            # Get file size and compute progress steps
-            total_size_in_bytes = int(r.headers.get("content-length", 0))
-            block_size = 4096
-            p_task = progress.add_task(
-                f"[blue]Item '{media.name[:30]}'",
-                total=total_size_in_bytes / block_size,
-                visible=progress_stdout,
-            )
-
-            # Write content to file until progress is finished.
-            while not progress.tasks[p_task].finished:
-                with open(path_file, "wb") as f:
-                    for data in r.iter_content(chunk_size=block_size):
-                        f.write(data)
-                        # Advance progress bar.
-                        progress.advance(p_task)
-
-                        # To send the progress to the GUI, we need to emit the percentage.
-                        if not progress_stdout:
-                            progress_gui.item.emit(progress.tasks[p_task].percentage)
-        except HTTPError as e:
-            # TODO: Handle Exception...
-            fn_logger(e)
-
-        # Check if file is encrypted.
-        needs_decryption = self.is_encrypted(stream_manifest.encryption_type)
-
-        if needs_decryption:
-            key, nonce = decrypt_security_token(stream_manifest.encryption_key)
-            tmp_path_file_decrypted = path_file + "_decrypted"
-            decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
-        else:
-            tmp_path_file_decrypted = path_file
-
-        # Write metadata to file.
-        self.metadata_write(media, tmp_path_file_decrypted)
-
-        return tmp_path_file_decrypted
 
     def cover_url(self, sid: str, width: int = 320, height: int = 320):
         if sid is None:
@@ -353,19 +394,21 @@ class Download:
         return result
 
     def get_file_extension(self, stream_url: str, stream_codec: str) -> str:
-        result = None
-
         if ".flac" in stream_url:
-            result = ".flac"
+            result: str = ".flac"
         elif ".mp4" in stream_url:
-            if "ac4" in stream_codec or "mha1" in stream_codec:
-                result = ".mp4"
-            elif "flac" in stream_codec:
-                result = ".flac"
-            else:
-                result = ".m4a"
+            # TODO: Need to investigate, what the correct extension is.
+            # if "ac4" in stream_codec or "mha1" in stream_codec:
+            #     result = ".mp4"
+            # elif "flac" in stream_codec:
+            #     result = ".flac"
+            # else:
+            #     result = ".m4a"
+            result: str = ".mp4"
+        if ".ts" in stream_url:
+            result: str = ".ts"
         else:
-            result = ".m4a"
+            result: str = ".m4a"
 
         return result
 
@@ -375,41 +418,83 @@ class Download:
 
         return path_file_out
 
-    def stream_manifest_parse(self, manifest: str) -> StreamManifest:
-        # Stream Manifest is base64 encoded.
-        manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
-
-        if is_xml(manifest_parsed):
-            root = ET.fromstring(manifest_parsed)
-            stream_url: str = root[0][0][0][0].attrib["media"]
-            codecs: str = root[0][0][0].attrib["codecs"]
-            mime_type: str = root[0][0].attrib["mimeType"]
-            file_extension: str = self.get_file_extension(stream_url, codecs)
+    def stream_manifest_parse(self, manifest: str, mime_type: str) -> StreamManifest:
+        if mime_type == StreamManifestMimeType.MPD.value:
+            # Stream Manifest is base64 encoded.
+            manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
+            mpd = MPEGDASHParser.parse(manifest_parsed)
+            codecs: str = mpd.periods[0].adaptation_sets[0].representations[0].codecs
+            mime_type: str = mpd.periods[0].adaptation_sets[0].mime_type
             # TODO: Handle encryption key. But I have never seen an encrypted file so far.
             encryption_type: str = "NONE"
             encryption_key: str | None = None
-        elif is_json(manifest_parsed):
+            # .initialization + the very first of .media; See https://developers.broadpeak.io/docs/foundations-dash
+            segments_count = 1 + 1
+
+            for s in mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0].segment_timelines[0].Ss:
+                segments_count += s.r if s.r else 1
+
+            # Populate segment urls.
+            segment_template = mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
+            stream_urls: list[str] = []
+
+            for index in range(segments_count):
+                stream_urls.append(segment_template.media.replace('$Number$', str(index)))
+
+        elif mime_type == StreamManifestMimeType.JSON.value:
+            # Stream Manifest is base64 encoded.
+            manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             # JSON string to object.
             stream_manifest = json.loads(manifest_parsed)
             # TODO: Handle more than one dowload URL
-            stream_url: str = stream_manifest["urls"][0]
+            stream_urls: str = stream_manifest["urls"]
             codecs: str = stream_manifest["codecs"]
             mime_type: str = stream_manifest["mimeType"]
-            file_extension: str = self.get_file_extension(stream_url, codecs)
             encryption_type: str = stream_manifest["encryptionType"]
             encryption_key: str | None = (
                 stream_manifest["encryptionKey"] if self.is_encrypted(encryption_type) else None
             )
+        elif mime_type == StreamManifestMimeType.VIDEO.value:
+            # Parse M3U8 video playlist
+            m3u8_variant: m3u8.M3U8 = m3u8.load(manifest)
+            settings: Settings = Settings()
+            # Find the desired video resolution or the next best one.
+            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, settings.data.quality_video.value)
+            # Populate urls.
+            stream_urls: list[str] = m3u8_playlist.files
+
+            # TODO: Handle encryption key. But I have never seen an encrypted file so far.
+            encryption_type: str = "NONE"
+            encryption_key: str | None = None
         else:
             raise UnknownManifestFormat
 
+        file_extension: str = self.get_file_extension(stream_urls[0], codecs)
+
         result: StreamManifest = StreamManifest(
-            stream_url=stream_url,
+            stream_urls=stream_urls,
             codecs=codecs,
             file_extension=file_extension,
             encryption_type=encryption_type,
             encryption_key=encryption_key,
-            mime_type=mime_type,
+            mime_type=mime_type
         )
 
         return result
+
+    def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: str) -> (m3u8.M3U8 | bool, str):
+        m3u8_playlist: m3u8.M3U8 | bool = False
+        resolution_best: int = 0
+        mime_type: str = ""
+
+        if m3u8_variant.is_variant:
+            for playlist in m3u8_variant.playlists:
+                if resolution_best < playlist.stream_info.resolution[1]:
+                    resolution_best = playlist.stream_info.resolution[1]
+                    m3u8_playlist = m3u8.load(playlist.uri)
+                    mime_type = playlist.stream_info.codecs
+
+                    if quality == playlist.stream_info.resolution[1]:
+                        break
+
+        return m3u8_playlist, mime_type

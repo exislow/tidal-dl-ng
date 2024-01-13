@@ -23,3 +23,9 @@ class SkipExisting(Enum):
     Disabled = False
     Filename = "exact"
     ExtensionIgnore = "extension_ignore"
+
+
+class StreamManifestMimeType(Enum):
+    MPD = "application/dash+xml"
+    JSON = "a"
+    VIDEO = "video/mp2t"

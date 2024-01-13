@@ -127,7 +127,7 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
 
     # Sanitize path
     try:
-        pathname_sanitized = sanitize_filepath(pathname, replacement_text=" ", validate_after_sanitize=True)
+        pathname_sanitized = sanitize_filepath(pathname, replacement_text=" ", validate_after_sanitize=True, platform="auto")
     except ValidationError:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
@@ -137,7 +137,7 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
 
     # Sanitize filename
     try:
-        filename_sanitized = sanitize_filename(path_file, replacement_text=" ", validate_after_sanitize=True)
+        filename_sanitized = sanitize_filename(filename, replacement_text=" ", validate_after_sanitize=True, platform="auto")
         filename_sanitized_extension = Path(filename_sanitized).suffix
 
         # Check if the file extension was removed by shortening the filename length

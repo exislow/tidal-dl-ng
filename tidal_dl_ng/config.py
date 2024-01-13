@@ -1,3 +1,5 @@
+import os
+import shutil
 from collections.abc import Callable
 from json import JSONDecodeError
 from typing import Any
@@ -34,7 +36,19 @@ class BaseConfig:
 
             self.data = self.cls_model.from_json(settings_json)
             result = True
-        except (JSONDecodeError, TypeError, FileNotFoundError):
+        except (JSONDecodeError, TypeError, FileNotFoundError, ValueError) as e:
+            if isinstance(e, ValueError):
+                path_bak = path + ".bak"
+
+                # First check if a backup file already exists. If yes, remove it.
+                if os.path.exists(path_bak):
+                    os.remove(path_bak)
+
+                # Move the invalid config file to the backup location.
+                shutil.move(path, path_bak)
+                # TODO: Implement better global logger.
+                print(f"Something is wrong with your config. Maybe it is not compatible anymore due to a new app version. You can find a backup of your old config here: '{path_bak}'. A new default config was created.")
+
             self.data = self.cls_model()
 
         # Call save in case of we need to update the saved config, due to changes in code.

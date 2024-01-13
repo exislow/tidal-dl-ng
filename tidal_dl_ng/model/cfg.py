@@ -10,7 +10,6 @@ from tidal_dl_ng.constants import QualityVideo, SkipExisting
 @dataclass
 class Settings:
     skip_existing: SkipExisting = SkipExisting.Disabled
-    skip_existing_ignore_extension: bool = False
     album_cover_save: bool = True
     lyrics_save: bool = False
     # TODO: Implement API KEY selection.
@@ -35,7 +34,9 @@ class Settings:
 
 @dataclass
 class HelpSettings:
-    skip_existing: str = "Do not download, if file already exists."
+    skip_existing: str = ("Do not download, if file already exists. Possible option false = do not skip, "
+                          "'exact' = if filename already exists, 'extension_ignore' = skip even if a file with a "
+                          "different file extension exists.")
     album_cover_save: str = "Safe cover to album folder."
     lyrics_save: str = "Safe lyrics to audio file."
     api_key_index: str = "Set the device API KEY."
