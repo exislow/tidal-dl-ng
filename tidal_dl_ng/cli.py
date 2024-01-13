@@ -169,7 +169,7 @@ def download(
                     media_type = MediaType.Video
 
                 dl.item(
-                    id_media=id_item,
+                    media_id=id_item,
                     media_type=media_type,
                     path_base=settings.data.download_base_path,
                     file_template=file_template,

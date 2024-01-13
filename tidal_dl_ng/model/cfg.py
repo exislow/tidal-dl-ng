@@ -3,13 +3,14 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import QualityVideo
+from tidal_dl_ng.constants import QualityVideo, SkipExisting
 
 
 @dataclass_json
 @dataclass
 class Settings:
-    skip_existing: bool = False
+    skip_existing: SkipExisting = SkipExisting.Disabled
+    skip_existing_ignore_extension: bool = False
     album_cover_save: bool = True
     lyrics_save: bool = False
     # TODO: Implement API KEY selection.
@@ -32,7 +33,6 @@ class Settings:
     metadata_cover_height: int = 320
 
 
-@dataclass_json
 @dataclass
 class HelpSettings:
     skip_existing: str = "Do not download, if file already exists."

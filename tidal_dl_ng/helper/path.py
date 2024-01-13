@@ -1,11 +1,11 @@
+import glob
 import os
-import pathlib
-import platform
 import re
 from collections.abc import Callable
 from pathlib import Path
 
-from pathvalidate import sanitize_filename
+from pathvalidate import sanitize_filename, sanitize_filepath
+from pathvalidate.error import ValidationError
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 
@@ -121,59 +121,43 @@ def get_fn_format(media: Track | Album | Playlist | UserPlaylist | Video | Mix) 
     return result
 
 
-def length_max_name_file() -> int:
-    system = platform.system()
-    result: int = 255
+def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
+    # Split into path and filename
+    pathname, filename = os.path.split(path_file)
 
+    # Sanitize path
     try:
-        if system in ["Darwin", "Linux"]:
-            result: int = os.pathconf("/", "PC_NAME_MAX")
-    except Exception as e:
-        # TODO: Implement propper logging.
-        print(e)
+        pathname_sanitized = sanitize_filepath(pathname, replacement_text=" ", validate_after_sanitize=True)
+    except ValidationError as e:
+        # If adaption of path is allowed in case of an error set path to HOME.
+        if adapt:
+            pathname_sanitized = Path.home()
+        else:
+            raise e
+
+    # Sanitize filename
+    try:
+        filename_sanitized = sanitize_filename(path_file, replacement_text=" ", validate_after_sanitize=True)
+        filename_sanitized_extension = Path(filename_sanitized).suffix
+
+        # Check if the file extension was removed by shortening the filename length
+        if filename_sanitized_extension == "":
+            # Add the original file extension
+            file_extension = "_" + Path(path_file).suffix
+            filename_sanitized = filename_sanitized[: -len(file_extension)] + file_extension
+    except ValidationError as e:
+        raise e
+
+    # Join path and filename
+    result = os.path.join(pathname_sanitized, filename_sanitized)
 
     return result
 
 
-def length_max_name_path() -> int:
-    system = platform.system()
-    result: int = 255
+def check_file_exists(path_file: str, extension_ignore: bool = False):
+    if extension_ignore:
+        path_file = Path(path_file).stem + ".*"
 
-    try:
-        if system in ["Darwin", "Linux"]:
-            result: int = os.pathconf("/", "PC_PATH_MAX")
-    except Exception as e:
-        # TODO: Implement propper logging.
-        print(e)
-
-    return result
-
-
-def path_validate(path_file: str, adapt: bool = False) -> (bool, str):
-    result: bool = False
-    length_max_path: int = length_max_name_path()
-    length_max_file: int = length_max_name_file()
-    path, file = os.path.split(path_file)
-    filename, extension = os.path.splitext(file)
-
-    if len(path) >= length_max_path:
-        result = False
-
-        if adapt:
-            path = Path.home()
-
-    if len(file) >= length_max_file:
-        result = False
-
-        if adapt:
-            file = f'{filename[:length_max_file - len(extension + "_")]}_{extension}'
-
-    path_file = os.path.join(path, file)
-
-    return result, path_file
-
-
-def check_file_exists(path_file: str):
-    result = pathlib.Path(path_file).is_file()
+    result = True if glob.glob(path_file) else False
 
     return result

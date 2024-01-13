@@ -5,22 +5,26 @@ import random
 import shutil
 import tempfile
 import time
+import xml.etree.ElementTree as ET
+from collections.abc import Callable
 from logging import Logger
 from uuid import uuid4
 
 import ffmpeg
 import m3u8
 import requests
-from pathvalidate import sanitize_filepath
+from helper.format import is_json, is_xml
+from helper.tidal import name_builder_item
+from model.tidal import StreamManifest
 from requests.exceptions import HTTPError
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
-from tidal_dl_ng.helper.exceptions import MediaUnknown
-from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_validate
+from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
+from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
 from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
@@ -43,11 +47,14 @@ class RequestsClient:
 class Download:
     # TODO: Implement download cover 1280.
     session: Session = None
-    skip_existing: bool = False
+    skip_existing: SkipExisting = False
 
-    def __init__(self, session: Session, skip_existing: bool = False):
+    def __init__(self, session: Session, skip_existing: SkipExisting = SkipExisting.Disabled):
         self.session = session
         self.skip_existing = skip_existing
+
+    def _audio_mpeg_dash(self, audio: Track, path_file: str) -> str | None:
+        pass
 
     def _video(self, video: Video, path_file: str) -> str | None:
         result: str | None = None
@@ -77,115 +84,156 @@ class Download:
 
         return result
 
+    def instantiate_media(
+        self, session: Session, media_type: MediaType.Track | MediaType.Video, id_media: str
+    ) -> Track | Video:
+        if media_type == MediaType.Track:
+            media = Track(session, id_media)
+        elif media_type == MediaType.Video:
+            media = Video(session, id_media)
+        else:
+            raise MediaUnknown
+
+        return media
+
     def item(
         self,
         path_base: str,
-        fn_logger: Logger | WrapperLogger,
-        id_media: str = None,
-        file_template: str = None,
+        file_template: str,
+        fn_logger: Callable,
         media: Track | Video = None,
+        media_id: str = None,
         media_type: MediaType = None,
         video_download: bool = True,
         progress_gui: ProgressBars = None,
         progress: Progress = None,
     ) -> (bool, str):
-        if id_media:
-            if media_type == MediaType.Track:
-                media = Track(self.session, id_media)
-            elif media_type == MediaType.Video:
-                media = Video(self.session, id_media)
+        # If only a media_id is provided, we need to create the media instance.
+        if media_id and media_type:
+            media = self.instantiate_media(self.session, media_type, media_id)
+        elif not media:
+            raise MediaMissing
 
-                # If video download is not allowed
-                if not video_download:
-                    return False, ""
-            else:
-                raise MediaUnknown
-        else:
-            media = media
+        # If video download is not allowed end here
+        if not video_download:
+            fn_logger.info(
+                f"Video downloads are deactivated (see settings). Skipping video: {name_builder_item(media)}"
+            )
 
-        if file_template:
-            file_name_relative = format_path_media(file_template, media)
-            path_file = os.path.abspath(os.path.normpath(os.path.join(path_base, file_name_relative)))
-        else:
-            path_file = os.path.abspath(os.path.normpath(format_path_media(path_base, media)))
+            return False, ""
 
+        # Create file name and path
+        file_name_relative = format_path_media(file_template, media)
+        path_file = os.path.abspath(os.path.normpath(os.path.join(path_base, file_name_relative)))
+
+        # Compute the file extension
+        # TODO: Move further down?
         if isinstance(media, Track):
             stream = media.stream()
-            # TODO: Check for `manifest_mime_type'. It could be also xml.
-            stream_manifest = json.loads(base64.b64decode(stream.manifest).decode("utf-8"))
-            # TODO: Handle more than one dowload URL
-            stream_url = stream_manifest["urls"][0]
-            file_extension = self.get_file_extension(stream_url, stream_manifest["codecs"])
-        elif isinstance(media, Video):
-            file_extension = ".ts"
+            stream_manifest = self.stream_manifest_parse(stream.manifest)
 
-        path_file = sanitize_filepath(path_file + file_extension)
-        # Check if path & filename longer than the OS allows. Shorten if necessary.
-        validation_result, path_file = path_validate(path_file, True)
+        # Sanitize final path_file to fit into OS boundaries.
+        path_file = path_file_sanitize(path_file, adapt=True)
 
-        download_skip = check_file_exists(path_file) if self.skip_existing else False
+        # Compute if and how downloads need to be skipped.
+        if self.skip_existing:
+            if self.skip_existing == SkipExisting.ExtensionIgnore:
+                extension_ignore = True
+            else:
+                extension_ignore = False
+
+            # TODO: Check if extension is already in `path_file` or not.
+            download_skip = check_file_exists(path_file, extension_ignore=extension_ignore)
+        else:
+            download_skip = False
 
         if not download_skip:
+            # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + file_extension)
+                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
 
                 if isinstance(media, Track):
-                    # TODO: Refactor to separate method.
-                    if progress_gui is None:
-                        progress_stdout: bool = True
-                    else:
-                        progress_stdout: bool = False
-                        progress_gui.item_name.emit(media.name)
-
-                    try:
-                        # Streaming, so we can iterate over the response.
-                        r = requests.get(stream_url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
-                        r.raise_for_status()
-                        total_size_in_bytes = int(r.headers.get("content-length", 0))
-                        block_size = 4096
-                        p_task = progress.add_task(
-                            f"[blue]Item '{media.name[:30]}'",
-                            total=total_size_in_bytes / block_size,
-                            visible=progress_stdout,
-                        )
-
-                        while not progress.tasks[p_task].finished:
-                            with open(tmp_path_file, "wb") as f:
-                                for data in r.iter_content(chunk_size=block_size):
-                                    f.write(data)
-                                    progress.advance(p_task, advance=1)
-
-                                    if not progress_stdout:
-                                        progress_gui.item.emit(progress.tasks[p_task].percentage)
-                    except HTTPError:
-                        # TODO: Handle Exception...
-                        pass
-
-                    needs_decryption = self.is_encrypted(stream_manifest)
-
-                    if needs_decryption:
-                        key, nonce = decrypt_security_token(stream_manifest["encryptionKey"])
-                        tmp_path_file_decrypted = tmp_path_file + "_decrypted"
-                        decrypt_file(tmp_path_file, tmp_path_file_decrypted, key, nonce)
-                    else:
-                        tmp_path_file_decrypted = tmp_path_file
-
-                    self.metadata_write(media, tmp_path_file_decrypted)
+                    tmp_path_file = self._audio_stream(
+                        fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file
+                    )
                 elif isinstance(media, Video):
-                    tmp_path_file_decrypted = self._video(media, tmp_path_file)
+                    tmp_path_file = self._video(media, tmp_path_file)
 
                     # TODO: Check if is possible to write metadata to MPEG Transport Stream files.
                     # TODO: Make optional.
+                    # Convert `*.ts` file to `*.mp4` using ffmpeg
                     if True:
-                        tmp_path_file_decrypted = self._video_convert(tmp_path_file_decrypted)
+                        tmp_path_file = self._video_convert(tmp_path_file)
                         path_file = os.path.splitext(path_file)[0] + ".mp4"
 
+                # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_file), exist_ok=True)
-                shutil.move(tmp_path_file_decrypted, path_file)
+                shutil.move(tmp_path_file, path_file)
         else:
             fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
 
         return not download_skip, path_file
+
+    def _audio_stream(
+        self,
+        fn_logger: Callable,
+        media: Track,
+        progress: Progress,
+        progress_gui: ProgressBars,
+        stream_manifest: StreamManifest,
+        path_file: str,
+    ):
+        # Set the correct progress output channel.
+        if progress_gui is None:
+            progress_stdout: bool = True
+        else:
+            progress_stdout: bool = False
+            progress_gui.item_name.emit(media.name)
+
+        try:
+            # Download the media as stream, so we can iterate over the response.
+            r = requests.get(stream_manifest.stream_url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+
+            r.raise_for_status()
+
+            # Get file size and compute progress steps
+            total_size_in_bytes = int(r.headers.get("content-length", 0))
+            block_size = 4096
+            p_task = progress.add_task(
+                f"[blue]Item '{media.name[:30]}'",
+                total=total_size_in_bytes / block_size,
+                visible=progress_stdout,
+            )
+
+            # Write content to file until progress is finished.
+            while not progress.tasks[p_task].finished:
+                with open(path_file, "wb") as f:
+                    for data in r.iter_content(chunk_size=block_size):
+                        f.write(data)
+                        # Advance progress bar.
+                        progress.advance(p_task)
+
+                        # To send the progress to the GUI, we need to emit the percentage.
+                        if not progress_stdout:
+                            progress_gui.item.emit(progress.tasks[p_task].percentage)
+        except HTTPError as e:
+            # TODO: Handle Exception...
+            fn_logger(e)
+
+        # Check if file is encrypted.
+        needs_decryption = self.is_encrypted(stream_manifest.encryption_type)
+
+        if needs_decryption:
+            key, nonce = decrypt_security_token(stream_manifest.encryption_key)
+            tmp_path_file_decrypted = path_file + "_decrypted"
+            decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
+        else:
+            tmp_path_file_decrypted = path_file
+
+        # Write metadata to file.
+        self.metadata_write(media, tmp_path_file_decrypted)
+
+        return tmp_path_file_decrypted
 
     def cover_url(self, sid: str, width: int = 320, height: int = 320):
         if sid is None:
@@ -303,8 +351,8 @@ class Download:
                     fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
                     time.sleep(time_sleep)
 
-    def is_encrypted(self, manifest: dict) -> bool:
-        result = manifest["encryptionType"] != "NONE"
+    def is_encrypted(self, encryption_type: str) -> bool:
+        result = encryption_type != "NONE"
 
         return result
 
@@ -330,3 +378,42 @@ class Download:
         result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
 
         return path_file_out
+
+    def stream_manifest_parse(self, manifest: str) -> StreamManifest:
+        # Stream Manifest is base64 encoded.
+        manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
+
+        if is_xml(manifest_parsed):
+            root = ET.fromstring(manifest_parsed)
+            stream_url: str = root[0][0][0][0].attrib["media"]
+            codecs: str = root[0][0][0].attrib["codecs"]
+            mime_type: str = root[0][0].attrib["mimeType"]
+            file_extension: str = self.get_file_extension(stream_url, codecs)
+            # TODO: Handle encryption key. But I have never seen an encrypted file so far.
+            encryption_type: str = "NONE"
+            encryption_key: str | None = None
+        elif is_json(manifest_parsed):
+            # JSON string to object.
+            stream_manifest = json.loads(manifest_parsed)
+            # TODO: Handle more than one dowload URL
+            stream_url: str = stream_manifest["urls"][0]
+            codecs: str = stream_manifest["codecs"]
+            mime_type: str = stream_manifest["mimeType"]
+            file_extension: str = self.get_file_extension(stream_url, codecs)
+            encryption_type: str = stream_manifest["encryptionType"]
+            encryption_key: str | None = (
+                stream_manifest["encryptionKey"] if self.is_encrypted(encryption_type) else None
+            )
+        else:
+            raise UnknownManifestFormat
+
+        result: StreamManifest = StreamManifest(
+            stream_url=stream_url,
+            codecs=codecs,
+            file_extension=file_extension,
+            encryption_type=encryption_type,
+            encryption_key=encryption_key,
+            mime_type=mime_type,
+        )
+
+        return result

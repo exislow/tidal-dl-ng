@@ -4,3 +4,11 @@ class LoginError(Exception):
 
 class MediaUnknown(Exception):
     pass
+
+
+class UnknownManifestFormat(Exception):
+    pass
+
+
+class MediaMissing(Exception):
+    pass

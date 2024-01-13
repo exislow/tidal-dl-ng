@@ -17,3 +17,9 @@ class MediaType(Enum):
     Playlist = "playlist"
     Album = "album"
     Mix = "mix"
+
+
+class SkipExisting(Enum):
+    Disabled = False
+    Filename = "exact"
+    ExtensionIgnore = "extension_ignore"

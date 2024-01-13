@@ -62,6 +62,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
     def __init__(self, settings: Settings = None):
         self.session = tidalapi.Session()
+        self.session.config.client_id = "6BDSRdpK9hqEBTgU"
+        self.session.config.client_secret = "xeuPmY7nbpZ9IIbLAcQ93shka1VNheUAqN6IcszjTG8="
         self.session.video_quality = tidalapi.VideoQuality.high
         self.file_path = path_file_token()
         self.token_from_storage = self.read(self.file_path)
