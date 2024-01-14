@@ -61,7 +61,7 @@ __ERROR_KEY__ = (
     },
 )
 
-from constants import REQUESTS_TIMEOUT_SEC
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC
 
 
 def getNum():

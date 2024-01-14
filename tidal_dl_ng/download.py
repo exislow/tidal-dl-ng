@@ -12,8 +12,6 @@ from uuid import uuid4
 import ffmpeg
 import m3u8
 import requests
-from helper.tidal import name_builder_item
-from model.tidal import StreamManifest
 from mpegdash.parser import MPEGDASHParser
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
@@ -24,9 +22,11 @@ from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, CoverDimensions, MediaTy
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
+from tidal_dl_ng.helper.tidal import name_builder_item
 from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
+from tidal_dl_ng.model.tidal import StreamManifest
 
 
 # TODO: Set appropriate client string and use it for video download.

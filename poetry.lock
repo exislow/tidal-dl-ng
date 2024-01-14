@@ -2147,4 +2147,4 @@ gui = ["pyqtdarktheme", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "e24689801e7e214b5372e375c1699b409745f1c76cf2dd33a4c1b7adec223da4"
+content-hash = "bdddb79a681d97040756bd48a1f391ed85b39b108ebae125c28d348e5fc63cd4"

@@ -1,8 +1,9 @@
 import mutagen
 import requests
-from constants import REQUESTS_TIMEOUT_SEC
 from mutagen import flac, id3, mp4
 from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, USLT
+
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC
 
 
 class Metadata:

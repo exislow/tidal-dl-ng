@@ -2,7 +2,7 @@ import math
 import sys
 from collections.abc import Callable
 
-from helper.path import get_format_template
+from tidal_dl_ng.helper.path import get_format_template
 
 try:
     import qdarktheme
