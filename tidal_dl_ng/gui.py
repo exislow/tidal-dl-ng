@@ -135,6 +135,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def populate_tree_lists(self, tidal: Tidal):
         # Start loading spinner
+        # TODO: Fix QPaint issue. App is crashing because of this.
         self.spinner_start.emit(self.tr_lists_user)
         self.tr_results.clear()
 

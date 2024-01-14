@@ -14,13 +14,13 @@ import m3u8
 import requests
 from helper.tidal import name_builder_item
 from model.tidal import StreamManifest
-from requests.exceptions import HTTPError
-from rich.progress import Progress
-from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from mpegdash.parser import MPEGDASHParser
+from requests.exceptions import HTTPError
+from rich.progress import Progress, TaskID
+from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting, StreamManifestMimeType
+from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, CoverDimensions, MediaType, SkipExisting, StreamManifestMimeType
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
@@ -52,10 +52,10 @@ class Download:
         self.session = session
         self.skip_existing = skip_existing
 
-    def _audio_stream(
+    def _download(
         self,
         fn_logger: Callable,
-        media: Track,
+        media: Track | Video,
         progress: Progress,
         progress_gui: ProgressBars,
         stream_manifest: StreamManifest,
@@ -71,31 +71,49 @@ class Download:
             progress_gui.item_name.emit(media_name)
 
         try:
-            # Download the media as stream, so we can iterate over the response.
-            r = requests.get(stream_manifest.stream_urls, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+            # Compute total iterations for progress
+            urls_count: int = len(stream_manifest.urls)
 
-            r.raise_for_status()
+            if urls_count > 1:
+                progress_total: int = urls_count
+                block_size: int | None = None
+            else:
+                # Compute progress iterations based on the file size.
+                r = requests.get(stream_manifest.urls[0], stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
-            # Get file size and compute progress steps
-            total_size_in_bytes = int(r.headers.get("content-length", 0))
-            block_size = 4096
-            p_task = progress.add_task(
-                f"[blue]Item '{media_name[:30]}'",
-                total=total_size_in_bytes / block_size,
+                r.raise_for_status()
+
+                # Get file size and compute progress steps
+                total_size_in_bytes: int = int(r.headers.get("content-length", 0))
+                block_size: int | None = 4096
+                progress_total: float = total_size_in_bytes / block_size
+
+            # Create progress Task
+            p_task: TaskID = progress.add_task(
+                f"[blue]Item '{media_name[:20]}'",
+                total=progress_total,
                 visible=progress_stdout,
             )
 
             # Write content to file until progress is finished.
             while not progress.tasks[p_task].finished:
                 with open(path_file, "wb") as f:
-                    for data in r.iter_content(chunk_size=block_size):
-                        f.write(data)
-                        # Advance progress bar.
-                        progress.advance(p_task)
+                    for url in stream_manifest.urls:
+                        # Create the request object with stream=True, so the content won't be loaded into memory at once.
+                        r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
-                        # To send the progress to the GUI, we need to emit the percentage.
-                        if not progress_stdout:
-                            progress_gui.item.emit(progress.tasks[p_task].percentage)
+                        r.raise_for_status()
+
+                        # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
+                        for data in r.iter_content(chunk_size=block_size):
+                            f.write(data)
+                            # Advance progress bar.
+                            progress.advance(p_task)
+
+                            # To send the progress to the GUI, we need to emit the percentage.
+                            if not progress_stdout:
+                                # progress_gui.item.emit(progress.tasks[p_task].percentage)
+                                pass
         except HTTPError as e:
             # TODO: Handle Exception...
             fn_logger(e)
@@ -111,72 +129,10 @@ class Download:
             tmp_path_file_decrypted = path_file
 
         # Write metadata to file.
-        self.metadata_write(media, tmp_path_file_decrypted)
+        if not isinstance(media, Video):
+            self.metadata_write(media, tmp_path_file_decrypted)
 
         return tmp_path_file_decrypted
-
-    def _mpeg_segments(
-        self,
-        fn_logger: Callable,
-        media: Track,
-        progress: Progress,
-        progress_gui: ProgressBars,
-        stream_manifest: StreamManifest,
-        path_file: str,
-    ):
-        media_name: str = name_builder_item(media)
-
-        # Set the correct progress output channel.
-        if progress_gui is None:
-            progress_stdout: bool = True
-        else:
-            progress_stdout: bool = False
-            progress_gui.item_name.emit(media_name)
-
-        try:
-            total_iterations = stream_manifest.segments_count
-            p_task = progress.add_task(
-                f"[blue]Item '{media.name[:30]}'",
-                total=total_iterations,
-                visible=progress_stdout,
-            )
-
-            # Write content to file until progress is finished.
-            while not progress.tasks[p_task].finished:
-                with open(path_file, "wb") as f:
-                    for index in range(total_iterations):
-                        # Download the media.
-                        segment_url = stream_manifest.stream_urls.replace('$Number$', str(index))
-                        r = requests.get(segment_url, timeout=REQUESTS_TIMEOUT_SEC)
-
-                        r.raise_for_status()
-                        # Write data
-                        f.write(r.content)
-                        # Advance progress bar.
-                        progress.advance(p_task)
-
-                        # To send the progress to the GUI, we need to emit the percentage.
-                        if not progress_stdout:
-                            progress_gui.item.emit(progress.tasks[p_task].percentage)
-        except HTTPError as e:
-            # TODO: Handle Exception...
-            fn_logger(e)
-
-        return path_file
-
-    def _video(self, video: Video, path_file: str) -> str | None:
-        result: str | None = None
-
-        with open(path_file, "wb") as f:
-            for segment in m3u8_playlist.data["segments"]:
-                url = segment["uri"]
-                r = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
-
-                f.write(r.content)
-
-        result = path_file
-
-        return result
 
     def instantiate_media(
         self, session: Session, media_type: type[MediaType.Track, MediaType.Video], id_media: str
@@ -245,24 +201,15 @@ class Download:
         if not download_skip:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
+                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + stream_manifest.file_extension)
+                # Download media.
+                tmp_path_file = self._download(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
 
-                if isinstance(media, Track):
-                    if stream_manifest.segments_count > 0:
-                        tmp_path_file = self._mpeg_segments(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
-                    else:
-                        tmp_path_file = self._audio_stream(
-                            fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file
-                        )
-                elif isinstance(media, Video):
-                    tmp_path_file = self._video(media, tmp_path_file)
-
-                    # TODO: Check if is possible to write metadata to MPEG Transport Stream files.
+                if isinstance(media, Video):
                     # TODO: Make optional.
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
-                    if True:
-                        tmp_path_file = self._video_convert(tmp_path_file)
-                        path_file = os.path.splitext(path_file)[0] + ".mp4"
+                    tmp_path_file = self._video_convert(tmp_path_file)
+                    path_file = os.path.splitext(path_file)[0] + ".mp4"
 
                 # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_file), exist_ok=True)
@@ -272,18 +219,20 @@ class Download:
 
         return not download_skip, path_file
 
-    def cover_url(self, sid: str, width: int = 320, height: int = 320):
+    def cover_url(self, sid: str, dimension: CoverDimensions = CoverDimensions.Px320):
         if sid is None:
             return ""
 
-        return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{int(width)}x{int(height)}.jpg"
+        return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{dimension.value}.jpg"
 
     def metadata_write(self, track: Track, path_file: str):
         settings: Settings = Settings()
         result: bool = False
-        release_date: str = track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
-        copy_right: str = track.copyright if track.copyright else ""
-        isrc: str = track.isrc if track.isrc else ""
+        release_date: str = (
+            track.album.release_date.strftime("%Y-%m-%d") if track.album and track.album.release_date else ""
+        )
+        copy_right: str = track.copyright if hasattr(track, "copyright") else ""
+        isrc: str = track.isrc if hasattr(track, "isrc") else ""
 
         try:
             lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
@@ -297,17 +246,15 @@ class Download:
             copy_right=copy_right,
             title=track.name,
             artists=[artist.name for artist in track.artists],
-            album=track.album.name,
+            album=track.album.name if track.album else "",
             tracknumber=track.track_num,
             date=release_date,
             isrc=isrc,
-            albumartist=track.artist.name,
-            totaltrack=track.album.num_tracks if track.album.num_tracks else 1,
-            totaldisc=track.album.num_volumes if track.album.num_volumes else 1,
-            discnumber=track.volume_num,
-            url_cover=self.cover_url(
-                track.album.cover, settings.data.metadata_cover_width, settings.data.metadata_cover_height
-            ),
+            albumartist=name_builder_item(track),
+            totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
+            totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
+            discnumber=track.volume_num if track.volume_num else 1,
+            url_cover=self.cover_url(track.album.cover, settings.data.metadata_cover_dimension) if track.album else "",
         )
 
         m.save()
@@ -379,7 +326,8 @@ class Download:
                 progress.advance(p_task1)
 
                 if not progress_stdout:
-                    progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
+                    # progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
+                    pass
 
                 if download_delay and status_download:
                     time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
@@ -405,7 +353,7 @@ class Download:
             # else:
             #     result = ".m4a"
             result: str = ".mp4"
-        if ".ts" in stream_url:
+        elif ".ts" in stream_url:
             result: str = ".ts"
         else:
             result: str = ".m4a"
@@ -439,14 +387,14 @@ class Download:
             stream_urls: list[str] = []
 
             for index in range(segments_count):
-                stream_urls.append(segment_template.media.replace('$Number$', str(index)))
+                stream_urls.append(segment_template.media.replace("$Number$", str(index)))
 
-        elif mime_type == StreamManifestMimeType.JSON.value:
+        elif mime_type == StreamManifestMimeType.BTS.value:
             # Stream Manifest is base64 encoded.
             manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             # JSON string to object.
             stream_manifest = json.loads(manifest_parsed)
-            # TODO: Handle more than one dowload URL
+            # TODO: Handle more than one download URL
             stream_urls: str = stream_manifest["urls"]
             codecs: str = stream_manifest["codecs"]
             mime_type: str = stream_manifest["mimeType"]
@@ -472,12 +420,12 @@ class Download:
         file_extension: str = self.get_file_extension(stream_urls[0], codecs)
 
         result: StreamManifest = StreamManifest(
-            stream_urls=stream_urls,
+            urls=stream_urls,
             codecs=codecs,
             file_extension=file_extension,
             encryption_type=encryption_type,
             encryption_key=encryption_key,
-            mime_type=mime_type
+            mime_type=mime_type,
         )
 
         return result

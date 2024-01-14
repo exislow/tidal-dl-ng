@@ -27,5 +27,11 @@ class SkipExisting(Enum):
 
 class StreamManifestMimeType(Enum):
     MPD = "application/dash+xml"
-    JSON = "a"
+    BTS = "application/vnd.tidal.bts"
     VIDEO = "video/mp2t"
+
+
+class CoverDimensions(Enum):
+    Px320 = "320x320"
+    Px640 = "640x640"
+    Px1280 = "1280x1280"

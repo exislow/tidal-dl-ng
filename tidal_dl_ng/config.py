@@ -47,7 +47,10 @@ class BaseConfig:
                 # Move the invalid config file to the backup location.
                 shutil.move(path, path_bak)
                 # TODO: Implement better global logger.
-                print(f"Something is wrong with your config. Maybe it is not compatible anymore due to a new app version. You can find a backup of your old config here: '{path_bak}'. A new default config was created.")
+                print(
+                    "Something is wrong with your config. Maybe it is not compatible anymore due to a new app version."
+                    f" You can find a backup of your old config here: '{path_bak}'. A new default config was created."
+                )
 
             self.data = self.cls_model()
 

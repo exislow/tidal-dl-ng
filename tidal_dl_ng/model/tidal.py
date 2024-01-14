@@ -5,7 +5,7 @@ from dataclasses import dataclass
 class StreamManifest:
     codecs: str
     mime_type: str
-    stream_urls: [str]
+    urls: [str]
     file_extension: str
     encryption_type: str | None = None
     encryption_key: str | None = None

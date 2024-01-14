@@ -1,15 +1,12 @@
-import pathlib
-
 import mutagen
 import requests
 from constants import REQUESTS_TIMEOUT_SEC
-from mutagen import flac, mp4
+from mutagen import flac, id3, mp4
 from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, USLT
 
 
 class Metadata:
     path_file: str = None
-    type_audio: str = None
     title: str = None
     album: str = None
     albumartist: str = None
@@ -31,7 +28,6 @@ class Metadata:
     def __init__(
         self,
         path_file: str,
-        type_audio: str = "",
         album: str = "",
         title: str = "",
         artists: list[str] | None = None,
@@ -49,12 +45,6 @@ class Metadata:
         url_cover: str = "",
     ):
         self.path_file = path_file
-
-        if type_audio:
-            self.type_audio = type_audio
-        else:
-            self.type_audio = pathlib.Path(self.path_file).suffix[1:]
-
         self.title = title
         self.album = album
         self.albumartist = albumartist
@@ -70,23 +60,24 @@ class Metadata:
         self.lyrics = lyrics
         self.path_cover = path_cover
         self.url_cover = url_cover
-        self.m: mutagen.MP4.MP4 | mutagen.m4a.M4A | mutagen.flac.FLAC | mutagen.mp3.MP3 = mutagen.File(self.path_file)
+        self.m: mutagen.mp4.MP4 | mutagen.flac.FLAC | mutagen.mp3.MP3 = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
         result: bool = False
         data_cover: str | bytes = self.cover_data(url=self.url_cover, path_file=self.path_cover)
 
         if data_cover:
-            if self.type_audio == "flac":
+            if isinstance(self.m, mutagen.flac.FLAC):
                 flac_cover = flac.Picture()
+                flac_cover.type = id3.PictureType.COVER_FRONT
                 flac_cover.data = data_cover
                 flac_cover.mime = "image/jpeg"
 
                 self.m.clear_pictures()
                 self.m.add_picture(flac_cover)
-            elif self.type_audio == "mp3":
+            elif isinstance(self.m, mutagen.mp3.MP3):
                 self.m.tags.add(APIC(encoding=3, data=data_cover))
-            elif self.type_audio in ["mp4", "m4a"]:
+            elif isinstance(self.m, mutagen.mp4.MP4):
                 cover_mp4 = mp4.MP4Cover(data_cover)
                 self.m.tags["covr"] = [cover_mp4]
 
@@ -95,11 +86,14 @@ class Metadata:
         return result
 
     def save(self):
-        if self.type_audio == "flac":
+        if not self.m.tags:
+            self.m.add_tags()
+
+        if isinstance(self.m, mutagen.flac.FLAC):
             self.set_flac()
-        elif self.type_audio in ["mp3", "ts"]:
+        elif isinstance(self.m, mutagen.mp3.MP3):
             self.set_mp3()
-        elif self.type_audio in ["mp4", "m4a"]:
+        elif isinstance(self.m, mutagen.mp4.MP4):
             self.set_mp4()
 
         self._cover()
@@ -108,9 +102,6 @@ class Metadata:
         return True
 
     def set_flac(self):
-        if not self.m.tags:
-            self.m.add_tags()
-
         self.m.tags["title"] = self.title
         self.m.tags["album"] = self.album
         self.m.tags["albumartist"] = self.albumartist
@@ -126,9 +117,6 @@ class Metadata:
         self.m.tags["lyrics"] = self.lyrics
 
     def set_mp3(self):
-        if not self.m.tags:
-            self.m.add_tags()
-
         self.m.tags.add(TIT2(encoding=3, text=self.title))
         self.m.tags.add(TALB(encoding=3, text=self.album))
         self.m.tags.add(TOPE(encoding=3, text=self.albumartist))

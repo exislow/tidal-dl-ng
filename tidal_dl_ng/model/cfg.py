@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import QualityVideo, SkipExisting
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 
 
 @dataclass_json
@@ -28,15 +28,16 @@ class Settings:
     format_track: str = "Tracks/{artist_name} - {track_title}"
     format_video: str = "Videos/{artist_name} - {track_title}"
     video_convert_mp4: bool = True
-    metadata_cover_width: int = 320
-    metadata_cover_height: int = 320
+    metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
 
 
 @dataclass
 class HelpSettings:
-    skip_existing: str = ("Do not download, if file already exists. Possible option false = do not skip, "
-                          "'exact' = if filename already exists, 'extension_ignore' = skip even if a file with a "
-                          "different file extension exists.")
+    skip_existing: str = (
+        "Do not download, if file already exists. Possible option false = do not skip, "
+        "'exact' = if filename already exists, 'extension_ignore' = skip even if a file with a "
+        "different file extension exists."
+    )
     album_cover_save: str = "Safe cover to album folder."
     lyrics_save: str = "Safe lyrics to audio file."
     api_key_index: str = "Set the device API KEY."
@@ -64,8 +65,9 @@ class HelpSettings:
         "Videos are downloaded as MPEG Transport Stream (TS) files. With this option each video "
         "will be converted to MP4. FFMPEG must be installed and added to your 'PATH' variable."
     )
-    metadata_cover_width: str = "The width of the cover image embedded into the track."
-    metadata_cover_height: str = "The height of the cover image embedded into the track."
+    metadata_cover_dimension: str = (
+        "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
+    )
 
 
 @dataclass_json
