@@ -8,8 +8,11 @@ from pathvalidate import sanitize_filename, sanitize_filepath
 from pathvalidate.error import ValidationError
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
+from tidal_dl_ng import __name_display__
+from tidal_dl_ng.constants import MediaType
 
-def path_base():
+
+def path_home() -> str:
     if "XDG_CONFIG_HOME" in os.environ:
         return os.environ["XDG_CONFIG_HOME"]
     elif "HOME" in os.environ:
@@ -20,16 +23,41 @@ def path_base():
         return os.path.abspath("./")
 
 
-def path_file_log():
-    return os.path.join(path_base(), ".tidal-dl-ng.log")
+def path_base() -> str:
+    path_config: str = ".config"
+    path_base: str = os.path.join(path_home(), path_config, __name_display__)
+
+    return path_base
 
 
-def path_file_token():
-    return os.path.join(path_base(), ".tidal-dl-ng_token.json")
+def path_file_log() -> str:
+    # TODO: Remove this soon. Only for migration to new dir.
+    old = os.path.join(path_home(), ".tidal-dl-ng.log")
+    if os.path.isfile(old):
+        os.makedirs(path_base(), exist_ok=True)
+        os.rename(old, os.path.join(path_base(), "app.log"))
+
+    return os.path.join(path_base(), "app.log")
 
 
-def path_file_settings():
-    return os.path.join(path_base(), ".tidal-dl-ng_settings.json")
+def path_file_token() -> str:
+    # TODO: Remove this soon. Only for migration to new dir.
+    old = os.path.join(path_home(), ".tidal-dl-ng_token.json")
+    if os.path.isfile(old):
+        os.makedirs(path_base(), exist_ok=True)
+        os.rename(old, os.path.join(path_base(), "token.json"))
+
+    return os.path.join(path_base(), "token.json")
+
+
+def path_file_settings() -> str:
+    # TODO: Remove this soon. Only for migration to new dir.
+    old = os.path.join(path_home(), ".tidal-dl-ng_settings.json")
+    if os.path.isfile(old):
+        os.makedirs(path_base(), exist_ok=True)
+        os.rename(old, os.path.join(path_base(), "settings.json"))
+
+    return os.path.join(path_base(), "settings.json")
 
 
 def format_path_media(fmt_template: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix) -> str:
@@ -38,7 +66,7 @@ def format_path_media(fmt_template: str, media: Track | Album | Playlist | UserP
     # Search track format template for placeholder.
     regex = r"\{(.+?)\}"
     matches = re.finditer(regex, fmt_template, re.MULTILINE)
-    fn_format = get_fn_format(media)
+    fn_format = get_format_fn(media)
 
     for _matchNum, match in enumerate(matches, start=1):
         template_str = match.group()
@@ -104,7 +132,7 @@ def format_str_video(name: str, media: Video) -> str | bool:
     return result
 
 
-def get_fn_format(media: Track | Album | Playlist | UserPlaylist | Video | Mix) -> Callable:
+def get_format_fn(media: Track | Album | Playlist | UserPlaylist | Video | Mix) -> Callable:
     result = None
 
     if isinstance(media, Track):
@@ -117,6 +145,25 @@ def get_fn_format(media: Track | Album | Playlist | UserPlaylist | Video | Mix) 
         result = format_str_mix
     elif isinstance(media, Video):
         result = format_str_video
+
+    return result
+
+
+def get_format_template(
+    media: Track | Album | Playlist | UserPlaylist | Video | Mix | MediaType, settings
+) -> str | bool:
+    result = False
+
+    if isinstance(media, Track) or media == MediaType.Track:
+        result = settings.data.format_track
+    elif isinstance(media, Album) or media == MediaType.Album:
+        result = settings.data.format_album
+    elif isinstance(media, Playlist | UserPlaylist) or media == MediaType.Playlist:
+        result = settings.data.format_playlist
+    elif isinstance(media, Mix) or media == MediaType.Mix:
+        result = settings.data.format_mix
+    elif isinstance(media, Video) or media == MediaType.Video:
+        result = settings.data.format_video
 
     return result
 

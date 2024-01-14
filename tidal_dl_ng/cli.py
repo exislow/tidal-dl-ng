@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
+from helper.tidal import get_tidal_media_id, get_tidal_media_type
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import BarColumn, Console, Progress, SpinnerColumn, TextColumn
@@ -12,8 +13,7 @@ from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
-from tidal_dl_ng.helper.path import path_file_settings
-from tidal_dl_ng.helper.url import get_tidal_media_id, get_tidal_media_type
+from tidal_dl_ng.helper.path import get_format_template, path_file_settings
 from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.model.cfg import HelpSettings
 
@@ -104,7 +104,7 @@ def login(ctx: typer.Context) -> bool:
 @app.command(name="dl")
 def download(
     ctx: typer.Context,
-    urls_or_ids: Annotated[Optional[list[str]], typer.Argument()] = None,
+    urls: Annotated[Optional[list[str]], typer.Argument()] = None,
     list_urls: Annotated[
         Optional[Path],
         typer.Option(
@@ -120,77 +120,64 @@ def download(
         ),
     ] = None,
 ):
-    if not urls_or_ids:
+    if not urls:
+        # Read the text file provided.
         if list_urls:
             text = list_urls.read_text()
-            urls_or_ids = text.splitlines()
+            urls = text.splitlines()
         else:
             print("Provide either URLs, IDs or a file containing URLs (one per line).")
 
             raise typer.Abort()
 
+    # Call login method to validate the token.
     ctx.invoke(login, ctx)
 
-    dl = Download(ctx.obj[CTX_TIDAL].session, ctx.obj[CTX_TIDAL].settings.data.skip_existing)
+    # Create initial objects.
     settings: Settings = Settings()
-    media_type: MediaType = None
+    dl = Download(ctx.obj[CTX_TIDAL].session, ctx.obj[CTX_TIDAL].settings.data.skip_existing)
     progress: Progress = Progress(
         "{task.description}",
         SpinnerColumn(),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
     )
-    progress_table = Table.grid()
     fn_logger = WrapperLogger(progress.print)
+    progress_table = Table.grid()
 
+    # Style Progress display.
     progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
 
-    for item in urls_or_ids:
-        if "http" in item:
-            media_name = get_tidal_media_type(item)
-            id_item = get_tidal_media_id(item)
-        else:
-            media_name = False
-            id_item = item
+    for item in urls:
+        media_type: str | bool = False
 
-        if not media_name:
+        # Extract media name and id from link.
+        if "http" in item:
+            media_type = get_tidal_media_type(item)
+            item_id = get_tidal_media_id(item)
+            file_template = get_format_template(media_type, settings)
+
+        # If url is invalid skip to next url in list.
+        if not media_type:
             print(f"It seems like that you have supplied an invalid URL: {item}")
 
             continue
 
+        # Create Live display for Progress.
         with Live(progress_table, refresh_per_second=10):
-            # TODO: Fix media type
-            if media_name in ["track", "video"]:
-                if media_name == "track":
-                    file_template = settings.data.format_track
-                    media_type = MediaType.Track
-                elif media_name == "video":
-                    file_template = settings.data.format_video
-                    media_type = MediaType.Video
-
+            # Download media.
+            if media_type in [MediaType.Track, MediaType.Video]:
                 dl.item(
-                    media_id=id_item,
+                    media_id=item_id,
                     media_type=media_type,
                     path_base=settings.data.download_base_path,
                     file_template=file_template,
                     progress=progress,
                     fn_logger=fn_logger,
                 )
-            elif media_name in ["album", "playlist", "mix"]:
-                file_template: str | bool = False
-
-                if media_name == "album":
-                    file_template = settings.data.format_album
-                    media_type = MediaType.Album
-                elif media_name == "playlist":
-                    file_template = settings.data.format_playlist
-                    media_type = MediaType.Playlist
-                elif media_name == "mix":
-                    file_template = settings.data.format_mix
-                    media_type = MediaType.Mix
-
+            elif media_type in [MediaType.Album, MediaType.Playlist, MediaType.Mix]:
                 dl.items(
-                    media_id=id_item,
+                    media_id=item_id,
                     media_type=media_type,
                     path_base=settings.data.download_base_path,
                     file_template=file_template,
@@ -200,6 +187,7 @@ def download(
                     fn_logger=fn_logger,
                 )
 
+    # Stop Progress display.
     progress.stop()
 
     return True

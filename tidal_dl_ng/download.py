@@ -267,7 +267,9 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=self.cover_url(track.album.cover, self.settings.data.metadata_cover_dimension) if track.album else "",
+            url_cover=(
+                self.cover_url(track.album.cover, self.settings.data.metadata_cover_dimension) if track.album else ""
+            ),
         )
 
         m.save()

@@ -11,15 +11,15 @@ from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 class Settings:
     skip_existing: SkipExisting = SkipExisting.Disabled
     # TODO: Implement cover download to a separate file.
-    #album_cover_save: bool = True
+    # album_cover_save: bool = True
     lyrics_save: bool = False
     # TODO: Implement API KEY selection.
-    #api_key_index: bool = 0
+    # api_key_index: bool = 0
     # TODO: Implement album info download to separate file.
-    #album_info_save: bool = False
+    # album_info_save: bool = False
     video_download: bool = True
     # TODO: Implement multi threading for downloads.
-    #multi_thread: bool = False
+    # multi_thread: bool = False
     download_delay: bool = True
     download_base_path: str = "./download"
     quality_audio: Quality = Quality.low_320k

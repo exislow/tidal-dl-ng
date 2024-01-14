@@ -8,7 +8,7 @@ import tidalapi
 from requests import HTTPError
 
 from tidal_dl_ng.helper.decorator import SingletonMeta
-from tidal_dl_ng.helper.path import path_file_settings, path_file_token
+from tidal_dl_ng.helper.path import path_base, path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.cfg import Token as ModelToken
 
@@ -17,9 +17,13 @@ class BaseConfig:
     data: ModelSettings | ModelToken = None
     file_path: str = None
     cls_model: object = None
+    path_base: str = path_base()
 
     def save(self) -> None:
         data_json = self.data.to_json()
+
+        # Try to create the base folder.
+        os.makedirs(self.path_base, exist_ok=True)
 
         with open(self.file_path, encoding="utf-8", mode="w") as f:
             f.write(data_json)
@@ -79,8 +83,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
     def __init__(self, settings: Settings = None):
         self.session = tidalapi.Session()
-        self.session.config.client_id = "6BDSRdpK9hqEBTgU"
-        self.session.config.client_secret = "xeuPmY7nbpZ9IIbLAcQ93shka1VNheUAqN6IcszjTG8="
+        # self.session.config.client_id = "km8T1xS355y7dd3H"
+        # self.session.config.client_secret = "vcmeGW1OuZ0fWYMCSZ6vNvSLJlT3XEpW0ambgYt5ZuI="
         self.session.video_quality = tidalapi.VideoQuality.high
         self.file_path = path_file_token()
         self.token_from_storage = self.read(self.file_path)

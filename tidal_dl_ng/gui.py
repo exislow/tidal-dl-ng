@@ -2,6 +2,8 @@ import math
 import sys
 from collections.abc import Callable
 
+from helper.path import get_format_template
+
 try:
     import qdarktheme
     from PySide6 import QtCore, QtGui, QtWidgets
@@ -409,13 +411,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             item=self.s_item_advance, list_item=self.s_list_advance, item_name=self.s_item_name
         )
         progress: Progress = Progress()
+        file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
-            if isinstance(media, Track):
-                file_template: str = self.settings.data.format_track
-            elif isinstance(media, Video):
-                file_template: str = self.settings.data.format_video
-
             result_download, download_path_file = dl.item(
                 media=media,
                 path_base=self.settings.data.download_base_path,
@@ -430,19 +428,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 logger_gui.info(f"Download skipped (file exists): {download_path_file}")
         elif isinstance(media, Album | Playlist | Mix):
-            file_template: str | bool = False
-
-            if isinstance(media, Album):
-                file_template: str = self.settings.data.format_album
-                progress_name = media.name
-            elif isinstance(media, Playlist):
-                file_template: str = self.settings.data.format_playlist
-                progress_name = media.name
-            elif isinstance(media, Mix):
-                file_template: str = self.settings.data.format_mix
-                progress_name = media.title
-            else:
-                progress_name = "List N/A"
+            progress_name = media.name if media.name else media.title if media.title else "List N/A"
 
             self.progress_list_name(progress_name)
 
