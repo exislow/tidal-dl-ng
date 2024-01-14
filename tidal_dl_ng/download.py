@@ -242,11 +242,15 @@ class Download:
         )
         copy_right: str = track.copyright if hasattr(track, "copyright") else ""
         isrc: str = track.isrc if hasattr(track, "isrc") else ""
+        lyrics: str = ""
 
-        try:
-            lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
-        except HTTPError:
-            lyrics: str = ""
+        if settings.data.lyrics_save:
+            # Try to retrieve lyrics.
+            try:
+                lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
+            except HTTPError:
+                # TODO: Implement proper logging.
+                print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         # TODO: Check if it is possible to pass "None" values.
         m: Metadata = Metadata(

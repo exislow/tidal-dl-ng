@@ -10,7 +10,8 @@ from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 @dataclass
 class Settings:
     skip_existing: SkipExisting = SkipExisting.Disabled
-    album_cover_save: bool = True
+    # TODO: Implement cover download to a separate file.
+    #album_cover_save: bool = True
     lyrics_save: bool = False
     # TODO: Implement API KEY selection.
     api_key_index: bool = 0
