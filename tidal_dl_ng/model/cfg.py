@@ -14,15 +14,16 @@ class Settings:
     #album_cover_save: bool = True
     lyrics_save: bool = False
     # TODO: Implement API KEY selection.
-    api_key_index: bool = 0
-    album_info_save: bool = False
+    #api_key_index: bool = 0
+    # TODO: Implement album info download to separate file.
+    #album_info_save: bool = False
     video_download: bool = True
-    multi_thread: bool = False
+    # TODO: Implement multi threading for downloads.
+    #multi_thread: bool = False
     download_delay: bool = True
     download_base_path: str = "./download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
-    use_playlist_folder: bool = True
     format_album: str = "Albums/{artist_name} - {album_title}/{track_num}. {artist_name} - {track_title}"
     format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}"
     format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}"
@@ -53,9 +54,6 @@ class HelpSettings:
         '"HI_RES" (MQA 24 Bit, 96 kHz), "HI_RES_LOSSLESS" (up to 24 Bit, 192 kHz)'
     )
     quality_video: str = 'Desired video download quality: "360", "480", "720", "1080"'
-    use_playlist_folder: str = (
-        "Should items of playlist be downloaded to a separate playlist folder or to the tracks folder?"
-    )
     # TODO: Describe possible variables.
     format_album: str = "Where to download albums and how to name the items."
     format_playlist: str = "Where to download playlists and how to name the items."

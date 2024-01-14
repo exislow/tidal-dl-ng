@@ -44,11 +44,12 @@ class RequestsClient:
 
 
 class Download:
-    # TODO: Implement download cover 1280.
+    settings: Settings = None
     session: Session = None
     skip_existing: SkipExisting = False
 
     def __init__(self, session: Session, skip_existing: SkipExisting = SkipExisting.Disabled):
+        self.settings = Settings()
         self.session = session
         self.skip_existing = skip_existing
 
@@ -214,7 +215,7 @@ class Download:
                 # Download media.
                 tmp_path_file = self._download(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
 
-                if isinstance(media, Video):
+                if isinstance(media, Video) and self.settings.data.video_convert_mp4:
                     # TODO: Make optional.
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
                     tmp_path_file = self._video_convert(tmp_path_file)
@@ -235,7 +236,6 @@ class Download:
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{dimension.value}.jpg"
 
     def metadata_write(self, track: Track, path_file: str):
-        settings: Settings = Settings()
         result: bool = False
         release_date: str = (
             track.album.release_date.strftime("%Y-%m-%d") if track.album and track.album.release_date else ""
@@ -244,7 +244,7 @@ class Download:
         isrc: str = track.isrc if hasattr(track, "isrc") else ""
         lyrics: str = ""
 
-        if settings.data.lyrics_save:
+        if self.settings.data.lyrics_save:
             # Try to retrieve lyrics.
             try:
                 lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
@@ -267,7 +267,7 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=self.cover_url(track.album.cover, settings.data.metadata_cover_dimension) if track.album else "",
+            url_cover=self.cover_url(track.album.cover, self.settings.data.metadata_cover_dimension) if track.album else "",
         )
 
         m.save()
@@ -419,9 +419,8 @@ class Download:
         elif mime_type == StreamManifestMimeType.VIDEO.value:
             # Parse M3U8 video playlist
             m3u8_variant: m3u8.M3U8 = m3u8.load(manifest)
-            settings: Settings = Settings()
             # Find the desired video resolution or the next best one.
-            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, settings.data.quality_video.value)
+            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, self.settings.data.quality_video.value)
             # Populate urls.
             stream_urls: list[str] = m3u8_playlist.files
 
