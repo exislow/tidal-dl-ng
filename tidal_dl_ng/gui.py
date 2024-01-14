@@ -449,7 +449,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             dl.items(
                 path_base=self.settings.data.download_base_path,
                 file_template=file_template,
-                list_media=media,
+                media=media,
                 video_download=self.settings.data.video_download,
                 progress_gui=data_pb,
                 progress=progress,

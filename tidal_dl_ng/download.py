@@ -135,12 +135,21 @@ class Download:
         return tmp_path_file_decrypted
 
     def instantiate_media(
-        self, session: Session, media_type: type[MediaType.Track, MediaType.Video], id_media: str
+        self,
+        session: Session,
+        media_type: type[MediaType.Track, MediaType.Video, MediaType.Album, MediaType.Playlist, MediaType.Mix],
+        id_media: str,
     ) -> Track | Video:
         if media_type == MediaType.Track:
             media = Track(session, id_media)
         elif media_type == MediaType.Video:
             media = Video(session, id_media)
+        elif media_type == MediaType.Album:
+            media = Album(self.session, id_media)
+        elif media_type == MediaType.Playlist:
+            media = Playlist(self.session, id_media)
+        elif media_type == MediaType.Mix:
+            media = Mix(self.session, id_media)
         else:
             raise MediaUnknown
 
@@ -158,7 +167,7 @@ class Download:
         progress_gui: ProgressBars = None,
         progress: Progress = None,
     ) -> (bool, str):
-        # If only a media_id is provided, we need to create the media instance.
+        # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
             media = self.instantiate_media(self.session, media_type, media_id)
         elif not media:
@@ -267,68 +276,69 @@ class Download:
         self,
         path_base: str,
         fn_logger: Logger | WrapperLogger,
-        id_media: str = None,
+        media_id: str = None,
         media_type: MediaType = None,
         file_template: str = None,
-        list_media: Album | Playlist | UserPlaylist | Mix = None,
+        media: Album | Playlist | UserPlaylist | Mix = None,
         video_download: bool = False,
         progress_gui: ProgressBars = None,
         progress: Progress = None,
         download_delay: bool = True,
     ):
-        if not list_media:
-            if media_type == MediaType.Album:
-                list_media = Album(self.session, id_media)
-            elif media_type == MediaType.Playlist:
-                list_media = Playlist(self.session, id_media)
-            elif media_type == MediaType.Mix:
-                list_media = Mix(self.session, id_media)
-            else:
-                raise MediaUnknown
+        # If no media instance is provided, we need to create the media instance.
+        if media_id and media_type:
+            media = self.instantiate_media(self.session, media_type, media_id)
+        elif not media:
+            raise MediaMissing
 
-        if file_template:
-            file_name_relative = format_path_media(file_template, list_media)
-            path_file = path_base
-        else:
-            file_name_relative = file_template
-            path_file = format_path_media(path_base, list_media)
+        # Create file name and path
+        file_name_relative = format_path_media(file_template, media)
 
         # TODO: Extend with pagination support: Iterate through `items` and `tracks`until len(returned list) == 0
-        if isinstance(list_media, Mix):
-            items = list_media.items()
-            list_media_name = list_media.title[:30]
+        # Get the items and name of the list.
+        if isinstance(media, Mix):
+            items = media.items()
+            list_media_name = media.title[:20]
         elif video_download:
-            items = list_media.items(limit=100)
-            list_media_name = list_media.name[:30]
+            items = media.items(limit=100)
+            list_media_name = media.name[:20]
         else:
-            items = list_media.tracks(limit=999)
-            list_media_name = list_media.name[:30]
+            items = media.tracks(limit=999)
+            list_media_name = media.name[:20]
 
+        # Determine where to redirect the progress information.
         if progress_gui is None:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
 
-        p_task1 = progress.add_task(f"[green]List '{list_media_name}'", total=len(items), visible=progress_stdout)
+        # Create the list progress task.
+        p_task1: TaskID = progress.add_task(
+            f"[green]List '{list_media_name}'", total=len(items), visible=progress_stdout
+        )
 
+        # Iterate through list items
         while not progress.finished:
             for media in items:
-                Progress()
                 # TODO: Handle return value of `track` method.
+                # Download the item.
                 status_download, result_path_file = self.item(
-                    path_base=path_file,
+                    path_base=path_base,
                     file_template=file_name_relative,
                     media=media,
                     progress_gui=progress_gui,
                     progress=progress,
                     fn_logger=fn_logger,
                 )
+
+                # Advance progress bar.
                 progress.advance(p_task1)
 
                 if not progress_stdout:
                     # progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
                     pass
 
+                # If a file was downloaded and the download delay is enabled, wait until the next download.
                 if download_delay and status_download:
                     time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
 
