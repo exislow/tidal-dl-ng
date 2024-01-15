@@ -32,7 +32,7 @@ from tidal_dl_ng.worker import Worker
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     settings: Settings = None
     tidal: Tidal = None
-    download: Download = None
+    dl: Download = None
     threadpool: QtCore.QThreadPool = None
     spinner: QtWaitingSpinner = None
     spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
@@ -42,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_item_name: QtCore.Signal = QtCore.Signal(str)
     pb_list: QtWidgets.QProgressBar = None
     s_list_advance: QtCore.Signal = QtCore.Signal(float)
+    s_pb_reset: QtCore.Signal = QtCore.Signal()
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -93,7 +94,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     break
 
         if result:
-            self.download = Download(self.tidal.session, self.tidal.settings.data.skip_existing)
+            self.dl = Download(self.tidal.session, self.tidal.settings.data.skip_existing)
 
             self.thread_it(self.populate_tree_lists, self.tidal)
 
@@ -230,7 +231,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
         # TODO: Implement disable download button etc.
-        self.download_item(media, self.download)
+        self.download(media, self.dl)
 
     def search_populate_results(self, query: str, type_media: SearchTypes):
         self.tr_results.clear()
@@ -334,6 +335,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_item_advance.connect(self.progress_item)
         self.s_item_name.connect(self.progress_item_name)
         self.s_list_advance.connect(self.progress_list)
+        self.s_pb_reset.connect(self.progress_reset())
 
     def progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
@@ -397,14 +399,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for item in items:
                 media: Track | Album | Playlist | Video = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
 
-                self.download_item(media, self.download)
+                self.download(media, self.dl)
 
         self.b_download.setText("Download")
         self.b_download.setEnabled(True)
 
-    def download_item(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> bool:
+    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> bool:
         # TODO: Refactor this. Move this logic to `Download` class and provide a generic interface.
-        self.progress_reset()
+        self.s_pb_reset.emit()
         self.statusbar.showMessage("Download started...")
 
         data_pb: ProgressBars = ProgressBars(
@@ -428,7 +430,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 logger_gui.info(f"Download skipped (file exists): {download_path_file}")
         elif isinstance(media, Album | Playlist | Mix):
-            progress_name = media.name if media.name else media.title if media.title else "List N/A"
+            progress_name = (
+                media.name
+                if hasattr(media, "name") and media.name
+                else hasattr(media, "title") and media.title if media.title else "List N/A"
+            )
 
             self.progress_list_name(progress_name)
 

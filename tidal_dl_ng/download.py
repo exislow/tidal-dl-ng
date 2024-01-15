@@ -69,6 +69,7 @@ class Download:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
+            # Send signal to GUI with media name
             progress_gui.item_name.emit(media_name)
 
         try:
@@ -113,8 +114,7 @@ class Download:
 
                             # To send the progress to the GUI, we need to emit the percentage.
                             if not progress_stdout:
-                                # progress_gui.item.emit(progress.tasks[p_task].percentage)
-                                pass
+                                progress_gui.item.emit(progress.tasks[p_task].percentage)
         except HTTPError as e:
             # TODO: Handle Exception...
             fn_logger(e)
@@ -240,8 +240,8 @@ class Download:
         release_date: str = (
             track.album.release_date.strftime("%Y-%m-%d") if track.album and track.album.release_date else ""
         )
-        copy_right: str = track.copyright if hasattr(track, "copyright") else ""
-        isrc: str = track.isrc if hasattr(track, "isrc") else ""
+        copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
+        isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
 
         if self.settings.data.lyrics_save:
@@ -341,8 +341,7 @@ class Download:
                 progress.advance(p_task1)
 
                 if not progress_stdout:
-                    # progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
-                    pass
+                    progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
 
                 # If a file was downloaded and the download delay is enabled, wait until the next download.
                 if download_delay and status_download:
