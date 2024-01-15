@@ -91,7 +91,7 @@ class Download:
 
             # Create progress Task
             p_task: TaskID = progress.add_task(
-                f"[blue]Item '{media_name[:20]}'",
+                f"[blue]Item '{media_name[:30]}'",
                 total=progress_total,
                 visible=progress_stdout,
             )
@@ -304,13 +304,13 @@ class Download:
         # Get the items and name of the list.
         if isinstance(media, Mix):
             items = media.items()
-            list_media_name = media.title[:20]
+            list_media_name = media.title[:30]
         elif video_download:
             items = media.items(limit=100)
-            list_media_name = media.name[:20]
+            list_media_name = media.name[:30]
         else:
             items = media.tracks(limit=999)
-            list_media_name = media.name[:20]
+            list_media_name = media.name[:30]
 
         # Determine where to redirect the progress information.
         if progress_gui is None:
