@@ -207,13 +207,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 item["element"].setCurrentIndex(item["default_id"])
 
-    @QtCore.Slot(QtWidgets.QWidget)
     def on_spinner_start(self, parent: QtWidgets.QWidget):
         self.spinner = QtWaitingSpinner(parent, True, True)
         self.spinner.setColor(QtGui.QColor(255, 255, 255))
         self.spinner.start()
 
-    @QtCore.Slot()
     def on_spinner_stop(self):
         self.spinner.stop()
         self.spinner = None
