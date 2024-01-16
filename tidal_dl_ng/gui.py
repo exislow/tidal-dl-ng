@@ -43,6 +43,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     pb_list: QtWidgets.QProgressBar = None
     s_list_advance: QtCore.Signal = QtCore.Signal(float)
     s_pb_reset: QtCore.Signal = QtCore.Signal()
+    s_populate_tree_lists: QtCore.Signal = QtCore.Signal(list)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -73,7 +74,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._populate_search_types(self.cb_search_type, SearchTypes)
         self.apply_settings(self.settings)
         self._init_signals()
-        self.thread_it(self.init_tidal, tidal)
+        self.init_tidal(tidal)
 
         logger_gui.debug("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
         logger_gui.debug("All setup.")
@@ -96,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if result:
             self.dl = Download(self.tidal.session, self.tidal.settings.data.skip_existing)
 
-            self.populate_tree_lists(self.tidal)
+            self.thread_it(self.tidal_user_lists)
 
     def _init_progressbar(self):
         self.pb_list = QtWidgets.QProgressBar()
@@ -137,9 +138,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnHidden(5, True)
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
-    def populate_tree_lists(self, tidal: Tidal):
+    # TODO: Refactor to own TIDAL file or so.
+    def tidal_user_lists(self):
         # Start loading spinner
         self.spinner_start.emit(self.tr_lists_user)
+
+        user_playlists: [Playlist | UserPlaylist] = self.tidal.session.user.playlist_and_favorite_playlists()
+        user_mixes: [Mix] = self.tidal.session.mixes().categories[0].items
+        user_all: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
+
+        self.s_populate_tree_lists.emit(user_all)
+
+    def on_populate_tree_lists(self, user_lists: [Playlist | UserPlaylist | Mix]):
         self.tr_results.clear()
 
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
@@ -152,11 +162,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             TidalLists.MIXES.value, QtCore.Qt.MatchExactly, 0
         )[0]
 
-        user_playlists: [Playlist | UserPlaylist] = tidal.session.user.playlist_and_favorite_playlists()
-        user_mixes: [Mix] = tidal.session.mixes().categories[0].items
-        user_all: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
-
-        for item in user_all:
+        for item in user_lists:
             if isinstance(item, UserPlaylist):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
                 name: str = item.name
@@ -178,6 +184,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner_stop.emit()
 
     def _init_tree_lists(self, tree: QtWidgets.QTreeWidget):
+        # Adjust Tree.
         tree.setColumnWidth(0, 200)
         tree.setColumnWidth(1, 300)
         tree.setColumnHidden(2, True)
@@ -340,7 +347,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_item_advance.connect(self.progress_item)
         self.s_item_name.connect(self.progress_item_name)
         self.s_list_advance.connect(self.progress_list)
-        self.s_pb_reset.connect(self.progress_reset())
+        self.s_pb_reset.connect(self.progress_reset)
+        self.s_populate_tree_lists.connect(self.on_populate_tree_lists)
 
     def progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
