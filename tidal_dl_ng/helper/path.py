@@ -154,15 +154,15 @@ def get_format_template(
 ) -> str | bool:
     result = False
 
-    if isinstance(media, Track) or media == MediaType.Track:
+    if isinstance(media, Track) or media == MediaType.TRACK:
         result = settings.data.format_track
-    elif isinstance(media, Album) or media == MediaType.Album:
+    elif isinstance(media, Album) or media == MediaType.ALBUM:
         result = settings.data.format_album
-    elif isinstance(media, Playlist | UserPlaylist) or media == MediaType.Playlist:
+    elif isinstance(media, Playlist | UserPlaylist) or media == MediaType.PLAYLIST:
         result = settings.data.format_playlist
-    elif isinstance(media, Mix) or media == MediaType.Mix:
+    elif isinstance(media, Mix) or media == MediaType.MIX:
         result = settings.data.format_mix
-    elif isinstance(media, Video) or media == MediaType.Video:
+    elif isinstance(media, Video) or media == MediaType.VIDEO:
         result = settings.data.format_video
 
     return result

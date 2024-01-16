@@ -30,14 +30,14 @@ def get_tidal_media_type(url_media: str) -> MediaType | bool:
         media_name = url_media.split("/")[-2]
 
         if media_name == "track":
-            result = MediaType.Track
+            result = MediaType.TRACK
         elif media_name == "video":
-            result = MediaType.Video
+            result = MediaType.VIDEO
         elif media_name == "album":
-            result = MediaType.Album
+            result = MediaType.ALBUM
         elif media_name == "playlist":
-            result = MediaType.Playlist
+            result = MediaType.PLAYLIST
         elif media_name == "mix":
-            result = MediaType.Mix
+            result = MediaType.MIX
 
     return result

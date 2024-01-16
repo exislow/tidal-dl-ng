@@ -166,7 +166,7 @@ def download(
         # Create Live display for Progress.
         with Live(progress_table, refresh_per_second=10):
             # Download media.
-            if media_type in [MediaType.Track, MediaType.Video]:
+            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
                 dl.item(
                     media_id=item_id,
                     media_type=media_type,
@@ -175,7 +175,7 @@ def download(
                     progress=progress,
                     fn_logger=fn_logger,
                 )
-            elif media_type in [MediaType.Album, MediaType.Playlist, MediaType.Mix]:
+            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX]:
                 dl.items(
                     media_id=item_id,
                     media_type=media_type,

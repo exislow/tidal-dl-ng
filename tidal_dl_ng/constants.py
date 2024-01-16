@@ -12,11 +12,11 @@ class QualityVideo(Enum):
 
 
 class MediaType(Enum):
-    Track: str = "track"
-    Video: str = "video"
-    Playlist: str = "playlist"
-    Album: str = "album"
-    Mix: str = "mix"
+    TRACK: str = "track"
+    VIDEO: str = "video"
+    PLAYLIST: str = "playlist"
+    ALBUM: str = "album"
+    MIX: str = "mix"
 
 
 class SkipExisting(Enum):

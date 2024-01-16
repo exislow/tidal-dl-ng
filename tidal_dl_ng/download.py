@@ -138,18 +138,18 @@ class Download:
     def instantiate_media(
         self,
         session: Session,
-        media_type: type[MediaType.Track, MediaType.Video, MediaType.Album, MediaType.Playlist, MediaType.Mix],
+        media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
         id_media: str,
     ) -> Track | Video:
-        if media_type == MediaType.Track:
+        if media_type == MediaType.TRACK:
             media = Track(session, id_media)
-        elif media_type == MediaType.Video:
+        elif media_type == MediaType.VIDEO:
             media = Video(session, id_media)
-        elif media_type == MediaType.Album:
+        elif media_type == MediaType.ALBUM:
             media = Album(self.session, id_media)
-        elif media_type == MediaType.Playlist:
+        elif media_type == MediaType.PLAYLIST:
             media = Playlist(self.session, id_media)
-        elif media_type == MediaType.Mix:
+        elif media_type == MediaType.MIX:
             media = Mix(self.session, id_media)
         else:
             raise MediaUnknown
