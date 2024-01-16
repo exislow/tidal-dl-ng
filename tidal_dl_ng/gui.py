@@ -142,13 +142,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner_start.emit(self.tr_lists_user)
         self.tr_results.clear()
 
-        twi_playlists: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
+        twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.PLAYLISTS.value, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_mixes: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
+        twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.FAVORITES.value, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_favorites: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
+        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.MIXES.value, QtCore.Qt.MatchExactly, 0
         )[0]
 
