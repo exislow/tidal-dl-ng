@@ -135,10 +135,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _init_tree_results(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(5, True)
+        tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
     def populate_tree_lists(self, tidal: Tidal):
         # Start loading spinner
-        # TODO: Fix QPaint issue. App is crashing because of this.
         self.spinner_start.emit(self.tr_lists_user)
         self.tr_results.clear()
 
@@ -218,7 +218,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # We build the menu.
         menu = QtWidgets.QMenu()
-        menu.addAction("Dowloading Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
@@ -247,9 +247,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # Format seconds to mm:ss.
             m, s = divmod(item.duration_sec, 60)
             duration: str = f"{m:02d}:{s:02d}"
+            # Since sorting happens only by string, we need to pad the index and add 1 (to avoid start at 0)
+            index: str = f"{item.position + 1:03}"
             child = QtWidgets.QTreeWidgetItem()
 
-            child.setText(0, str(item.position))
+            child.setText(0, index)
             child.setText(1, item.artist)
             child.setText(2, item.title)
             child.setText(3, item.album)
