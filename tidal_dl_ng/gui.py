@@ -18,7 +18,7 @@ from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import Settings, Tidal
-from tidal_dl_ng.constants import QualityVideo
+from tidal_dl_ng.constants import QualityVideo, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, ResultSearch
@@ -96,7 +96,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if result:
             self.dl = Download(self.tidal.session, self.tidal.settings.data.skip_existing)
 
-            self.thread_it(self.populate_tree_lists, self.tidal)
+            self.populate_tree_lists(self.tidal)
 
     def _init_progressbar(self):
         self.pb_list = QtWidgets.QProgressBar()
@@ -142,12 +142,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner_start.emit(self.tr_lists_user)
         self.tr_results.clear()
 
-        # TODO: Refactor list item names to constants.
         twi_playlists: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
-            "Playlists", QtCore.Qt.MatchExactly, 0
+            TidalLists.PLAYLISTS.value, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_mixes: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems("Favorites", QtCore.Qt.MatchExactly, 0)[0]
-        twi_favorites: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems("Mixes", QtCore.Qt.MatchExactly, 0)[0]
+        twi_mixes: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
+            TidalLists.FAVORITES.value, QtCore.Qt.MatchExactly, 0
+        )[0]
+        twi_favorites: QtWidgets.QTableWidgetItem = self.tr_lists_user.findItems(
+            TidalLists.MIXES.value, QtCore.Qt.MatchExactly, 0
+        )[0]
 
         user_playlists: [Playlist | UserPlaylist] = tidal.session.user.playlist_and_favorite_playlists()
         user_mixes: [Mix] = tidal.session.mixes().categories[0].items
