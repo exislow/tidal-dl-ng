@@ -1,15 +1,3 @@
-[project]
-name = "tidal-dl-ng"
-version = "0.5.1"
-description = "TIDAL Medial Downloader Next Generation!"
-authors = ["Robert Honz <cen.sored@gmail.com>"]
-repository = "https://github.com/exislow/tidal-dl-ng"
-documentation = "https://exislow.github.io/tidal-dl-ng/"
-readme = "README.md"
-packages = [
-  { include = "tidal_dl_ng" }
-]
-
 [tool.poetry]
 name = "tidal-dl-ng"
 authors = ["Robert Honz <cen.sored@gmail.com>"]
@@ -20,6 +8,14 @@ documentation = "https://exislow.github.io/tidal-dl-ng/"
 readme = "README.md"
 packages = [
   { include = "tidal_dl_ng" }
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU Affero General Public License v3",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
 ]
 
 [tool.poetry.scripts]

@@ -2,6 +2,12 @@ import json
 
 import requests
 
+# See also
+# https://github.com/yaronzz/Tidal-Media-Downloader/commit/1d5b8cd8f65fd1def45d6406778248249d6dfbdf
+# https://github.com/yaronzz/Tidal-Media-Downloader/pull/840
+# https://github.com/nathom/streamrip/tree/main/streamrip
+# https://github.com/arnesongit/plugin.audio.tidal2/blob/e9429d601d0c303d775d05a19a66415b57479d87/resources/lib/tidal2/tidalapi/__init__.py#L86
+
 # TODO: Implement this into `Download`: Session should randomize the usage.
 __KEYS_JSON__ = """
 {
