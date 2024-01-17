@@ -49,5 +49,5 @@ class AudioExtensions(Enum):
     MP4 = ".mp4"
 
 
-class MediaExtensions(AudioExtensions):
+class VideoExtensions(Enum):
     TS = ".ts"

@@ -20,11 +20,12 @@ from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import (
     REQUESTS_TIMEOUT_SEC,
+    AudioExtensions,
     CoverDimensions,
-    MediaExtensions,
     MediaType,
     SkipExisting,
     StreamManifestMimeType,
+    VideoExtensions,
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
@@ -222,7 +223,6 @@ class Download:
                 tmp_path_file = self._download(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
 
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
-                    # TODO: Make optional.
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
                     tmp_path_file = self._video_convert(tmp_path_file)
                     path_file = os.path.splitext(path_file)[0] + ".mp4"
@@ -258,7 +258,7 @@ class Download:
                 # TODO: Implement proper logging.
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
-        # TODO: Check if it is possible to pass "None" values.
+        # `None` values are not allowed.
         m: Metadata = Metadata(
             path_file=path_file,
             lyrics=lyrics,
@@ -363,9 +363,9 @@ class Download:
         return result
 
     def get_file_extension(self, stream_url: str, stream_codec: str) -> str:
-        if MediaExtensions.FLAC.value in stream_url:
-            result: str = MediaExtensions.FLAC.value
-        elif MediaExtensions.MP4.value in stream_url:
+        if AudioExtensions.FLAC.value in stream_url:
+            result: str = AudioExtensions.FLAC.value
+        elif AudioExtensions.MP4.value in stream_url:
             # TODO: Need to investigate, what the correct extension is.
             # if "ac4" in stream_codec or "mha1" in stream_codec:
             #     result = ".mp4"
@@ -373,16 +373,16 @@ class Download:
             #     result = ".flac"
             # else:
             #     result = ".m4a"
-            result: str = MediaExtensions.MP4.value
-        elif MediaExtensions.TS.value in stream_url:
-            result: str = MediaExtensions.TS.value
+            result: str = AudioExtensions.MP4.value
+        elif VideoExtensions.TS.value in stream_url:
+            result: str = VideoExtensions.TS.value
         else:
-            result: str = MediaExtensions.M4A.value
+            result: str = AudioExtensions.M4A.value
 
         return result
 
     def _video_convert(self, path_file: str) -> str:
-        path_file_out = os.path.splitext(path_file)[0] + MediaExtensions.MP4.value
+        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4.value
         result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
 
         return path_file_out
