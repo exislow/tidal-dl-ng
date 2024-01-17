@@ -9,7 +9,7 @@ from pathvalidate.error import ValidationError
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 from tidal_dl_ng import __name_display__
-from tidal_dl_ng.constants import MediaType
+from tidal_dl_ng.constants import AudioExtensions, MediaType
 
 
 def path_home() -> str:
@@ -210,9 +210,14 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
 
 def check_file_exists(path_file: str, extension_ignore: bool = False):
     if extension_ignore:
-        path_file = Path(path_file).stem + ".*"
+        path_file_stem: str = Path(path_file).stem
+        path_files: [str] = []
 
-    # TODO: Check what happens is (no) files .
-    result = bool(glob.glob(path_file))
+        for extension in AudioExtensions:
+            path_files.append(path_file_stem + extension.value)
+    else:
+        path_files: [str] = [path_file]
+
+    result = bool(sum([glob.glob(_file) for _file in path_files], []))
 
     return result

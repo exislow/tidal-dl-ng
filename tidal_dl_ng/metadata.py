@@ -25,7 +25,6 @@ class Metadata:
     url_cover: str = None
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC = None
 
-    # TODO: What about videos?
     def __init__(
         self,
         path_file: str,

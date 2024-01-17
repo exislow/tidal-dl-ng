@@ -38,6 +38,16 @@ class CoverDimensions(Enum):
 
 
 class TidalLists(Enum):
-    PLAYLISTS = "Playlists"
-    FAVORITES = "Favorites"
-    MIXES = "Mixes"
+    PLAYLISTS: str = "Playlists"
+    FAVORITES: str = "Favorites"
+    MIXES: str = "Mixes"
+
+
+class AudioExtensions(Enum):
+    FLAC = ".flac"
+    M4A = ".m4a"
+    MP4 = ".mp4"
+
+
+class MediaExtensions(AudioExtensions):
+    TS = ".ts"

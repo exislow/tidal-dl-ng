@@ -19,8 +19,12 @@ class BaseConfig:
     cls_model: object = None
     path_base: str = path_base()
 
-    def save(self) -> None:
+    def save(self, config_to_compare: str = None) -> None:
         data_json = self.data.to_json()
+
+        # If old and current config is equal, skip the write operation.
+        if config_to_compare == data_json:
+            return
 
         # Try to create the base folder.
         os.makedirs(self.path_base, exist_ok=True)
@@ -59,8 +63,7 @@ class BaseConfig:
             self.data = self.cls_model()
 
         # Call save in case of we need to update the saved config, due to changes in code.
-        # TODO: Compare if config in memory and on disk is different. Otherwise no write operation.
-        self.save()
+        self.save(settings_json)
 
         return result
 

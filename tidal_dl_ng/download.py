@@ -18,7 +18,14 @@ from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC, CoverDimensions, MediaType, SkipExisting, StreamManifestMimeType
+from tidal_dl_ng.constants import (
+    REQUESTS_TIMEOUT_SEC,
+    CoverDimensions,
+    MediaExtensions,
+    MediaType,
+    SkipExisting,
+    StreamManifestMimeType,
+)
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
@@ -203,7 +210,6 @@ class Download:
         # Compute if and how downloads need to be skipped.
         if self.skip_existing.value:
             extension_ignore = self.skip_existing == SkipExisting.ExtensionIgnore
-            # TODO: Check if extension is already in `path_file` or not.
             download_skip = check_file_exists(path_file, extension_ignore=extension_ignore)
         else:
             download_skip = False
@@ -357,9 +363,9 @@ class Download:
         return result
 
     def get_file_extension(self, stream_url: str, stream_codec: str) -> str:
-        if ".flac" in stream_url:
-            result: str = ".flac"
-        elif ".mp4" in stream_url:
+        if MediaExtensions.FLAC.value in stream_url:
+            result: str = MediaExtensions.FLAC.value
+        elif MediaExtensions.MP4.value in stream_url:
             # TODO: Need to investigate, what the correct extension is.
             # if "ac4" in stream_codec or "mha1" in stream_codec:
             #     result = ".mp4"
@@ -367,16 +373,16 @@ class Download:
             #     result = ".flac"
             # else:
             #     result = ".m4a"
-            result: str = ".mp4"
-        elif ".ts" in stream_url:
-            result: str = ".ts"
+            result: str = MediaExtensions.MP4.value
+        elif MediaExtensions.TS.value in stream_url:
+            result: str = MediaExtensions.TS.value
         else:
-            result: str = ".m4a"
+            result: str = MediaExtensions.M4A.value
 
         return result
 
     def _video_convert(self, path_file: str) -> str:
-        path_file_out = os.path.splitext(path_file)[0] + ".mp4"
+        path_file_out = os.path.splitext(path_file)[0] + MediaExtensions.MP4.value
         result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
 
         return path_file_out
