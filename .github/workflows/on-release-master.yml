@@ -149,7 +149,8 @@ jobs:
       - name: Get Release File Name & Upload URL
         id: get_release_info
         run: |
-          VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}/${{env.RELEASE_UPLOAD_URL}}.txt`
+          ls -alh
+          VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}.txt`
           echo "upload_url=$VALUE" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
         # TODO: Switch to https://github.com/softprops/action-gh-release
