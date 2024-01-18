@@ -30,7 +30,7 @@ from tidal_dl_ng.constants import (
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
-from tidal_dl_ng.helper.tidal import name_builder_item
+from tidal_dl_ng.helper.tidal import items_results_all, name_builder_item
 from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
@@ -306,17 +306,19 @@ class Download:
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
 
-        # TODO: Extend with pagination support: Iterate through `items` and `tracks`until len(returned list) == 0
-        # Get the items and name of the list.
+        # Get the name of the list and check, if videos should be included.
+        videos_include: bool = True
+
         if isinstance(media, Mix):
-            items = media.items()
             list_media_name = media.title[:30]
         elif video_download:
-            items = media.items(limit=100)
             list_media_name = media.name[:30]
         else:
-            items = media.tracks(limit=999)
+            videos_include = False
             list_media_name = media.name[:30]
+
+        # Get all items of the list.
+        items = items_results_all(media, videos_include=videos_include)
 
         # Determine where to redirect the progress information.
         if progress_gui is None:

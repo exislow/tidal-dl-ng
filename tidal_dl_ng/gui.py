@@ -2,7 +2,7 @@ import math
 import sys
 from collections.abc import Callable
 
-from helper.tidal import items_all_results, search_all_results
+from helper.tidal import items_results_all, search_results_all
 
 from tidal_dl_ng.helper.path import get_format_template
 
@@ -272,7 +272,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tr_results.addTopLevelItem(child)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultSearch]:
-        result_search: dict[str, [SearchTypes]] = search_all_results(
+        result_search: dict[str, [SearchTypes]] = search_results_all(
             session=self.tidal.session, needle=query, types_media=types_media
         )
         result: [ResultSearch] = []
@@ -392,7 +392,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             media_list = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
         # Get all results
-        media_items: [Track | Video] = items_all_results(media_list)
+        media_items: [Track | Video] = items_results_all(media_list)
         result: [ResultSearch] = self.search_result_to_model(media_items)
 
         self.populate_tree_results(result)

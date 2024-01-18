@@ -44,7 +44,7 @@ def get_tidal_media_type(url_media: str) -> MediaType | bool:
     return result
 
 
-def search_all_results(session: Session, needle: str, types_media: SearchTypes = None) -> dict[str, [SearchTypes]]:
+def search_results_all(session: Session, needle: str, types_media: SearchTypes = None) -> dict[str, [SearchTypes]]:
     limit: int = 300
     offset: int = 0
     done: bool = False
@@ -72,7 +72,7 @@ def search_all_results(session: Session, needle: str, types_media: SearchTypes =
     return result
 
 
-def items_all_results(media_list: [Mix | Playlist | Album]) -> [Track | Video]:
+def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool = True) -> [Track | Video]:
     limit: int = 100
     offset: int = 0
     done: bool = False
@@ -82,7 +82,11 @@ def items_all_results(media_list: [Mix | Playlist | Album]) -> [Track | Video]:
         result = media_list.items()
     else:
         while not done:
-            tmp_result: [Track | Video] = media_list.items(limit=limit, offset=offset)
+            tmp_result: [Track | Video] = (
+                media_list.items(limit=limit, offset=offset)
+                if videos_include
+                else media_list.tracks(limit=limit, offset=offset)
+            )
 
             if bool(tmp_result):
                 result += tmp_result
