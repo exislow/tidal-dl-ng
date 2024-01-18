@@ -15,14 +15,6 @@ except ModuleNotFoundError:
         pass
 
 
-# TODO: Remove if not used?
-@dataclass
-class UserList:
-    name: str
-    count: str
-    obj: object
-
-
 @dataclass
 class ResultSearch:
     position: int
