@@ -1,4 +1,5 @@
-from tidalapi import Track
+from tidalapi import Album, Mix, Playlist, Session, Track, Video
+from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
 
@@ -39,5 +40,55 @@ def get_tidal_media_type(url_media: str) -> MediaType | bool:
             result = MediaType.PLAYLIST
         elif media_name == "mix":
             result = MediaType.MIX
+
+    return result
+
+
+def search_all_results(session: Session, needle: str, types_media: SearchTypes = None) -> dict[str, [SearchTypes]]:
+    limit: int = 300
+    offset: int = 0
+    done: bool = False
+    result: dict[str, [SearchTypes]] = {}
+
+    while not done:
+        tmp_result: dict[str, [SearchTypes]] = session.search(
+            query=needle, models=types_media, limit=limit, offset=offset
+        )
+        tmp_done: bool = True
+
+        for key, value in tmp_result.items():
+            # Append pagination results, if there are any
+            if offset == 0:
+                result = tmp_result
+                tmp_done = False
+            elif bool(value):
+                result[key] += value
+                tmp_done = False
+
+        # Next page
+        offset += limit
+        done = tmp_done
+
+    return result
+
+
+def items_all_results(media_list: [Mix | Playlist | Album]) -> [Track | Video]:
+    limit: int = 100
+    offset: int = 0
+    done: bool = False
+    result: [Track | Video] = []
+
+    if isinstance(media_list, Mix):
+        result = media_list.items()
+    else:
+        while not done:
+            tmp_result: [Track | Video] = media_list.items(limit=limit, offset=offset)
+
+            if bool(tmp_result):
+                result += tmp_result
+                # Get the next page in the next iteration.
+                offset += limit
+            else:
+                done = True
 
     return result

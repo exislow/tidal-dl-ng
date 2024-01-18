@@ -2,6 +2,8 @@ import math
 import sys
 from collections.abc import Callable
 
+from helper.tidal import items_all_results, search_all_results
+
 from tidal_dl_ng.helper.path import get_format_template
 
 try:
@@ -250,13 +252,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def populate_tree_results(self, results: [ResultSearch]):
         self.tr_results.clear()
+        count_digits: int = int(math.log10(len(results))) + 1
 
         for item in results:
             # Format seconds to mm:ss.
             m, s = divmod(item.duration_sec, 60)
             duration: str = f"{m:02d}:{s:02d}"
             # Since sorting happens only by string, we need to pad the index and add 1 (to avoid start at 0)
-            index: str = f"{item.position + 1:03}"
+            index: str = str(item.position + 1).zfill(count_digits)
             child = QtWidgets.QTreeWidgetItem()
 
             child.setText(0, index)
@@ -269,7 +272,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tr_results.addTopLevelItem(child)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultSearch]:
-        result_search: [dict[str, SearchTypes]] = self.tidal.session.search(query, models=types_media, limit=999)
+        result_search: dict[str, [SearchTypes]] = search_all_results(
+            session=self.tidal.session, needle=query, types_media=types_media
+        )
         result: [ResultSearch] = []
 
         for _media_type, l_media in result_search.items():
@@ -386,8 +391,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             item = self.tr_lists_user.itemAt(point)
             media_list = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
-        media_items = media_list.items()
-        result = self.search_result_to_model(media_items)
+        # Get all results
+        media_items: [Track | Video] = items_all_results(media_list)
+        result: [ResultSearch] = self.search_result_to_model(media_items)
 
         self.populate_tree_results(result)
 
