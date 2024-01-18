@@ -334,7 +334,6 @@ class Download:
         # Iterate through list items
         while not progress.finished:
             for media in items:
-                # TODO: Handle return value of `track` method.
                 # Download the item.
                 status_download, result_path_file = self.item(
                     path_base=path_base,

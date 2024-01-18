@@ -85,10 +85,10 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
     settings: Settings = None
 
     def __init__(self, settings: Settings = None):
-        self.session = tidalapi.Session()
+        tidal_config: tidalapi.Config = tidalapi.Config(item_limit=10000)
+        self.session = tidalapi.Session(tidal_config)
         # self.session.config.client_id = "km8T1xS355y7dd3H"
         # self.session.config.client_secret = "vcmeGW1OuZ0fWYMCSZ6vNvSLJlT3XEpW0ambgYt5ZuI="
-        self.session.video_quality = tidalapi.VideoQuality.high
         self.file_path = path_file_token()
         self.token_from_storage = self.read(self.file_path)
         self.login_token()
@@ -102,6 +102,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
             self.settings = settings
 
         self.session.audio_quality = self.settings.data.quality_audio
+        self.session.video_quality = tidalapi.VideoQuality.high
 
         return True
 

@@ -111,7 +111,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # self.pb_progress.setVisible()
             self.statusbar.addPermanentWidget(pb)
 
-    def progress_reset(self):
+    def on_progress_reset(self):
         self.pb_list.setValue(0)
         self.pb_item.setValue(0)
 
@@ -204,6 +204,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         for item in l_cb:
             idx = item["element"].findText(item["setting"])
+
             if idx > -1:
                 item["element"].setCurrentIndex(idx)
             else:
@@ -342,37 +343,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.b_search.clicked.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
-        self.cb_quality_audio.currentIndexChanged.connect(self.quality_set_audio)
-        self.cb_quality_video.currentIndexChanged.connect(self.quality_set_video)
+        self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
+        self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
         self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
         self.spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
         self.spinner_stop.connect(self.on_spinner_stop)
-        self.s_item_advance.connect(self.progress_item)
-        self.s_item_name.connect(self.progress_item_name)
-        self.s_list_advance.connect(self.progress_list)
-        self.s_pb_reset.connect(self.progress_reset)
+        self.s_item_advance.connect(self.on_progress_item)
+        self.s_item_name.connect(self.on_progress_item_name)
+        self.s_list_advance.connect(self.on_progress_list)
+        self.s_pb_reset.connect(self.on_progress_reset)
         self.s_populate_tree_lists.connect(self.on_populate_tree_lists)
 
-    def progress_list(self, value: float):
+    def on_progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
 
-    def progress_item(self, value: float):
+    def on_progress_item(self, value: float):
         self.pb_item.setValue(int(math.ceil(value)))
 
-    def progress_item_name(self, value: str):
+    def on_progress_item_name(self, value: str):
         self.pb_item.setFormat(f"%p% {value}")
 
     def progress_list_name(self, value: str):
         self.pb_list.setFormat(f"%p% {value}")
 
-    def quality_set_audio(self, index):
+    def on_quality_set_audio(self, index):
         self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index).value)
         self.settings.save()
 
         if self.tidal:
             self.tidal.settings_apply()
 
-    def quality_set_video(self, index):
+    def on_quality_set_video(self, index):
         self.settings.data.quality_video = QualityVideo(self.cb_quality_video.itemData(index).value)
         self.settings.save()
 
