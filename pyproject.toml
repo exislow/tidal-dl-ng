@@ -20,9 +20,9 @@ classifiers = [
 
 [tool.poetry.scripts]
 tidal-dl-ng = "tidal_dl_ng.cli:app"
-tidal-dl-ng-gui = { reference = "tidal_dl_ng.gui:gui_activate", extras = ["gui"] }
+tidal-dl-ng-gui = "tidal_dl_ng.gui:gui_activate"
 tdn = "tidal_dl_ng.cli:app"
-tdng = { reference = "tidal_dl_ng.gui:gui_activate", extras = ["gui"] }
+tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
@@ -38,7 +38,7 @@ ffmpeg-python = "^0.2.0"
 coloredlogs = "^15.0.1"
 pyside6 = {version = "^6.6.1", optional = true}
 pyqtdarktheme = {version = "^2.1.0", optional = true}
-mpegdash = "^0.3.1"
+mpegdash = "^0.4.0"
 rich = "^13.7.0"
 
 [tool.poetry.extras]

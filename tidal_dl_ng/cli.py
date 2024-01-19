@@ -17,7 +17,7 @@ from tidal_dl_ng.helper.tidal import get_tidal_media_id, get_tidal_media_type
 from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
-app = typer.Typer()
+app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False)
 
 
 def version_callback(value: bool):

@@ -1001,17 +1001,14 @@ mkdocstrings = ">=0.20"
 
 [[package]]
 name = "mpegdash"
-version = "0.3.1"
+version = "0.4.0"
 description = "MPEG-DASH MPD(Media Presentation Description) Parser"
 optional = false
 python-versions = "*"
 files = [
-    {file = "mpegdash-0.3.1-py3-none-any.whl", hash = "sha256:abefe682f5db4528b930013d3dd12f6a108e145cffb6333de464df73f4707a69"},
-    {file = "mpegdash-0.3.1.tar.gz", hash = "sha256:2f314a6e465f1f00fdf775918ff871971fe54daba9c6d0bfb5c145b69b716a24"},
+    {file = "mpegdash-0.4.0-py3-none-any.whl", hash = "sha256:d07f6e1f2a67ddce1be501e3ad7abc29a2d6a7b1830b4da974b49c2ebe99cf2a"},
+    {file = "mpegdash-0.4.0.tar.gz", hash = "sha256:65368c7a367c6875eb8c456a08644eb0708981a745044da0c9e942a3bc2b6389"},
 ]
-
-[package.dependencies]
-future = "*"
 
 [[package]]
 name = "mutagen"
@@ -2147,4 +2144,4 @@ gui = ["pyqtdarktheme", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "bdddb79a681d97040756bd48a1f391ed85b39b108ebae125c28d348e5fc63cd4"
+content-hash = "8dd50e4a69455a33b53bb22e188194d07165fc2e4bf56f1907c34ca1cc877509"
