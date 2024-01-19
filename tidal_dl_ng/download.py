@@ -78,7 +78,7 @@ class Download:
         else:
             progress_stdout: bool = False
             # Send signal to GUI with media name
-            progress_gui.item_name.emit(media_name)
+            progress_gui.item_name.emit(media_name[:30])
 
         try:
             # Compute total iterations for progress
@@ -325,6 +325,7 @@ class Download:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
+            progress_gui.item_name.emit(list_media_name[:30])
 
         # Create the list progress task.
         p_task1: TaskID = progress.add_task(

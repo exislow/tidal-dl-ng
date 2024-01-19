@@ -2,9 +2,8 @@ import math
 import sys
 from collections.abc import Callable
 
-from helper.tidal import items_results_all, search_results_all
-
 from tidal_dl_ng.helper.path import get_format_template
+from tidal_dl_ng.helper.tidal import items_results_all, search_results_all
 
 try:
     import qdarktheme
@@ -23,7 +22,7 @@ from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import QualityVideo, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
-from tidal_dl_ng.model.gui_data import ProgressBars, ResultSearch
+from tidal_dl_ng.model.gui_data import ProgressBars, ResultSearch, StatusbarMessage
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
@@ -42,10 +41,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     pb_item: QtWidgets.QProgressBar = None
     s_item_advance: QtCore.Signal = QtCore.Signal(float)
     s_item_name: QtCore.Signal = QtCore.Signal(str)
+    s_list_name: QtCore.Signal = QtCore.Signal(str)
     pb_list: QtWidgets.QProgressBar = None
     s_list_advance: QtCore.Signal = QtCore.Signal(float)
     s_pb_reset: QtCore.Signal = QtCore.Signal()
     s_populate_tree_lists: QtCore.Signal = QtCore.Signal(list)
+    s_statusbar_message: QtCore.Signal = QtCore.Signal(object)
+    s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -114,6 +116,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_progress_reset(self):
         self.pb_list.setValue(0)
         self.pb_item.setValue(0)
+
+    def on_statusbar_message(self, data: StatusbarMessage):
+        self.statusbar.showMessage(data.message, data.timout)
 
     def _log_output(self, text):
         display_msg = coloredlogs.converter.convert(text)
@@ -238,11 +243,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.list_items_show, point=point)
 
     def on_download_list_media(self, point: QtCore.QPoint):
+        self.b_download.setEnabled(False)
+        self.b_download.setText("Downloading...")
+
         item = self.tr_lists_user.itemAt(point)
         media = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
-        # TODO: Implement disable download button etc.
         self.download(media, self.dl)
+
+        self.b_download.setText("Download")
+        self.b_download.setEnabled(True)
 
     def search_populate_results(self, query: str, type_media: SearchTypes):
         self.tr_results.clear()
@@ -270,7 +280,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child.setText(4, duration)
             child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
 
-            self.tr_results.addTopLevelItem(child)
+            # TODO: Fix "QBasicTimer::start: Timers cannot be started from another thread"
+            self.s_tr_results_add_top_level_item.emit(child)
+
+    def on_tr_results_add_top_level_item(self, widget_item: QtWidgets.QTreeWidgetItem):
+        self.tr_results.addTopLevelItem(widget_item)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultSearch]:
         result_search: dict[str, [SearchTypes]] = search_results_all(
@@ -350,9 +364,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner_stop.connect(self.on_spinner_stop)
         self.s_item_advance.connect(self.on_progress_item)
         self.s_item_name.connect(self.on_progress_item_name)
+        self.s_list_name.connect(self.on_progress_list_name)
         self.s_list_advance.connect(self.on_progress_list)
         self.s_pb_reset.connect(self.on_progress_reset)
         self.s_populate_tree_lists.connect(self.on_populate_tree_lists)
+        self.s_statusbar_message.connect(self.on_statusbar_message)
+        self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
 
     def on_progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
@@ -363,7 +380,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_progress_item_name(self, value: str):
         self.pb_item.setFormat(f"%p% {value}")
 
-    def progress_list_name(self, value: str):
+    def on_progress_list_name(self, value: str):
         self.pb_list.setFormat(f"%p% {value}")
 
     def on_quality_set_audio(self, index):
@@ -422,13 +439,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.b_download.setText("Download")
         self.b_download.setEnabled(True)
 
-    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> bool:
+    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> None:
         # TODO: Refactor this. Move this logic to `Download` class and provide a generic interface.
         self.s_pb_reset.emit()
-        self.statusbar.showMessage("Download started...")
+        self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
         data_pb: ProgressBars = ProgressBars(
-            item=self.s_item_advance, list_item=self.s_list_advance, item_name=self.s_item_name
+            item=self.s_item_advance,
+            list_item=self.s_list_advance,
+            item_name=self.s_item_name,
+            list_name=self.s_list_name,
         )
         progress: Progress = Progress()
         file_template = get_format_template(media, self.settings)
@@ -448,14 +468,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 logger_gui.info(f"Download skipped (file exists): {download_path_file}")
         elif isinstance(media, Album | Playlist | Mix):
-            progress_name = (
-                media.name
-                if hasattr(media, "name") and media.name
-                else hasattr(media, "title") and media.title if media.title else "List N/A"
-            )
-
-            self.progress_list_name(progress_name)
-
             dl.items(
                 path_base=self.settings.data.download_base_path,
                 file_template=file_template,
@@ -467,11 +479,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 fn_logger=logger_gui,
             )
 
-        self.statusbar.showMessage("Download finished.", 2000)
+        self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
         progress.stop()
-
-        # TODO: Refactor to useful return value.
-        return True
 
 
 # TODO: Comment with Google Docstrings.

@@ -8,6 +8,7 @@ try:
         item: QtCore.Signal
         item_name: QtCore.Signal
         list_item: QtCore.Signal
+        list_name: QtCore.Signal
 
 except ModuleNotFoundError:
 
@@ -23,3 +24,9 @@ class ResultSearch:
     album: str
     duration_sec: int
     obj: object
+
+
+@dataclass
+class StatusbarMessage:
+    message: str
+    timout: int = 0
