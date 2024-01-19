@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 
 @dataclass
-class ResultSearch:
+class ResultItem:
     position: int
     artist: str
     title: str
