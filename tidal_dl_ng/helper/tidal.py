@@ -1,4 +1,4 @@
-from tidalapi import Album, Mix, Playlist, Session, Track, Video
+from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
@@ -94,5 +94,13 @@ def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool
                 offset += limit
             else:
                 done = True
+
+    return result
+
+
+def user_media_lists(session: Session) -> [Playlist | UserPlaylist | Mix]:
+    user_playlists: [Playlist | UserPlaylist] = session.user.playlist_and_favorite_playlists()
+    user_mixes: [Mix] = session.mixes().categories[0].items
+    result: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
 
     return result

@@ -3,7 +3,7 @@ import sys
 from collections.abc import Callable
 
 from tidal_dl_ng.helper.path import get_format_template
-from tidal_dl_ng.helper.tidal import items_results_all, search_results_all
+from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
 
 try:
     import qdarktheme
@@ -69,7 +69,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings = Settings()
         self.threadpool = QtCore.QThreadPool()
 
-        # TODO: Show GUI, create a progress bar showing the TIDAL querying progress.
         self._init_tree_results(self.tr_results)
         self._init_tree_lists(self.tr_lists_user)
         self._init_progressbar()
@@ -145,14 +144,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnHidden(5, True)
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
 
-    # TODO: Refactor to own TIDAL file or so.
     def tidal_user_lists(self):
         # Start loading spinner
         self.spinner_start.emit(self.tr_lists_user)
 
-        user_playlists: [Playlist | UserPlaylist] = self.tidal.session.user.playlist_and_favorite_playlists()
-        user_mixes: [Mix] = self.tidal.session.mixes().categories[0].items
-        user_all: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
+        user_all: [Playlist | UserPlaylist | Mix] = user_media_lists(self.tidal.session)
 
         self.s_populate_tree_lists.emit(user_all)
 
@@ -280,7 +276,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child.setText(4, duration)
             child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
 
-            # TODO: Fix "QBasicTimer::start: Timers cannot be started from another thread"
             self.s_tr_results_add_top_level_item.emit(child)
 
     def on_tr_results_add_top_level_item(self, widget_item: QtWidgets.QTreeWidgetItem):
@@ -440,7 +435,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.b_download.setEnabled(True)
 
     def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> None:
-        # TODO: Refactor this. Move this logic to `Download` class and provide a generic interface.
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
@@ -454,7 +448,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
-            result_download, download_path_file = dl.item(
+            dl.item(
                 media=media,
                 path_base=self.settings.data.download_base_path,
                 file_template=file_template,
@@ -462,16 +456,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 progress=progress,
                 fn_logger=logger_gui,
             )
-
-            if result_download:
-                logger_gui.info(f"Download successful: {download_path_file}")
-            else:
-                logger_gui.info(f"Download skipped (file exists): {download_path_file}")
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(
+                media=media,
                 path_base=self.settings.data.download_base_path,
                 file_template=file_template,
-                media=media,
                 video_download=self.settings.data.video_download,
                 progress_gui=data_pb,
                 progress=progress,
