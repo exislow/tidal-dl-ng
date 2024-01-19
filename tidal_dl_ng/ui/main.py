@@ -33,20 +33,24 @@ class Ui_MainWindow:
         if not MainWindow.objectName():
             MainWindow.setObjectName("MainWindow")
         MainWindow.resize(900, 700)
-        self.a_options = QAction(MainWindow)
-        self.a_options.setObjectName("a_options")
-        self.a_options.setEnabled(False)
-        self.a_options.setText("Options")
-        self.a_options.setIconText("Options")
+        self.a_preferences = QAction(MainWindow)
+        self.a_preferences.setObjectName("a_preferences")
+        self.a_preferences.setEnabled(False)
+        self.a_preferences.setText("Preferences...")
+        self.a_preferences.setIconText("Preferences...")
         # if QT_CONFIG(tooltip)
-        self.a_options.setToolTip("Options")
+        self.a_preferences.setToolTip("Preferences...")
         # endif // QT_CONFIG(tooltip)
         # if QT_CONFIG(statustip)
-        self.a_options.setStatusTip("")
+        self.a_preferences.setStatusTip("")
         # endif // QT_CONFIG(statustip)
         # if QT_CONFIG(whatsthis)
-        self.a_options.setWhatsThis("")
+        self.a_preferences.setWhatsThis("")
         # endif // QT_CONFIG(whatsthis)
+        self.a_version = QAction(MainWindow)
+        self.a_version.setObjectName("a_version")
+        self.a_exit = QAction(MainWindow)
+        self.a_exit.setObjectName("a_exit")
         self.w_central = QWidget(MainWindow)
         self.w_central.setObjectName("w_central")
         self.w_central.setEnabled(True)
@@ -420,7 +424,9 @@ class Ui_MainWindow:
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.m_file.menuAction())
-        self.m_file.addAction(self.a_options)
+        self.m_file.addAction(self.a_preferences)
+        self.m_file.addAction(self.a_version)
+        self.m_file.addAction(self.a_exit)
 
         self.retranslateUi(MainWindow)
 
@@ -430,6 +436,8 @@ class Ui_MainWindow:
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", "MainWindow", None))
+        self.a_version.setText(QCoreApplication.translate("MainWindow", "Version", None))
+        self.a_exit.setText(QCoreApplication.translate("MainWindow", "Exit", None))
         ___qtreewidgetitem = self.tr_lists_user.headerItem()
         ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", "obj", None))
 

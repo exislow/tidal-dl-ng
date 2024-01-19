@@ -540,7 +540,9 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="a_options"/>
+    <addaction name="a_preferences"/>
+    <addaction name="a_version"/>
+    <addaction name="a_exit"/>
    </widget>
    <addaction name="m_file"/>
   </widget>
@@ -564,24 +566,34 @@
     <enum>Qt::LeftToRight</enum>
    </property>
   </widget>
-  <action name="a_options">
+  <action name="a_preferences">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string notr="true">Options</string>
+    <string notr="true">Preferences...</string>
    </property>
    <property name="iconText">
-    <string notr="true">Options</string>
+    <string notr="true">Preferences...</string>
    </property>
    <property name="toolTip">
-    <string notr="true">Options</string>
+    <string notr="true">Preferences...</string>
    </property>
    <property name="statusTip">
     <string notr="true"/>
    </property>
    <property name="whatsThis">
     <string notr="true"/>
+   </property>
+  </action>
+  <action name="a_version">
+   <property name="text">
+    <string>Version</string>
+   </property>
+  </action>
+  <action name="a_exit">
+   <property name="text">
+    <string>Exit</string>
    </property>
   </action>
  </widget>

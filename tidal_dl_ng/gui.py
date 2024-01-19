@@ -2,6 +2,7 @@ import math
 import sys
 from collections.abc import Callable
 
+from tidal_dl_ng.dialog import DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
 
@@ -35,6 +36,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     tidal: Tidal = None
     dl: Download = None
     threadpool: QtCore.QThreadPool = None
+    tray: QtWidgets.QSystemTrayIcon = None
     spinner: QtWaitingSpinner = None
     spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
     spinner_stop: QtCore.Signal = QtCore.Signal()
@@ -54,13 +56,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Gen!")
-        # TODO: Fix icons (make them visible).
-        # my_pixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
-        my_icon = QtGui.QIcon("tidal_dl_ng/ui/icon.png")
-        self.setWindowIcon(my_icon)
-        tray = QtWidgets.QSystemTrayIcon()
-        tray.setIcon(my_icon)
-        tray.setVisible(True)
+        self._init_tray()
 
         # Logging redirect.
         XStream.stdout().messageWritten.connect(self._log_output)
@@ -381,6 +377,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
 
+        # Menubar
+        self.a_exit.triggered.connect(sys.exit)
+        self.a_version.triggered.connect(self.on_version)
+
     def on_progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
 
@@ -469,6 +469,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             )
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
+
+    def on_version(self) -> None:
+        DialogVersion(self)
+
+    def _init_tray(self):
+        # TODO: Fix icons (make them visible).
+        # my_pixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
+        my_icon = QtGui.QIcon("tidal_dl_ng/ui/icon.png")
+        # self.setWindowIcon(my_icon)
+        self.tray = QtWidgets.QSystemTrayIcon()
+        self.tray.setIcon(my_icon)
+        self.tray.setVisible(True)
+        self.tray.setContextMenu(self.m_file)
 
 
 # TODO: Comment with Google Docstrings.

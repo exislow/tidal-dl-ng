@@ -154,6 +154,8 @@ exclude = '''
     | venv
     | site
     | docs
+    | tidal_dl_ng/ui/main.py
+    | tidal_dl_ng/ui/dialog_version.py
 )/
 '''
 
