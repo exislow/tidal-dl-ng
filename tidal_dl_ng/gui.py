@@ -2,6 +2,7 @@ import math
 import sys
 from collections.abc import Callable
 
+from tidal_dl_ng import __version__
 from tidal_dl_ng.dialog import DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
@@ -491,9 +492,8 @@ def gui_activate(tidal: Tidal | None = None):
         # Make sure Pyinstaller icons are still grouped
         if not sys.argv[0].endswith(".exe"):
             # Arbitrary string
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
-                "CompanyName.ProductName.SubProduct.VersionInformation"
-            )
+            my_app_id: str = "exislow.tidal.dl-ng." + __version__
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(my_app_id)
 
     window = MainWindow(tidal=tidal)
     window.show()
