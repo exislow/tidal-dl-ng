@@ -8,6 +8,30 @@
 This tool allows to download songs and videos from TIDAL (a paid plan is required!). You can use the command line or GUI
 version of this tool.
 
+![App Image](assets/app.png)
+
+```bash
+$ tidal-dl-ng --help
+
+ Usage: tidal-dl-ng [OPTIONS] COMMAND [ARGS]...
+
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --version             -v                                                                         │
+│ --install-completion            Install completion for the current shell.                        │
+│ --show-completion               Show completion for the current shell, to copy it or customize   │
+│                                 the installation.                                                │
+│ --help                          Show this message and exit.                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
+│ cfg    Print or set an option. If no arguments are given, all options will be listed. If only    │
+│        one argument is given, the value will be printed for this option. To set a value for an   │
+│        option simply pass the value as the second argument                                       │
+│ dl                                                                                               │
+│ gui                                                                                              │
+│ login                                                                                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+```
+
 If you like this projects and want to support it, you can buy me a coffee :-)
 
 <a href="https://www.buymeacoffee.com/exislow" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/arial-orange.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
