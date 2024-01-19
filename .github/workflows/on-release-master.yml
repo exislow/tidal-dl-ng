@@ -102,7 +102,7 @@ jobs:
             CMD_BUILD: >
               brew install create-dmg &&
               source $VENV &&
-              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-macos-dmg APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
@@ -120,7 +120,7 @@ jobs:
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
               source $VENV &&
-              poetry run make gui APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-linux APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
@@ -130,7 +130,7 @@ jobs:
             CMD_BUILD: >
               choco install zip make -y &&
               source $VENV &&
-              poetry run make gui APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-windows APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
               cd ..

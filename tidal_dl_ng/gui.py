@@ -30,7 +30,6 @@ from tidal_dl_ng.worker import Worker
 
 
 # TODO: Make more use of Exceptions
-# TODO: Add File -> Version
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     settings: Settings = None
     tidal: Tidal = None
@@ -56,7 +55,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Gen!")
-        self._init_tray()
 
         # Logging redirect.
         XStream.stdout().messageWritten.connect(self._log_output)
@@ -473,24 +471,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_version(self) -> None:
         DialogVersion(self)
 
-    def _init_tray(self):
-        # TODO: Fix icons (make them visible).
-        # my_pixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
-        my_icon = QtGui.QIcon("tidal_dl_ng/ui/icon.png")
-        # self.setWindowIcon(my_icon)
-        self.tray = QtWidgets.QSystemTrayIcon()
-        self.tray.setIcon(my_icon)
-        self.tray.setVisible(True)
-        self.tray.setContextMenu(self.m_file)
-
 
 # TODO: Comment with Google Docstrings.
 def gui_activate(tidal: Tidal | None = None):
+    # Set dark theme and create QT app.
     qdarktheme.enable_hi_dpi()
     app = QtWidgets.QApplication(sys.argv)
     qdarktheme.setup_theme()
 
-    window = MainWindow(tidal)
+    # Create icon object and apply it to app window.
+    pixmap: QtGui.QPixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
+    icon: QtGui.QIcon = QtGui.QIcon(pixmap)
+    app.setWindowIcon(icon)
+
+    window = MainWindow(tidal=tidal)
     window.show()
 
     sys.exit(app.exec())

@@ -57,8 +57,17 @@ docs: ## Build and serve the documentation
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: gui
-gui: ## Build GUI app with PyInstaller
+.PHONY: gui-windows
+gui-windows: ## Build GUI app with PyInstaller
+	@poetry run pyinstaller --noconfirm \
+		--windowed --onefile \
+		--name "$(APP_NAME)" \
+		--noupx \
+		--icon $(path_asset)/icon.ico \
+		tidal_dl_ng/gui.py
+
+.PHONY: gui-linux
+gui-linux: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
 		--windowed --onefile \
 		--name "$(APP_NAME)" \
@@ -66,9 +75,18 @@ gui: ## Build GUI app with PyInstaller
 		--icon $(path_asset)/icon.png \
 		tidal_dl_ng/gui.py
 
-# TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 .PHONY: gui-macos
-gui-macos: gui ## Package GUI in a *.dmg file
+gui-macos: ## Build GUI app with PyInstaller
+	@poetry run pyinstaller --noconfirm \
+		--windowed --onefile \
+		--name "$(APP_NAME)" \
+		--noupx \
+		--icon $(path_asset)/icon.icns \
+		tidal_dl_ng/gui.py
+
+# TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
+.PHONY: gui-macos-dmg
+gui-macos-dmg: gui-macos ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
 	@poetry run mv "$(app_path_dist)/$(APP_NAME).app" $(app_path_dist)/dmg
 	@poetry run create-dmg \
