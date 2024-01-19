@@ -484,6 +484,17 @@ def gui_activate(tidal: Tidal | None = None):
     icon: QtGui.QIcon = QtGui.QIcon(pixmap)
     app.setWindowIcon(icon)
 
+    # This bit gets the taskbar icon working properly in Windows
+    if sys.platform.startswith("win"):
+        import ctypes
+
+        # Make sure Pyinstaller icons are still grouped
+        if not sys.argv[0].endswith(".exe"):
+            # Arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "CompanyName.ProductName.SubProduct.VersionInformation"
+            )
+
     window = MainWindow(tidal=tidal)
     window.show()
 
