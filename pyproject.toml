@@ -20,9 +20,9 @@ classifiers = [
 
 [tool.poetry.scripts]
 tidal-dl-ng = "tidal_dl_ng.cli:app"
-tidal-dl-ng-gui = "tidal_dl_ng.gui:gui_activate"
+tidal-dl-ng-gui = { reference = "tidal_dl_ng.gui:gui_activate", extras = ["gui"] }
 tdn = "tidal_dl_ng.cli:app"
-tdng = "tidal_dl_ng.gui:gui_activate"
+tdng = { reference = "tidal_dl_ng.gui:gui_activate", extras = ["gui"] }
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
