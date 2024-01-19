@@ -24,7 +24,7 @@ from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import QualityVideo, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
-from tidal_dl_ng.model.gui_data import ProgressBars, ResultSearch, StatusbarMessage
+from tidal_dl_ng.model.gui_data import ProgressBars, ResultItem, StatusbarMessage
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
@@ -246,7 +246,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def thread_download_list_media(self, point):
         self.thread_it(self.on_download_list_media, point)
-        self.thread_it(self.list_items_show, point=point)
+        self.thread_it(self.list_items_show_result, point=point)
 
     def on_download_list_media(self, point: QtCore.QPoint):
         self.b_download.setEnabled(False)
@@ -263,39 +263,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def search_populate_results(self, query: str, type_media: SearchTypes):
         self.tr_results.clear()
 
-        results: [ResultSearch] = self.search(query, [type_media])
+        results: [ResultItem] = self.search(query, [type_media])
 
         self.populate_tree_results(results)
 
-    def populate_tree_results(self, results: [ResultSearch]):
-        self.tr_results.clear()
+    def populate_tree_results(self, results: [ResultItem], parent: QtWidgets.QTreeWidgetItem = None):
+        if not parent:
+            self.tr_results.clear()
+
+        # Count how many digits the list length has,
         count_digits: int = int(math.log10(len(results))) + 1
 
         for item in results:
-            # Format seconds to mm:ss.
-            m, s = divmod(item.duration_sec, 60)
-            duration: str = f"{m:02d}:{s:02d}"
-            # Since sorting happens only by string, we need to pad the index and add 1 (to avoid start at 0)
-            index: str = str(item.position + 1).zfill(count_digits)
-            child = QtWidgets.QTreeWidgetItem()
+            child = self.populate_tree_result_child(item=item, index_count_digits=count_digits)
 
-            child.setText(0, index)
-            child.setText(1, item.artist)
-            child.setText(2, item.title)
-            child.setText(3, item.album)
-            child.setText(4, duration)
-            child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
+            if parent:
+                parent.addChild(child)
+            else:
+                self.s_tr_results_add_top_level_item.emit(child)
 
-            self.s_tr_results_add_top_level_item.emit(child)
+    def populate_tree_result_child(self, item: [Mix | Album | Playlist], index_count_digits: int):
+        # Format seconds to mm:ss.
+        m, s = divmod(item.duration_sec, 60)
+        duration: str = f"{m:02d}:{s:02d}"
+        # Since sorting happens only by string, we need to pad the index and add 1 (to avoid start at 0)
+        index: str = str(item.position + 1).zfill(index_count_digits)
+
+        # Populate child
+        child = QtWidgets.QTreeWidgetItem()
+        child.setText(0, index)
+        child.setText(1, item.artist)
+        child.setText(2, item.title)
+        child.setText(3, item.album)
+        child.setText(4, duration)
+        child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
+
+        if isinstance(item.obj, Mix | Playlist | Album):
+            # Add empty dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
+            child.addChild(QtWidgets.QTreeWidgetItem())
+
+        return child
 
     def on_tr_results_add_top_level_item(self, widget_item: QtWidgets.QTreeWidgetItem):
         self.tr_results.addTopLevelItem(widget_item)
 
-    def search(self, query: str, types_media: SearchTypes) -> [ResultSearch]:
+    def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
         result_search: dict[str, [SearchTypes]] = search_results_all(
             session=self.tidal.session, needle=query, types_media=types_media
         )
-        result: [ResultSearch] = []
+        result: [ResultItem] = []
 
         for _media_type, l_media in result_search.items():
             if isinstance(l_media, list):
@@ -303,12 +319,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         return result
 
-    def search_result_to_model(self, items: [*SearchTypes]) -> [ResultSearch]:
+    def search_result_to_model(self, items: [*SearchTypes]) -> [ResultItem]:
         result = []
 
         for idx, item in enumerate(items):
             if isinstance(item, Track):
-                result_item: ResultSearch = ResultSearch(
+                result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=", ".join(artist.name for artist in item.artists),
                     title=item.name,
@@ -319,7 +335,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 result.append(result_item)
             elif isinstance(item, Video):
-                result_item: ResultSearch = ResultSearch(
+                result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=", ".join(artist.name for artist in item.artists),
                     title=item.name,
@@ -330,7 +346,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 result.append(result_item)
             elif isinstance(item, Playlist):
-                result_item: ResultSearch = ResultSearch(
+                result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
                     title=item.name,
@@ -341,7 +357,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 result.append(result_item)
             elif isinstance(item, Album):
-                result_item: ResultSearch = ResultSearch(
+                result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=", ".join(artist.name for artist in item.artists),
                     title="",
@@ -380,6 +396,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.a_exit.triggered.connect(sys.exit)
         self.a_version.triggered.connect(self.on_version)
 
+        # Results
+        self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
+
     def on_progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
 
@@ -411,18 +430,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Only if clicked item is not a top level item.
         if media_list:
-            self.list_items_show(media_list)
+            self.list_items_show_result(media_list)
 
-    def list_items_show(self, media_list: Album | Playlist | None = None, point: QtCore.QPoint | None = None):
+    def list_items_show_result(
+        self,
+        media_list: Album | Playlist | Mix | None = None,
+        point: QtCore.QPoint | None = None,
+        parent: QtWidgets.QTreeWidgetItem = None,
+    ) -> None:
         if point:
             item = self.tr_lists_user.itemAt(point)
             media_list = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
         # Get all results
         media_items: [Track | Video] = items_results_all(media_list)
-        result: [ResultSearch] = self.search_result_to_model(media_items)
+        result: [ResultItem] = self.search_result_to_model(media_items)
 
-        self.populate_tree_results(result)
+        self.populate_tree_results(result, parent=parent)
 
     def thread_it(self, fn: Callable, *args, **kwargs):
         # Any other args, kwargs are passed to the run function
@@ -471,6 +495,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_version(self) -> None:
         DialogVersion(self)
+
+    def on_tr_results_expanded(self, child: QtWidgets.QTreeWidgetItem) -> None:
+        child.removeChild(child.child(0))
+        media_list: [Mix | Album | Playlist] = child.data(5, QtCore.Qt.ItemDataRole.UserRole)
+
+        self.list_items_show_result(media_list=media_list, parent=child)
 
 
 # TODO: Comment with Google Docstrings.
