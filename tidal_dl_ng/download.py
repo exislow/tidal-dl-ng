@@ -6,7 +6,6 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable
-from logging import Logger
 from uuid import uuid4
 
 import ffmpeg
@@ -31,7 +30,6 @@ from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
 from tidal_dl_ng.helper.tidal import items_results_all, name_builder_item
-from tidal_dl_ng.helper.wrapper import WrapperLogger
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
 from tidal_dl_ng.model.tidal import StreamManifest
@@ -55,30 +53,42 @@ class Download:
     settings: Settings = None
     session: Session = None
     skip_existing: SkipExisting = False
+    fn_logger: Callable = None
+    progress_gui: ProgressBars = None
+    progress: Progress = None
 
-    def __init__(self, session: Session, skip_existing: SkipExisting = SkipExisting.Disabled):
+    def __init__(
+        self,
+        session: Session,
+        path_base: str,
+        fn_logger: Callable,
+        skip_existing: SkipExisting = SkipExisting.Disabled,
+        progress_gui: ProgressBars = None,
+        progress: Progress = None,
+    ):
         self.settings = Settings()
         self.session = session
         self.skip_existing = skip_existing
+        self.fn_logger = fn_logger
+        self.progress_gui = progress_gui
+        self.progress = progress
+        self.path_base = path_base
 
     def _download(
         self,
-        fn_logger: Callable,
         media: Track | Video,
-        progress: Progress,
-        progress_gui: ProgressBars,
         stream_manifest: StreamManifest,
         path_file: str,
-    ):
+    ) -> str:
         media_name: str = name_builder_item(media)
 
         # Set the correct progress output channel.
-        if progress_gui is None:
+        if self.progress_gui is None:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
             # Send signal to GUI with media name
-            progress_gui.item_name.emit(media_name[:30])
+            self.progress_gui.item_name.emit(media_name[:30])
 
         try:
             # Compute total iterations for progress
@@ -99,14 +109,14 @@ class Download:
                 progress_total: float = total_size_in_bytes / block_size
 
             # Create progress Task
-            p_task: TaskID = progress.add_task(
+            p_task: TaskID = self.progress.add_task(
                 f"[blue]Item '{media_name[:30]}'",
                 total=progress_total,
                 visible=progress_stdout,
             )
 
             # Write content to file until progress is finished.
-            while not progress.tasks[p_task].finished:
+            while not self.progress.tasks[p_task].finished:
                 with open(path_file, "wb") as f:
                     for url in stream_manifest.urls:
                         # Create the request object with stream=True, so the content won't be loaded into memory at once.
@@ -118,14 +128,14 @@ class Download:
                         for data in r.iter_content(chunk_size=block_size):
                             f.write(data)
                             # Advance progress bar.
-                            progress.advance(p_task)
+                            self.progress.advance(p_task)
 
                             # To send the progress to the GUI, we need to emit the percentage.
                             if not progress_stdout:
-                                progress_gui.item.emit(progress.tasks[p_task].percentage)
+                                self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
         except HTTPError as e:
             # TODO: Handle Exception...
-            fn_logger(e)
+            self.fn_logger(e)
 
         # Check if file is encrypted.
         needs_decryption = self.is_encrypted(stream_manifest.encryption_type)
@@ -166,15 +176,11 @@ class Download:
 
     def item(
         self,
-        path_base: str,
         file_template: str,
-        fn_logger: Callable,
         media: Track | Video = None,
         media_id: str = None,
         media_type: MediaType = None,
         video_download: bool = True,
-        progress_gui: ProgressBars = None,
-        progress: Progress = None,
     ) -> (bool, str):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
@@ -184,7 +190,7 @@ class Download:
 
         # If video download is not allowed end here
         if not video_download:
-            fn_logger.info(
+            self.fn_logger.info(
                 f"Video downloads are deactivated (see settings). Skipping video: {name_builder_item(media)}"
             )
 
@@ -192,7 +198,7 @@ class Download:
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
-        path_file = os.path.abspath(os.path.normpath(os.path.join(path_base, file_name_relative)))
+        path_file = os.path.abspath(os.path.normpath(os.path.join(self.path_base, file_name_relative)))
 
         # Populate StreamManifest for further download.
         if isinstance(media, Track):
@@ -220,7 +226,7 @@ class Download:
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
                 tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + stream_manifest.file_extension)
                 # Download media.
-                tmp_path_file = self._download(fn_logger, media, progress, progress_gui, stream_manifest, tmp_path_file)
+                tmp_path_file = self._download(media=media, stream_manifest=stream_manifest, path_file=tmp_path_file)
 
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
@@ -231,7 +237,7 @@ class Download:
                 os.makedirs(os.path.dirname(path_file), exist_ok=True)
                 shutil.move(tmp_path_file, path_file)
         else:
-            fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
+            self.fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
 
         return not download_skip, path_file
 
@@ -286,15 +292,11 @@ class Download:
 
     def items(
         self,
-        path_base: str,
-        fn_logger: Logger | WrapperLogger,
+        file_template: str,
+        media: Album | Playlist | UserPlaylist | Mix = None,
         media_id: str = None,
         media_type: MediaType = None,
-        file_template: str = None,
-        media: Album | Playlist | UserPlaylist | Mix = None,
         video_download: bool = False,
-        progress_gui: ProgressBars = None,
-        progress: Progress = None,
         download_delay: bool = True,
     ):
         # If no media instance is provided, we need to create the media instance.
@@ -321,42 +323,38 @@ class Download:
         items = items_results_all(media, videos_include=videos_include)
 
         # Determine where to redirect the progress information.
-        if progress_gui is None:
+        if self.progress_gui is None:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
-            progress_gui.item_name.emit(list_media_name[:30])
+            self.progress_gui.item_name.emit(list_media_name[:30])
 
         # Create the list progress task.
-        p_task1: TaskID = progress.add_task(
+        p_task1: TaskID = self.progress.add_task(
             f"[green]List '{list_media_name}'", total=len(items), visible=progress_stdout
         )
 
         # Iterate through list items
-        while not progress.finished:
+        while not self.progress.finished:
             for media in items:
                 # Download the item.
                 status_download, result_path_file = self.item(
-                    path_base=path_base,
-                    file_template=file_name_relative,
                     media=media,
-                    progress_gui=progress_gui,
-                    progress=progress,
-                    fn_logger=fn_logger,
+                    file_template=file_name_relative,
                 )
 
                 # Advance progress bar.
-                progress.advance(p_task1)
+                self.progress.advance(p_task1)
 
                 if not progress_stdout:
-                    progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
+                    self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
 
                 # If a file was downloaded and the download delay is enabled, wait until the next download.
                 if download_delay and status_download:
                     time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
 
                     # TODO: Fix logging. Is not displayed in debug window.
-                    fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
+                    self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
                     time.sleep(time_sleep)
 
     def is_encrypted(self, encryption_type: str) -> bool:

@@ -98,7 +98,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     break
 
         if result:
-            self.dl = Download(self.tidal.session, self.tidal.settings.data.skip_existing)
+            # Init `Download` object.
+            data_pb: ProgressBars = ProgressBars(
+                item=self.s_item_advance,
+                list_item=self.s_list_advance,
+                item_name=self.s_item_name,
+                list_name=self.s_list_name,
+            )
+            progress: Progress = Progress()
+            self.dl = Download(
+                session=self.tidal.session,
+                skip_existing=self.tidal.settings.data.skip_existing,
+                path_base=self.settings.data.download_base_path,
+                fn_logger=logger_gui,
+                progress_gui=data_pb,
+                progress=progress,
+            )
 
             self.thread_it(self.tidal_user_lists)
 
@@ -438,38 +453,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
-        data_pb: ProgressBars = ProgressBars(
-            item=self.s_item_advance,
-            list_item=self.s_list_advance,
-            item_name=self.s_item_name,
-            list_name=self.s_list_name,
-        )
-        progress: Progress = Progress()
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
             dl.item(
                 media=media,
-                path_base=self.settings.data.download_base_path,
                 file_template=file_template,
-                progress_gui=data_pb,
-                progress=progress,
-                fn_logger=logger_gui,
             )
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(
                 media=media,
-                path_base=self.settings.data.download_base_path,
                 file_template=file_template,
                 video_download=self.settings.data.video_download,
-                progress_gui=data_pb,
-                progress=progress,
                 download_delay=self.settings.data.download_delay,
-                fn_logger=logger_gui,
             )
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
-        progress.stop()
 
 
 # TODO: Comment with Google Docstrings.

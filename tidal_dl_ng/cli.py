@@ -14,7 +14,7 @@ from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.helper.path import get_format_template, path_file_settings
 from tidal_dl_ng.helper.tidal import get_tidal_media_id, get_tidal_media_type
-from tidal_dl_ng.helper.wrapper import WrapperLogger
+from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
 app = typer.Typer()
@@ -135,21 +135,27 @@ def download(
 
     # Create initial objects.
     settings: Settings = Settings()
-    dl = Download(ctx.obj[CTX_TIDAL].session, ctx.obj[CTX_TIDAL].settings.data.skip_existing)
     progress: Progress = Progress(
         "{task.description}",
         SpinnerColumn(),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
     )
-    fn_logger = WrapperLogger(progress.print)
+    fn_logger = LoggerWrapped(progress.print)
+    dl = Download(
+        session=ctx.obj[CTX_TIDAL].session,
+        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
+        path_base=settings.data.download_base_path,
+        fn_logger=fn_logger,
+        progress=progress,
+    )
     progress_table = Table.grid()
 
     # Style Progress display.
     progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
 
     for item in urls:
-        media_type: str | bool = False
+        media_type: MediaType | bool = False
 
         # Extract media name and id from link.
         if "http" in item:
@@ -170,21 +176,15 @@ def download(
                 dl.item(
                     media_id=item_id,
                     media_type=media_type,
-                    path_base=settings.data.download_base_path,
                     file_template=file_template,
-                    progress=progress,
-                    fn_logger=fn_logger,
                 )
             elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX]:
                 dl.items(
                     media_id=item_id,
                     media_type=media_type,
-                    path_base=settings.data.download_base_path,
                     file_template=file_template,
                     video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
-                    progress=progress,
                     download_delay=settings.data.download_delay,
-                    fn_logger=fn_logger,
                 )
 
     # Stop Progress display.

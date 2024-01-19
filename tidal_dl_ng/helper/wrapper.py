@@ -1,7 +1,7 @@
 from collections.abc import Callable
 
 
-class WrapperLogger:
+class LoggerWrapped:
     fn_print: Callable = None
 
     def __init__(self, fn_print: Callable):
