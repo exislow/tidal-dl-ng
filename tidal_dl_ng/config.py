@@ -120,10 +120,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return result
 
-    def login_oauth_start(self, function=print) -> None:
-        self.session.login_oauth_simple(function)
-
-    def login_finish(self) -> bool:
+    def _login_finalize(self) -> bool:
         result = self.session.check_login()
 
         if result:
@@ -149,9 +146,12 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         elif not is_token:
             fn_print("You either do not have a token or your token is invalid.")
             fn_print("No worries, we will handle this...")
-            self.login_pkce(fn_print)
+            # Login method: Device linking
+            # self.session.login_oauth_simple(fn_print)
+            # Login method: PKCE authorization (enables HiRes streaming)
+            self.session.login_pkce(fn_print)
 
-            is_login = self.login_finish()
+            is_login = self._login_finalize()
 
             if is_login:
                 fn_print("The login was successful. I have stored your credentials (token).")
@@ -161,6 +161,3 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                 fn_print("Something went wrong. Did you login using your browser correctly? May try again...")
 
         return result
-
-    def login_pkce(self, fn_print: Callable) -> None:
-        self.session.login_pkce(fn_print)
