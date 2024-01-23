@@ -198,7 +198,9 @@ class Download:
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
-        path_file = os.path.abspath(os.path.normpath(os.path.join(self.path_base, file_name_relative)))
+        path_file = os.path.abspath(
+            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
+        )
 
         # Populate StreamManifest for further download.
         if isinstance(media, Track):
