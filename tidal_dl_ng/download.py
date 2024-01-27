@@ -50,12 +50,12 @@ class RequestsClient:
 
 
 class Download:
-    settings: Settings = None
-    session: Session = None
+    settings: Settings
+    session: Session
     skip_existing: SkipExisting = False
-    fn_logger: Callable = None
-    progress_gui: ProgressBars = None
-    progress: Progress = None
+    fn_logger: Callable
+    progress_gui: ProgressBars
+    progress: Progress
 
     def __init__(
         self,
