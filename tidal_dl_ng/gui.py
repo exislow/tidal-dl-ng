@@ -272,7 +272,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tr_results.clear()
 
         # Count how many digits the list length has,
-        count_digits: int = int(math.log10(len(results))) + 1
+        count_digits: int = int(math.log10(len(results) if results else 1)) + 1
 
         for item in results:
             child = self.populate_tree_result_child(item=item, index_count_digits=count_digits)
