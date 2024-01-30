@@ -15,21 +15,18 @@ $ tidal-dl-ng --help
 
  Usage: tidal-dl-ng [OPTIONS] COMMAND [ARGS]...
 
-╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --version             -v                                                                         │
-│ --install-completion            Install completion for the current shell.                        │
-│ --show-completion               Show completion for the current shell, to copy it or customize   │
-│                                 the installation.                                                │
-│ --help                          Show this message and exit.                                      │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ cfg    Print or set an option. If no arguments are given, all options will be listed. If only    │
-│        one argument is given, the value will be printed for this option. To set a value for an   │
-│        option simply pass the value as the second argument                                       │
-│ dl                                                                                               │
-│ gui                                                                                              │
-│ login                                                                                            │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────╮
+│ --version  -v                                                                                │
+│ --help     -h        Show this message and exit.                                             │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────╮
+│ cfg    Print or set an option. If no arguments are given, all options will be listed. If     │
+│        only one argument is given, the value will be printed for this option. To set a value │
+│        for an option simply pass the value as the second argument                            │
+│ dl                                                                                           │
+│ gui                                                                                          │
+│ login                                                                                        │
+╰──────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 If you like this projects and want to support it, you can buy me a coffee :-)
