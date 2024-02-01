@@ -34,19 +34,19 @@ from tidal_dl_ng.worker import Worker
 
 # TODO: Make more use of Exceptions
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
-    settings: Settings = None
-    tidal: Tidal = None
-    dl: Download = None
-    threadpool: QtCore.QThreadPool = None
-    tray: QtWidgets.QSystemTrayIcon = None
-    spinner: QtWaitingSpinner = None
+    settings: Settings
+    tidal: Tidal
+    dl: Download
+    threadpool: QtCore.QThreadPool
+    tray: QtWidgets.QSystemTrayIcon
+    spinner: QtWaitingSpinner
     spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
     spinner_stop: QtCore.Signal = QtCore.Signal()
-    pb_item: QtWidgets.QProgressBar = None
+    pb_item: QtWidgets.QProgressBar
     s_item_advance: QtCore.Signal = QtCore.Signal(float)
     s_item_name: QtCore.Signal = QtCore.Signal(str)
     s_list_name: QtCore.Signal = QtCore.Signal(str)
-    pb_list: QtWidgets.QProgressBar = None
+    pb_list: QtWidgets.QProgressBar
     s_list_advance: QtCore.Signal = QtCore.Signal(float)
     s_pb_reset: QtCore.Signal = QtCore.Signal()
     s_populate_tree_lists: QtCore.Signal = QtCore.Signal(list)
@@ -291,7 +291,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tr_results.clear()
 
         # Count how many digits the list length has,
-        count_digits: int = int(math.log10(len(results))) + 1
+        count_digits: int = int(math.log10(len(results) if results else 1)) + 1
 
         for item in results:
             child = self.populate_tree_result_child(item=item, index_count_digits=count_digits)

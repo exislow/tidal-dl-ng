@@ -14,9 +14,9 @@ from tidal_dl_ng.model.cfg import Token as ModelToken
 
 
 class BaseConfig:
-    data: ModelSettings | ModelToken = None
-    file_path: str = None
-    cls_model: object = None
+    data: ModelSettings | ModelToken
+    file_path: str
+    cls_model: ModelSettings | ModelToken
     path_base: str = path_config_base()
 
     def save(self, config_to_compare: str = None) -> None:
@@ -70,22 +70,19 @@ class BaseConfig:
 
 
 class Settings(BaseConfig, metaclass=SingletonMeta):
-    cls_model = ModelSettings
-    data = None
-
     def __init__(self):
+        self.cls_model = ModelSettings
         self.file_path = path_file_settings()
         self.read(self.file_path)
 
 
 class Tidal(BaseConfig, metaclass=SingletonMeta):
-    cls_model = ModelToken
-    session: tidalapi.Session = None
-    data: ModelToken = None
+    session: tidalapi.Session
     token_from_storage: bool = False
-    settings: Settings = None
+    settings: Settings
 
     def __init__(self, settings: Settings = None):
+        self.cls_model = ModelToken
         tidal_config: tidalapi.Config = tidalapi.Config(item_limit=10000)
         self.session = tidalapi.Session(tidal_config)
         # self.session.config.client_id = "km8T1xS355y7dd3H"

@@ -7,23 +7,23 @@ from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC
 
 
 class Metadata:
-    path_file: str = None
-    title: str = None
-    album: str = None
-    albumartist: str = None
-    artists: [str] = None
-    copy_right: str = None
-    tracknumber: int = None
-    discnumber: int = None
-    totaldisc: int = None
-    totaltrack: int = None
-    date: str = None
-    composer: [str] = None
-    isrc: str = None
-    lyrics: str = None
-    path_cover: str = None
-    url_cover: str = None
-    m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC = None
+    path_file: str
+    title: str
+    album: str
+    albumartist: str
+    artists: [str]
+    copy_right: str
+    tracknumber: int
+    discnumber: int
+    totaldisc: int
+    totaltrack: int
+    date: str
+    composer: [str]
+    isrc: str
+    lyrics: str
+    path_cover: str
+    url_cover: str
+    m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
         self,
