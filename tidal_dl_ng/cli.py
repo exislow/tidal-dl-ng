@@ -105,7 +105,7 @@ def login(ctx: typer.Context) -> bool:
 def download(
     ctx: typer.Context,
     urls: Annotated[Optional[list[str]], typer.Argument()] = None,
-    list_urls: Annotated[
+    file_urls: Annotated[
         Optional[Path],
         typer.Option(
             "--list",
@@ -122,8 +122,8 @@ def download(
 ):
     if not urls:
         # Read the text file provided.
-        if list_urls:
-            text = list_urls.read_text()
+        if file_urls:
+            text = file_urls.read_text()
             urls = text.splitlines()
         else:
             print("Provide either URLs, IDs or a file containing URLs (one per line).")
@@ -154,6 +154,8 @@ def download(
     # Style Progress display.
     progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
 
+    urls_pos_last = len(urls) - 1
+
     for item in urls:
         media_type: MediaType | bool = False
 
@@ -173,10 +175,10 @@ def download(
         with Live(progress_table, refresh_per_second=10):
             # Download media.
             if media_type in [MediaType.TRACK, MediaType.VIDEO]:
+                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
+
                 dl.item(
-                    media_id=item_id,
-                    media_type=media_type,
-                    file_template=file_template,
+                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
                 )
             elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX]:
                 dl.items(

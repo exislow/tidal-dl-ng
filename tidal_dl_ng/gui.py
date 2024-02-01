@@ -483,25 +483,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if len(items) == 0:
             logger_gui.error("Please select a row first.")
         else:
+            items_pos_last = len(items) - 1
+
             for item in items:
                 media: Track | Album | Playlist | Video = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+                # Skip only if Track item, skip option set and the item is not the last in the list.
+                download_delay: bool = bool(
+                    isinstance(media, Track | Video)
+                    and self.settings.data.download_delay
+                    and items.index(item) < items_pos_last
+                )
 
-                self.download(media, self.dl)
+                self.download(media, self.dl, delay_track=download_delay)
 
         self.b_download.setText("Download")
         self.b_download.setEnabled(True)
 
-    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download) -> None:
+    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download, delay_track: bool = False) -> None:
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
-            dl.item(
-                media=media,
-                file_template=file_template,
-            )
+            dl.item(media=media, file_template=file_template, download_delay=delay_track)
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(
                 media=media,
