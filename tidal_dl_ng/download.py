@@ -204,7 +204,7 @@ class Download:
 
         # Populate StreamManifest for further download.
         if isinstance(media, Track):
-            stream = media.stream()
+            stream = media.get_stream()
             manifest: str = stream.manifest
             mime_type: str = stream.manifest_mime_type
         else:
