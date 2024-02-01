@@ -2,6 +2,7 @@ from enum import Enum
 
 CTX_TIDAL: str = "tidal"
 REQUESTS_TIMEOUT_SEC = 45
+EXTENSION_LYRICS = ".lrc"
 
 
 class QualityVideo(Enum):

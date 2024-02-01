@@ -12,7 +12,8 @@ class Settings:
     skip_existing: SkipExisting = SkipExisting.Disabled
     # TODO: Implement cover download to a separate file.
     # album_cover_save: bool = True
-    lyrics_save: bool = False
+    lyrics_embed: bool = False
+    lyrics_file: bool = False
     # TODO: Implement API KEY selection.
     # api_key_index: bool = 0
     # TODO: Implement album info download to separate file.
@@ -41,7 +42,8 @@ class HelpSettings:
         "different file extension exists."
     )
     album_cover_save: str = "Safe cover to album folder."
-    lyrics_save: str = "Safe lyrics to audio file."
+    lyrics_embed: str = "Embed lyrics in audio file."
+    lyrics_file: str = "Save lyrics to separate *.lrc file."
     api_key_index: str = "Set the device API KEY."
     album_info_save: str = "Save album info to track?"
     video_download: str = "Allow download of videos."
