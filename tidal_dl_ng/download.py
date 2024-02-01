@@ -18,6 +18,7 @@ from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import (
+    EXTENSION_LYRICS,
     REQUESTS_TIMEOUT_SEC,
     AudioExtensions,
     CoverDimensions,
@@ -239,6 +240,10 @@ class Download:
                 # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_file), exist_ok=True)
                 shutil.move(tmp_path_file, path_file)
+
+                # Move lyrics file
+                if self.settings.data.lyrics_file:
+                    self._move_lyrics(path_file, tmp_path_file)
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
 
@@ -254,11 +259,30 @@ class Download:
 
         return not download_skip, path_file
 
+    def _move_lyrics(self, file_media_dst: str, file_media_src: str):
+        # Build tmp lyrics filename
+        tmp_lyrics_file_path: str = file_media_src + EXTENSION_LYRICS
+        # Check if the file was downloaded
+        if os.path.isfile(tmp_lyrics_file_path):
+            # Move it.
+            shutil.move(tmp_lyrics_file_path, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
+
     def cover_url(self, sid: str, dimension: CoverDimensions = CoverDimensions.Px320):
         if sid is None:
             return ""
 
         return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{dimension.value}.jpg"
+
+    def lyrics_write_file(self, file_path: str, lyrics: str) -> str:
+        result: str = file_path
+
+        try:
+            with open(file_path, "x", encoding="utf-8") as f:
+                f.write(lyrics)
+        except:
+            result = ""
+
+        return result
 
     def metadata_write(self, track: Track, path_file: str):
         result: bool = False
@@ -269,13 +293,16 @@ class Download:
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
 
-        if self.settings.data.lyrics_embed:
+        if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
             # Try to retrieve lyrics.
             try:
                 lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
             except HTTPError:
                 # TODO: Implement proper logging.
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
+
+        if lyrics:
+            self.lyrics_write_file(path_file + EXTENSION_LYRICS, lyrics)
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
