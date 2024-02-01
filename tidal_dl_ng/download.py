@@ -181,6 +181,7 @@ class Download:
         media_id: str = None,
         media_type: MediaType = None,
         video_download: bool = True,
+        download_delay: bool = False,
     ) -> (bool, str):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
@@ -240,6 +241,16 @@ class Download:
                 shutil.move(tmp_path_file, path_file)
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
+
+        status_download: bool = not download_skip
+
+        # If a file was downloaded and the download delay is enabled, wait until the next download.
+        # Only use this, if you have a list of several Track items. Do not use this for list items.
+        if download_delay and status_download:
+            time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
+
+            self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
+            time.sleep(time_sleep)
 
         return not download_skip, path_file
 
@@ -355,7 +366,6 @@ class Download:
                 if download_delay and status_download:
                     time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
 
-                    # TODO: Fix logging. Is not displayed in debug window.
                     self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
                     time.sleep(time_sleep)
 
