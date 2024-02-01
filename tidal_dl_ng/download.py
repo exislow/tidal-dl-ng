@@ -198,7 +198,9 @@ class Download:
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
-        path_file = os.path.abspath(os.path.normpath(os.path.join(self.path_base, file_name_relative)))
+        path_file = os.path.abspath(
+            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
+        )
 
         # Populate StreamManifest for further download.
         if isinstance(media, Track):
@@ -366,18 +368,14 @@ class Download:
         if AudioExtensions.FLAC.value in stream_url:
             result: str = AudioExtensions.FLAC.value
         elif AudioExtensions.MP4.value in stream_url:
-            # TODO: Need to investigate, what the correct extension is.
-            # if "ac4" in stream_codec or "mha1" in stream_codec:
-            #     result = ".mp4"
-            # elif "flac" in stream_codec:
-            #     result = ".flac"
-            # else:
-            #     result = ".m4a"
-            result: str = AudioExtensions.MP4.value
+            if "ac4" in stream_codec or "mha1" in stream_codec or "flac" in stream_codec or "mp4a" in stream_codec:
+                result: str = AudioExtensions.M4A.value
+            else:
+                result: str = AudioExtensions.MP4.value
         elif VideoExtensions.TS.value in stream_url:
             result: str = VideoExtensions.TS.value
         else:
-            result: str = AudioExtensions.M4A.value
+            result: str = AudioExtensions.MP4.value
 
         return result
 

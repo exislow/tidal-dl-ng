@@ -8,7 +8,7 @@ import tidalapi
 from requests import HTTPError
 
 from tidal_dl_ng.helper.decorator import SingletonMeta
-from tidal_dl_ng.helper.path import path_base, path_file_settings, path_file_token
+from tidal_dl_ng.helper.path import path_config_base, path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.cfg import Token as ModelToken
 
@@ -17,7 +17,7 @@ class BaseConfig:
     data: ModelSettings | ModelToken
     file_path: str
     cls_model: ModelSettings | ModelToken
-    path_base: str = path_base()
+    path_base: str = path_config_base()
 
     def save(self, config_to_compare: str = None) -> None:
         data_json = self.data.to_json()
@@ -36,7 +36,8 @@ class BaseConfig:
         setattr(self.data, key, value)
 
     def read(self, path: str) -> bool:
-        result = False
+        result: bool = False
+        settings_json: str = ""
 
         try:
             with open(path, encoding="utf-8") as f:
@@ -116,10 +117,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return result
 
-    def login_oauth_start(self, function=print) -> None:
-        self.session.login_oauth_simple(function)
-
-    def login_oauth_finish(self) -> bool:
+    def login_finalize(self) -> bool:
         result = self.session.check_login()
 
         if result:
@@ -145,9 +143,12 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         elif not is_token:
             fn_print("You either do not have a token or your token is invalid.")
             fn_print("No worries, we will handle this...")
-            self.login_oauth_start(fn_print)
+            # Login method: Device linking
+            # self.session.login_oauth_simple(fn_print)
+            # Login method: PKCE authorization (enables HiRes streaming)
+            self.session.login_pkce(fn_print)
 
-            is_login = self.login_oauth_finish()
+            is_login = self.login_finalize()
 
             if is_login:
                 fn_print("The login was successful. I have stored your credentials (token).")

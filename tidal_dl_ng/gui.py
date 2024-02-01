@@ -2,8 +2,10 @@ import math
 import sys
 from collections.abc import Callable
 
+from requests.exceptions import HTTPError
+
 from tidal_dl_ng import __version__
-from tidal_dl_ng.dialog import DialogVersion
+from tidal_dl_ng.dialog import DialogLogin, DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
 
@@ -85,12 +87,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             result = True
         else:
             self.tidal = Tidal(self.settings)
+            result = self.tidal.login_token()
 
-            while True:
-                result = self.tidal.login(logger_gui.info)
+            if not result:
+                hint: str = "Watiting for user input."
+                while not result:
+                    url_login = self.tidal.session.pkce_login_url()
+                    d_login: DialogLogin = DialogLogin(url_login=url_login, hint=hint, parent=self)
+                    url_redirect: str = d_login.url_redirect
 
-                if result:
-                    break
+                    if d_login.return_code == 1:
+                        try:
+                            token: dict[str, str | int] = self.tidal.session.pkce_get_auth_token(url_redirect)
+                            self.tidal.session.process_auth_token(token)
+                            self.tidal.login_finalize()
+
+                            result = True
+                            logger_gui.info("Login not successful. Have fun!")
+                        except (HTTPError, Exception):
+                            hint = "Something was wrong with your redirect url. Please try again!"
+                            logger_gui.warning("Login not successful. Try again...")
+                    else:
+                        # If user has pressed cancel.
+                        sys.exit(1)
 
         if result:
             # Init `Download` object.
