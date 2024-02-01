@@ -269,7 +269,7 @@ class Download:
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
 
-        if self.settings.data.lyrics_save:
+        if self.settings.data.lyrics_embed:
             # Try to retrieve lyrics.
             try:
                 lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
