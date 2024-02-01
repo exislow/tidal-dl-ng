@@ -120,7 +120,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return result
 
-    def _login_finalize(self) -> bool:
+    def login_finalize(self) -> bool:
         result = self.session.check_login()
 
         if result:
@@ -151,7 +151,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
             # Login method: PKCE authorization (enables HiRes streaming)
             self.session.login_pkce(fn_print)
 
-            is_login = self._login_finalize()
+            is_login = self.login_finalize()
 
             if is_login:
                 fn_print("The login was successful. I have stored your credentials (token).")

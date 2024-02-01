@@ -5,8 +5,7 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)
 [![License](https://img.shields.io/github/license/exislow/tidal-dl-ng)](https://img.shields.io/github/license/exislow/tidal-dl-ng)
 
-This tool allows to download songs and videos from TIDAL (a paid plan is required!). You can use the command line or GUI
-version of this tool.
+This tool allows to download songs and videos from TIDAL. A paid plan is required! Audio quality varies up to HiRes / TIDAL MAX 24 Bit, 192 kHz depending on the song and your TIDAL plan. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
@@ -93,7 +92,7 @@ tidal_ng_dl/gui.py
 The GUI is build with `PySide6` using the [Qt Designer](https://doc.qt.io/qt-6/qtdesigner-manual.html):
 
 ```bash
-pyside6-designer
+PYSIDE_DESIGNER_PLUGINS=tidal_dl_ng/ui pyside6-designer
 ```
 
 After all changes are saved you need to translate the Qt Designer `*.ui` file into Python code:

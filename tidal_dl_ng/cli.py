@@ -95,7 +95,7 @@ def login(ctx: typer.Context) -> bool:
 
     settings = Settings()
     tidal = Tidal(settings)
-    result = tidal.login(print)
+    result = tidal.login(fn_print=print)
     ctx.obj[CTX_TIDAL] = tidal
 
     return result
