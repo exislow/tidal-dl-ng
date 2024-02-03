@@ -50,7 +50,7 @@
      <x>20</x>
      <y>20</y>
      <width>411</width>
-     <height>321</height>
+     <height>325</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="lv_main">
@@ -95,33 +95,9 @@
      </widget>
     </item>
     <item>
-     <widget class="QLabel" name="l_url_login">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>50</height>
-       </size>
-      </property>
-      <property name="baseSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">border: 2px solid red; padding: 6px</string>
-      </property>
-      <property name="text">
-       <string>PLACEHOLDER URL...</string>
-      </property>
-      <property name="wordWrap">
-       <bool>true</bool>
+     <widget class="QTextBrowser" name="tb_url_login">
+      <property name="placeholderText">
+       <string>Copy this login URL...</string>
       </property>
       <property name="openExternalLinks">
        <bool>true</bool>

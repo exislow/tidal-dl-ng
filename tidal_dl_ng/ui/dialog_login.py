@@ -6,9 +6,9 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, QSize, Qt
+from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QDialogButtonBox, QLabel, QSizePolicy, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialogButtonBox, QLabel, QSizePolicy, QTextBrowser, QTextEdit, QVBoxLayout, QWidget
 
 
 class Ui_DialogLogin:
@@ -31,7 +31,7 @@ class Ui_DialogLogin:
         self.bb_dialog.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
         self.verticalLayoutWidget = QWidget(DialogLogin)
         self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(QRect(20, 20, 411, 321))
+        self.verticalLayoutWidget.setGeometry(QRect(20, 20, 411, 325))
         self.lv_main = QVBoxLayout(self.verticalLayoutWidget)
         self.lv_main.setObjectName("lv_main")
         self.lv_main.setContentsMargins(0, 0, 0, 0)
@@ -57,17 +57,11 @@ class Ui_DialogLogin:
 
         self.lv_main.addWidget(self.l_description)
 
-        self.l_url_login = QLabel(self.verticalLayoutWidget)
-        self.l_url_login.setObjectName("l_url_login")
-        sizePolicy.setHeightForWidth(self.l_url_login.sizePolicy().hasHeightForWidth())
-        self.l_url_login.setSizePolicy(sizePolicy)
-        self.l_url_login.setMinimumSize(QSize(0, 50))
-        self.l_url_login.setBaseSize(QSize(0, 0))
-        self.l_url_login.setStyleSheet("border: 2px solid red; padding: 6px")
-        self.l_url_login.setWordWrap(True)
-        self.l_url_login.setOpenExternalLinks(True)
+        self.tb_url_login = QTextBrowser(self.verticalLayoutWidget)
+        self.tb_url_login.setObjectName("tb_url_login")
+        self.tb_url_login.setOpenExternalLinks(True)
 
-        self.lv_main.addWidget(self.l_url_login)
+        self.lv_main.addWidget(self.tb_url_login)
 
         self.te_url_redirect = QTextEdit(self.verticalLayoutWidget)
         self.te_url_redirect.setObjectName("te_url_redirect")
@@ -101,7 +95,7 @@ class Ui_DialogLogin:
                 None,
             )
         )
-        self.l_url_login.setText(QCoreApplication.translate("DialogLogin", "PLACEHOLDER URL...", None))
+        self.tb_url_login.setPlaceholderText(QCoreApplication.translate("DialogLogin", "Copy this login URL...", None))
         self.te_url_redirect.setPlaceholderText(
             QCoreApplication.translate("DialogLogin", "Copy and paste the redirect URL after login here...", None)
         )
