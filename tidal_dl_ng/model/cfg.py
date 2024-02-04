@@ -22,7 +22,7 @@ class Settings:
     # TODO: Implement multi threading for downloads.
     # multi_thread: bool = False
     download_delay: bool = True
-    download_base_path: str = "./download"
+    download_base_path: str = "~/download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
     format_album: str = "Albums/{artist_name} - {album_title}/{track_num}. {artist_name} - {track_title}"
