@@ -8,7 +8,6 @@ from tidal_dl_ng import __version__
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
-from tidal_dl_ng.model.cfg import Settings as ModelSettings
 
 try:
     import qdarktheme
@@ -53,7 +52,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_populate_tree_lists: QtCore.Signal = QtCore.Signal(list)
     s_statusbar_message: QtCore.Signal = QtCore.Signal(object)
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
-    s_settings_save: QtCore.Signal = QtCore.Signal(object)
+    s_settings_save: QtCore.Signal = QtCore.Signal()
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -328,8 +327,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_tr_results_add_top_level_item(self, widget_item: QtWidgets.QTreeWidgetItem):
         self.tr_results.addTopLevelItem(widget_item)
 
-    def on_settings_save(self, settings: ModelSettings):
-        pass
+    def on_settings_save(self):
+        self.settings.save()
+        self.apply_settings(self.settings)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
         result_search: dict[str, [SearchTypes]] = search_results_all(
@@ -528,7 +528,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         DialogVersion(self)
 
     def on_preferences(self) -> None:
-        DialogPreferences(settings=self.settings.data, settings_save=self.s_settings_save, parent=self)
+        DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
 
     def on_tr_results_expanded(self, child: QtWidgets.QTreeWidgetItem) -> None:
         child.removeChild(child.child(0))

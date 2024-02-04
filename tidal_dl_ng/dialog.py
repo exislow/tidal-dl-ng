@@ -6,6 +6,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Quality as QualityAudio
 
 from tidal_dl_ng import __version__
+from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
@@ -61,19 +62,51 @@ class DialogPreferences(QtWidgets.QDialog):
     """Preferences dialog."""
 
     ui: Ui_DialogSettings
-    settings: ModelSettings
-    settings_save: QtCore.Signal
+    settings: Settings
+    data: ModelSettings
+    s_settings_save: QtCore.Signal
     icon: QtGui.QIcon
     help_settings: HelpSettings
+    parameters_checkboxes: [str]
+    parameters_combo: [(str, Enum)]
+    parameters_line_edit: [str]
+    prefix_checkbox: str = "cb_"
+    prefix_label: str = "l_"
+    prefix_icon: str = "icon_"
+    prefix_line_edit: str = "le_"
+    prefix_combo: str = "c_"
 
-    def __init__(self, settings: ModelSettings, settings_save: QtCore.Signal, parent=None):
+    def __init__(self, settings: Settings, settings_save: QtCore.Signal, parent=None):
         super().__init__(parent)
 
         self.settings = settings
-        self.settings_save = settings_save
+        self.data = settings.data
+        self.s_settings_save = settings_save
         self.help_settings = HelpSettings()
         pixmapi: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.SP_MessageBoxQuestion
         self.icon = self.style().standardIcon(pixmapi)
+
+        self.parameters_checkboxes = [
+            "lyrics_embed",
+            "lyrics_file",
+            "video_download",
+            "download_delay",
+            "video_convert_mp4",
+        ]
+        self.parameters_combo = [
+            ("skip_existing", SkipExisting),
+            ("quality_audio", QualityAudio),
+            ("quality_video", QualityVideo),
+            ("metadata_cover_dimension", CoverDimensions),
+        ]
+        self.parameters_line_edit = [
+            "download_base_path",
+            "format_album",
+            "format_playlist",
+            "format_mix",
+            "format_track",
+            "format_video",
+        ]
 
         # Create an instance of the GUI
         self.ui = Ui_DialogSettings()
@@ -113,49 +146,29 @@ class DialogPreferences(QtWidgets.QDialog):
             obj_line_edit.setText(str(path))
 
     def populate_line_edit(self):
-        prefix_label: str = "l_"
-        prefix_icon: str = "icon_"
-        prefix_line_edit: str = "le_"
-        parameter_names: [str] = [
-            "download_base_path",
-            "format_album",
-            "format_playlist",
-            "format_mix",
-            "format_track",
-            "format_video",
-        ]
 
-        for pn in parameter_names:
-            label_icon: QtWidgets.QLabel = getattr(self.ui, prefix_label + prefix_icon + pn)
-            label: QtWidgets.QLabel = getattr(self.ui, prefix_label + pn)
-            line_edit: QtWidgets.QLineEdit = getattr(self.ui, prefix_line_edit + pn)
+        for pn in self.parameters_line_edit:
+            label_icon: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + self.prefix_icon + pn)
+            label: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + pn)
+            line_edit: QtWidgets.QLineEdit = getattr(self.ui, self.prefix_line_edit + pn)
 
             label_icon.setPixmap(QtGui.QPixmap(self.icon.pixmap(QtCore.QSize(16, 16))))
             label_icon.setToolTip(getattr(self.help_settings, pn))
             label.setText(pn)
-            line_edit.setText(getattr(self.settings, pn))
+            line_edit.setText(getattr(self.data, pn))
 
         # Base Path File Dialog
         self.ui.b_download_base_path.clicked.connect(lambda x: self.dialog_dir_open(self.ui.le_download_base_path))
 
     def populate_combo(self):
-        prefix_label: str = "l_"
-        prefix_icon: str = "icon_"
-        prefix_combo: str = "c_"
-        parameters: [(str, Enum)] = [
-            ("skip_existing", SkipExisting),
-            ("quality_audio", QualityAudio),
-            ("quality_video", QualityVideo),
-            ("metadata_cover_dimension", CoverDimensions),
-        ]
 
-        for p in parameters:
+        for p in self.parameters_combo:
             pn: str = p[0]
             values: Enum = p[1]
-            label_icon: QtWidgets.QLabel = getattr(self.ui, prefix_label + prefix_icon + pn)
-            label: QtWidgets.QLabel = getattr(self.ui, prefix_label + pn)
-            combo: QtWidgets.QComboBox = getattr(self.ui, prefix_combo + pn)
-            setting_current = getattr(self.settings, pn)
+            label_icon: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + self.prefix_icon + pn)
+            label: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + pn)
+            combo: QtWidgets.QComboBox = getattr(self.ui, self.prefix_combo + pn)
+            setting_current = getattr(self.data, pn)
 
             label_icon.setPixmap(QtGui.QPixmap(self.icon.pixmap(QtCore.QSize(16, 16))))
             label_icon.setToolTip(getattr(self.help_settings, pn))
@@ -168,24 +181,27 @@ class DialogPreferences(QtWidgets.QDialog):
                     combo.setCurrentIndex(index)
 
     def populate_checkboxes(self):
-        prefix_checkbox: str = "cb_"
-        parameter_names: [str] = [
-            "lyrics_embed",
-            "lyrics_file",
-            "video_download",
-            "download_delay",
-            "video_convert_mp4",
-        ]
-
-        for pn in parameter_names:
-            checkbox: QtWidgets.QCheckBox = getattr(self.ui, prefix_checkbox + pn)
+        for pn in self.parameters_checkboxes:
+            checkbox: QtWidgets.QCheckBox = getattr(self.ui, self.prefix_checkbox + pn)
 
             checkbox.setText(pn)
             checkbox.setToolTip(getattr(self.help_settings, pn))
             checkbox.setIcon(self.icon)
-            checkbox.setChecked(getattr(self.settings, pn))
+            checkbox.setChecked(getattr(self.data, pn))
 
     def accept(self):
         # Get settings. TODO
-        # self.settings_save()
-        self.accept()
+        self.to_settings()
+        self.done(1)
+
+    def to_settings(self):
+        for item in self.parameters_checkboxes:
+            setattr(self.settings.data, item, getattr(self.ui, self.prefix_checkbox + item).isChecked())
+
+        for item in self.parameters_line_edit:
+            setattr(self.settings.data, item, getattr(self.ui, self.prefix_line_edit + item).text())
+
+        for item in self.parameters_combo:
+            setattr(self.settings.data, item[0], getattr(self.ui, self.prefix_combo + item[0]).currentData())
+
+        self.s_settings_save.emit()
