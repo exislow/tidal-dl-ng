@@ -568,7 +568,7 @@
   </widget>
   <action name="a_preferences">
    <property name="enabled">
-    <bool>false</bool>
+    <bool>true</bool>
    </property>
    <property name="text">
     <string notr="true">Preferences...</string>
