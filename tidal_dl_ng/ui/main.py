@@ -35,7 +35,7 @@ class Ui_MainWindow:
         MainWindow.resize(900, 700)
         self.a_preferences = QAction(MainWindow)
         self.a_preferences.setObjectName("a_preferences")
-        self.a_preferences.setEnabled(False)
+        self.a_preferences.setEnabled(True)
         self.a_preferences.setText("Preferences...")
         self.a_preferences.setIconText("Preferences...")
         # if QT_CONFIG(tooltip)
