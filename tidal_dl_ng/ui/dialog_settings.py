@@ -378,10 +378,10 @@ class Ui_DialogSettings:
 
         self.horizontalLayout_3.addWidget(self.le_download_base_path)
 
-        self.b_download_base_path = QPushButton(self.gb_path)
-        self.b_download_base_path.setObjectName("b_download_base_path")
+        self.pb_download_base_path = QPushButton(self.gb_path)
+        self.pb_download_base_path.setObjectName("pb_download_base_path")
 
-        self.horizontalLayout_3.addWidget(self.b_download_base_path)
+        self.horizontalLayout_3.addWidget(self.pb_download_base_path)
 
         self.verticalLayout.addLayout(self.horizontalLayout_3)
 
@@ -488,6 +488,6 @@ class Ui_DialogSettings:
         self.l_format_playlist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_format_mix.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_format_mix.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.b_download_base_path.setText(QCoreApplication.translate("DialogSettings", "...", None))
+        self.pb_download_base_path.setText(QCoreApplication.translate("DialogSettings", "...", None))
 
     # retranslateUi

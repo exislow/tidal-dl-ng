@@ -158,7 +158,7 @@ class DialogPreferences(QtWidgets.QDialog):
             line_edit.setText(getattr(self.data, pn))
 
         # Base Path File Dialog
-        self.ui.b_download_base_path.clicked.connect(lambda x: self.dialog_dir_open(self.ui.le_download_base_path))
+        self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_dir_open(self.ui.le_download_base_path))
 
     def populate_combo(self):
 

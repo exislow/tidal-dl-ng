@@ -40,8 +40,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     threadpool: QtCore.QThreadPool
     tray: QtWidgets.QSystemTrayIcon
     spinner: QtWaitingSpinner
-    spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
-    spinner_stop: QtCore.Signal = QtCore.Signal()
+    s_spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
+    s_spinner_stop: QtCore.Signal = QtCore.Signal()
     pb_item: QtWidgets.QProgressBar
     s_item_advance: QtCore.Signal = QtCore.Signal(float)
     s_item_name: QtCore.Signal = QtCore.Signal(str)
@@ -53,6 +53,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_statusbar_message: QtCore.Signal = QtCore.Signal(object)
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
     s_settings_save: QtCore.Signal = QtCore.Signal()
+    s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -176,7 +177,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def tidal_user_lists(self):
         # Start loading spinner
-        self.spinner_start.emit(self.tr_lists_user)
+        self.s_spinner_start.emit(self.tr_lists_user)
+        self.s_pb_reload_status.emit(False)
 
         user_all: [Playlist | UserPlaylist | Mix] = user_media_lists(self.tidal.session)
 
@@ -194,6 +196,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.MIXES.value, QtCore.Qt.MatchExactly, 0
         )[0]
+
+        # Remove all children if present
+        for twi in [twi_playlists, twi_mixes, twi_favorites]:
+            for i in reversed(range(twi.childCount())):
+                twi.removeChild(twi.child(i))
 
         for item in user_lists:
             if isinstance(item, UserPlaylist):
@@ -214,7 +221,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             twi_child.setData(3, QtCore.Qt.ItemDataRole.UserRole, item)
 
         # Stop load spinner
-        self.spinner_stop.emit()
+        self.s_spinner_stop.emit()
+        self.s_pb_reload_status.emit(True)
 
     def _init_tree_lists(self, tree: QtWidgets.QTreeWidget):
         # Adjust Tree.
@@ -405,8 +413,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
         self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
         self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
-        self.spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
-        self.spinner_stop.connect(self.on_spinner_stop)
+        self.s_spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
+        self.s_spinner_stop.connect(self.on_spinner_stop)
         self.s_item_advance.connect(self.on_progress_item)
         self.s_item_name.connect(self.on_progress_item_name)
         self.s_list_name.connect(self.on_progress_list_name)
@@ -416,14 +424,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
         self.s_settings_save.connect(self.on_settings_save)
+        self.pb_reload_user_lists.clicked.connect(lambda x: self.thread_it(self.tidal_user_lists))
+        self.s_pb_reload_status.connect(self.button_reload_status)
 
         # Menubar
         self.a_exit.triggered.connect(sys.exit)
         self.a_version.triggered.connect(self.on_version)
         self.a_preferences.triggered.connect(self.on_preferences)
+        self.a_logout.triggered.connect(self.on_logout)
 
         # Results
         self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
+
+    def on_logout(self):
+        result: bool = self.tidal.logout()
+
+        if result:
+            sys.exit(0)
 
     def on_progress_list(self, value: float):
         self.pb_list.setValue(int(math.ceil(value)))
@@ -535,6 +552,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media_list: [Mix | Album | Playlist] = child.data(5, QtCore.Qt.ItemDataRole.UserRole)
 
         self.list_items_show_result(media_list=media_list, parent=child)
+
+    def button_reload_status(self, status: bool):
+        button_text: str = "Reloading..."
+        if status:
+            button_text = "Reload"
+
+        self.pb_reload_user_lists.setEnabled(status)
+        self.pb_reload_user_lists.setText(button_text)
 
 
 # TODO: Comment with Google Docstrings.

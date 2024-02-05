@@ -2,6 +2,7 @@ import os
 import shutil
 from collections.abc import Callable
 from json import JSONDecodeError
+from pathlib import Path
 from typing import Any
 
 import tidalapi
@@ -158,3 +159,10 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                 fn_print("Something went wrong. Did you login using your browser correctly? May try again...")
 
         return result
+
+    def logout(self):
+        Path(self.file_path).unlink(missing_ok=True)
+        self.token_from_storage = False
+        del self.session
+
+        return True
