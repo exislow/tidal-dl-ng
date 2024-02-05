@@ -45,122 +45,139 @@
        <enum>QLayout::SetNoConstraint</enum>
       </property>
       <item>
-       <widget class="QTreeWidget" name="tr_lists_user">
-        <property name="toolTip">
-         <string notr="true"/>
-        </property>
-        <property name="statusTip">
-         <string notr="true"/>
-        </property>
-        <property name="whatsThis">
-         <string notr="true"/>
-        </property>
-        <property name="accessibleName">
-         <string notr="true"/>
-        </property>
-        <property name="accessibleDescription">
-         <string notr="true"/>
-        </property>
-        <property name="editTriggers">
-         <set>QAbstractItemView::NoEditTriggers</set>
-        </property>
-        <property name="showDropIndicator" stdset="0">
-         <bool>false</bool>
-        </property>
-        <property name="indentation">
-         <number>10</number>
-        </property>
-        <property name="uniformRowHeights">
-         <bool>true</bool>
-        </property>
-        <property name="sortingEnabled">
-         <bool>true</bool>
-        </property>
-        <attribute name="headerCascadingSectionResizes">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="headerHighlightSections">
-         <bool>true</bool>
-        </attribute>
-        <attribute name="headerShowSortIndicator" stdset="0">
-         <bool>true</bool>
-        </attribute>
-        <column>
-         <property name="text">
-          <string notr="true">Playlist</string>
-         </property>
-         <property name="toolTip">
-          <string notr="true"/>
-         </property>
-         <property name="statusTip">
-          <string notr="true"/>
-         </property>
-         <property name="whatsThis">
-          <string notr="true"/>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string notr="true">Info</string>
-         </property>
-         <property name="toolTip">
-          <string notr="true"/>
-         </property>
-         <property name="statusTip">
-          <string notr="true"/>
-         </property>
-         <property name="whatsThis">
-          <string notr="true"/>
-         </property>
-        </column>
-        <column>
-         <property name="text">
-          <string>obj</string>
-         </property>
-        </column>
+       <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <property name="text">
-          <string>Playlists</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="flags">
-          <set>ItemIsEnabled</set>
-         </property>
+         <widget class="QTreeWidget" name="tr_lists_user">
+          <property name="toolTip">
+           <string notr="true"/>
+          </property>
+          <property name="statusTip">
+           <string notr="true"/>
+          </property>
+          <property name="whatsThis">
+           <string notr="true"/>
+          </property>
+          <property name="accessibleName">
+           <string notr="true"/>
+          </property>
+          <property name="accessibleDescription">
+           <string notr="true"/>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="showDropIndicator" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="indentation">
+           <number>10</number>
+          </property>
+          <property name="uniformRowHeights">
+           <bool>true</bool>
+          </property>
+          <property name="sortingEnabled">
+           <bool>true</bool>
+          </property>
+          <attribute name="headerCascadingSectionResizes">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="headerHighlightSections">
+           <bool>true</bool>
+          </attribute>
+          <attribute name="headerShowSortIndicator" stdset="0">
+           <bool>true</bool>
+          </attribute>
+          <column>
+           <property name="text">
+            <string notr="true">Name</string>
+           </property>
+           <property name="toolTip">
+            <string notr="true"/>
+           </property>
+           <property name="statusTip">
+            <string notr="true"/>
+           </property>
+           <property name="whatsThis">
+            <string notr="true"/>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string notr="true">Info</string>
+           </property>
+           <property name="toolTip">
+            <string notr="true"/>
+           </property>
+           <property name="statusTip">
+            <string notr="true"/>
+           </property>
+           <property name="whatsThis">
+            <string notr="true"/>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>obj</string>
+           </property>
+          </column>
+          <item>
+           <property name="text">
+            <string>Playlists</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="flags">
+            <set>ItemIsEnabled</set>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Mixes</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="flags">
+            <set>ItemIsEnabled</set>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Favorites</string>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+           <property name="flags">
+            <set>ItemIsEnabled</set>
+           </property>
+          </item>
+         </widget>
         </item>
         <item>
-         <property name="text">
-          <string>Mixes</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="flags">
-          <set>ItemIsEnabled</set>
-         </property>
+         <widget class="QPushButton" name="pb_reload_user_lists">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Reload</string>
+          </property>
+         </widget>
         </item>
-        <item>
-         <property name="text">
-          <string>Favorites</string>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="flags">
-          <set>ItemIsEnabled</set>
-         </property>
-        </item>
-       </widget>
+       </layout>
       </item>
       <item>
        <layout class="QVBoxLayout" name="lv_search_result" stretch="0,0,0,0">
@@ -542,6 +559,7 @@
     </property>
     <addaction name="a_preferences"/>
     <addaction name="a_version"/>
+    <addaction name="a_logout"/>
     <addaction name="a_exit"/>
    </widget>
    <addaction name="m_file"/>
@@ -594,6 +612,11 @@
   <action name="a_exit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="a_logout">
+   <property name="text">
+    <string>Logout</string>
    </property>
   </action>
  </widget>
