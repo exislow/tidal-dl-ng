@@ -34,6 +34,7 @@ class Settings:
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
 
 
+@dataclass_json
 @dataclass
 class HelpSettings:
     skip_existing: str = (
