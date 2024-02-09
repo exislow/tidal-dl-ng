@@ -296,12 +296,13 @@ class Download:
         if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
             # Try to retrieve lyrics.
             try:
-                lyrics: str = track.lyrics().subtitles if hasattr(track, "lyrics") else ""
-            except HTTPError:
+                lyrics: str = track.lyrics().subtitles
+            except (HTTPError, AttributeError):
+                lyrics: str = ""
                 # TODO: Implement proper logging.
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
-        if lyrics:
+        if lyrics and self.settings.data.lyrics_file:
             self.lyrics_write_file(path_file + EXTENSION_LYRICS, lyrics)
 
         # `None` values are not allowed.
