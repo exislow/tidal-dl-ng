@@ -43,8 +43,8 @@ class HelpSettings:
         "different file extension exists."
     )
     album_cover_save: str = "Safe cover to album folder."
-    lyrics_embed: str = "Embed lyrics in audio file."
-    lyrics_file: str = "Save lyrics to separate *.lrc file."
+    lyrics_embed: str = "Embed lyrics in audio file, if lyrics are available."
+    lyrics_file: str = "Save lyrics to separate *.lrc file, if lyrics are available."
     api_key_index: str = "Set the device API KEY."
     album_info_save: str = "Save album info to track?"
     video_download: str = "Allow download of videos."
