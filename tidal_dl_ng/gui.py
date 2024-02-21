@@ -185,8 +185,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_populate_tree_lists.emit(user_all)
 
     def on_populate_tree_lists(self, user_lists: [Playlist | UserPlaylist | Mix]):
-        self.tr_results.clear()
-
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.PLAYLISTS.value, QtCore.Qt.MatchExactly, 0
         )[0]
@@ -311,6 +309,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.s_tr_results_add_top_level_item.emit(child)
 
     def populate_tree_result_child(self, item: [Mix | Album | Playlist], index_count_digits: int):
+        # TODO: Duration needs to be calculated later to properly fill with zeros.
         # Format seconds to mm:ss.
         m, s = divmod(item.duration_sec, 60)
         duration: str = f"{m:02d}:{s:02d}"
@@ -318,7 +317,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index: str = str(item.position + 1).zfill(index_count_digits)
 
         # Populate child
-        child = QtWidgets.QTreeWidgetItem()
+        child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
         child.setText(0, index)
         child.setText(1, item.artist)
         child.setText(2, item.title)
@@ -327,8 +326,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
 
         if isinstance(item.obj, Mix | Playlist | Album):
-            # Add empty dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
-            child.addChild(QtWidgets.QTreeWidgetItem())
+            # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
+            child_dummy: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
+
+            child_dummy.setDisabled(True)
+            child.addChild(child_dummy)
 
         return child
 
@@ -547,11 +549,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_preferences(self) -> None:
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
 
-    def on_tr_results_expanded(self, child: QtWidgets.QTreeWidgetItem) -> None:
-        child.removeChild(child.child(0))
-        media_list: [Mix | Album | Playlist] = child.data(5, QtCore.Qt.ItemDataRole.UserRole)
+    def on_tr_results_expanded(self, list_item: QtWidgets.QTreeWidgetItem) -> None:
+        # If the child is a dummy the list_item has not been expanded before
+        load_children: bool = list_item.child(0).isDisabled()
 
-        self.list_items_show_result(media_list=media_list, parent=child)
+        if load_children:
+            list_item.removeChild(list_item.child(0))
+            media_list: [Mix | Album | Playlist] = list_item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+
+            self.list_items_show_result(media_list=media_list, parent=list_item)
 
     def button_reload_status(self, status: bool):
         button_text: str = "Reloading..."
