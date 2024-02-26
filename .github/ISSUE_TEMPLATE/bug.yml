@@ -1,0 +1,50 @@
+name: Bug Report
+description: File a bug report
+title: "[Bug] "
+labels: ["bug"]
+assignees:
+  - exislow
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! You must use a clear title for this bug.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Use three sentences or more. Otherwise your report gets rejected.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: What version of our software are you running?
+      placeholder: vX.Y.Z
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: What operating system are you seeing the problem on?
+      multiple: false
+      options:
+        - macOS
+        - Linux
+        - Windows
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+  - type: textarea
+    id: config
+    attributes:
+      label: Your settings
+      description: Please copy and paste your settings from `~/.config/settings.json` (macOS & Linux) / `%HOMEPATH%\.config\settings.json` (Windows). This will be automatically formatted into code, so no need for backticks.
+      render: json
+    validations:
+      required: true

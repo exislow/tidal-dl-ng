@@ -1,0 +1,27 @@
+name: Feature Request
+description: File a feature request
+title: "[Feature] "
+labels: ["enhancement"]
+assignees:
+  - exislow
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We appreciate your feedback on how to improve this project. Please be sure to include as much details & any images if possible!
+  - type: textarea
+    id: situation
+    attributes:
+      label: Current Situation
+      description: Describe the current situation, which is lacking of something you like to have.
+      placeholder: Write at least three sentences and be as precise as possible.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggestion / Feature Request
+      description: Describe the feature(s) you would like to see added.
+      placeholder: Write three sentences or more and be as precise as possible.
+    validations:
+      required: true

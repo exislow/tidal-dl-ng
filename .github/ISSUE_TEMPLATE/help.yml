@@ -1,0 +1,19 @@
+name: Help
+description: File a question for help
+title: "[Help] "
+labels: ["help wanted"]
+assignees:
+  - exislow
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If no other issue template fits please use this.
+  - type: textarea
+    id: help
+    attributes:
+      label: I need Help.
+      description: Describe the current situation and state your question.
+      placeholder: Write at least three sentences and be as precise as possible.
+    validations:
+      required: true
