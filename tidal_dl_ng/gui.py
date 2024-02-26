@@ -122,24 +122,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         sys.exit(1)
 
         if result:
-            # Init `Download` object.
-            data_pb: ProgressBars = ProgressBars(
-                item=self.s_item_advance,
-                list_item=self.s_list_advance,
-                item_name=self.s_item_name,
-                list_name=self.s_list_name,
-            )
-            progress: Progress = Progress()
-            self.dl = Download(
-                session=self.tidal.session,
-                skip_existing=self.tidal.settings.data.skip_existing,
-                path_base=self.settings.data.download_base_path,
-                fn_logger=logger_gui,
-                progress_gui=data_pb,
-                progress=progress,
-            )
-
+            self._init_dl()
             self.thread_it(self.tidal_user_lists)
+
+    def _init_dl(self):
+        # Init `Download` object.
+        data_pb: ProgressBars = ProgressBars(
+            item=self.s_item_advance,
+            list_item=self.s_list_advance,
+            item_name=self.s_item_name,
+            list_name=self.s_list_name,
+        )
+        progress: Progress = Progress()
+        self.dl = Download(
+            session=self.tidal.session,
+            skip_existing=self.tidal.settings.data.skip_existing,
+            path_base=self.settings.data.download_base_path,
+            fn_logger=logger_gui,
+            progress_gui=data_pb,
+            progress=progress,
+        )
 
     def _init_progressbar(self):
         self.pb_list = QtWidgets.QProgressBar()
@@ -348,6 +350,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_settings_save(self):
         self.settings.save()
         self.apply_settings(self.settings)
+        self._init_dl()
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
         # If a direct link was searched for, skip search and create the object from the link directly.
