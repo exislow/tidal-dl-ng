@@ -6,6 +6,7 @@ from requests.exceptions import HTTPError
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
+from tidal_dl_ng.helper.exceptions import MediaUnknown
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
@@ -353,7 +354,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if "http" in query:
             media_type = get_tidal_media_type(query)
             item_id = get_tidal_media_id(query)
-            media = instantiate_media(self.tidal.session, media_type, item_id)
+
+            try:
+                media = instantiate_media(self.tidal.session, media_type, item_id)
+            except MediaUnknown:
+                media = None
+
             result_search = {"direct": [media]}
         else:
             result_search: dict[str, [SearchTypes]] = search_results_all(
