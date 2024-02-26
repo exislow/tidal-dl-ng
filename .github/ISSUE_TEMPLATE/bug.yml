@@ -44,7 +44,7 @@ body:
     id: config
     attributes:
       label: Your settings
-      description: Please copy and paste your settings from `~/.config/settings.json` (macOS & Linux) / `%HOMEPATH%\.config\settings.json` (Windows). This will be automatically formatted into code, so no need for backticks.
+      description: Please copy and paste your settings from `~/.config/tidal_dl_ng/settings.json` (macOS & Linux) / `%HOMEPATH%\.config\tidal_dl_ng\settings.json` (Windows). This will be automatically formatted into code, so no need for backticks.
       render: json
     validations:
       required: true
