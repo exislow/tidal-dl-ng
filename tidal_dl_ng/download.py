@@ -191,7 +191,7 @@ class Download:
             raise MediaMissing
 
         # If video download is not allowed end here
-        if not video_download:
+        if not video_download and isinstance(media, Video):
             self.fn_logger.info(
                 f"Video downloads are deactivated (see settings). Skipping video: {name_builder_item(media)}"
             )
