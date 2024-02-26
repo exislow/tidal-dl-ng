@@ -357,6 +357,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         result = []
 
         for idx, item in enumerate(items):
+            # Check if item is available on TIDAL.
+            if hasattr(item, "available") and not item.available:
+                continue
+
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
                     position=idx,
