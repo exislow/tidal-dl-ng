@@ -190,6 +190,14 @@ class Download:
         elif not media:
             raise MediaMissing
 
+        # Check if media is available not deactivated / removed from TIDAL.
+        if not media.available:
+            self.fn_logger.info(
+                f"This track is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
+            )
+
+            return False, ""
+
         # If video download is not allowed end here
         if not video_download and isinstance(media, Video):
             self.fn_logger.info(
