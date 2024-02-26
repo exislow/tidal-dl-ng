@@ -28,9 +28,9 @@ from tidal_dl_ng.constants import (
     VideoExtensions,
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
-from tidal_dl_ng.helper.exceptions import MediaMissing, MediaUnknown, UnknownManifestFormat
+from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
-from tidal_dl_ng.helper.tidal import items_results_all, name_builder_item
+from tidal_dl_ng.helper.tidal import instantiate_media, items_results_all, name_builder_item
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
 from tidal_dl_ng.model.tidal import StreamManifest
@@ -154,27 +154,6 @@ class Download:
 
         return tmp_path_file_decrypted
 
-    def instantiate_media(
-        self,
-        session: Session,
-        media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
-        id_media: str,
-    ) -> Track | Video:
-        if media_type == MediaType.TRACK:
-            media = Track(session, id_media)
-        elif media_type == MediaType.VIDEO:
-            media = Video(session, id_media)
-        elif media_type == MediaType.ALBUM:
-            media = Album(self.session, id_media)
-        elif media_type == MediaType.PLAYLIST:
-            media = Playlist(self.session, id_media)
-        elif media_type == MediaType.MIX:
-            media = Mix(self.session, id_media)
-        else:
-            raise MediaUnknown
-
-        return media
-
     def item(
         self,
         file_template: str,
@@ -186,7 +165,7 @@ class Download:
     ) -> (bool, str):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
-            media = self.instantiate_media(self.session, media_type, media_id)
+            media = instantiate_media(self.session, media_type, media_id)
         elif not media:
             raise MediaMissing
 
@@ -350,7 +329,7 @@ class Download:
     ):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
-            media = self.instantiate_media(self.session, media_type, media_id)
+            media = instantiate_media(self.session, media_type, media_id)
         elif not media:
             raise MediaMissing
 

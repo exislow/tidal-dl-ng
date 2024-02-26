@@ -2,6 +2,7 @@ from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
+from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 
 def name_builder_artist(media: Track) -> str:
@@ -104,3 +105,24 @@ def user_media_lists(session: Session) -> [Playlist | UserPlaylist | Mix]:
     result: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
 
     return result
+
+
+def instantiate_media(
+    session: Session,
+    media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
+    id_media: str,
+) -> Track | Video:
+    if media_type == MediaType.TRACK:
+        media = Track(session, id_media)
+    elif media_type == MediaType.VIDEO:
+        media = Video(session, id_media)
+    elif media_type == MediaType.ALBUM:
+        media = Album(session, id_media)
+    elif media_type == MediaType.PLAYLIST:
+        media = Playlist(session, id_media)
+    elif media_type == MediaType.MIX:
+        media = Mix(session, id_media)
+    else:
+        raise MediaUnknown
+
+    return media

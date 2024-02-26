@@ -7,7 +7,14 @@ from requests.exceptions import HTTPError
 from tidal_dl_ng import __version__
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
-from tidal_dl_ng.helper.tidal import items_results_all, search_results_all, user_media_lists
+from tidal_dl_ng.helper.tidal import (
+    get_tidal_media_id,
+    get_tidal_media_type,
+    instantiate_media,
+    items_results_all,
+    search_results_all,
+    user_media_lists,
+)
 
 try:
     import qdarktheme
@@ -342,9 +349,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.apply_settings(self.settings)
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
-        result_search: dict[str, [SearchTypes]] = search_results_all(
-            session=self.tidal.session, needle=query, types_media=types_media
-        )
+        # If a direct link was searched for, skip search and create the object from the link directly.
+        if "http" in query:
+            media_type = get_tidal_media_type(query)
+            item_id = get_tidal_media_id(query)
+            media = instantiate_media(self.tidal.session, media_type, item_id)
+            result_search = {"direct": [media]}
+        else:
+            result_search: dict[str, [SearchTypes]] = search_results_all(
+                session=self.tidal.session, needle=query, types_media=types_media
+            )
+
         result: [ResultItem] = []
 
         for _media_type, l_media in result_search.items():
@@ -401,6 +416,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     title="",
                     album=item.name,
                     duration_sec=item.duration,
+                    obj=item,
+                )
+
+                result.append(result_item)
+            elif isinstance(item, Mix):
+                result_item: ResultItem = ResultItem(
+                    position=idx,
+                    artist=item.sub_title,
+                    title=item.title,
+                    album="",
+                    # TODO: Calculate total duration.
+                    duration_sec=-1,
                     obj=item,
                 )
 
