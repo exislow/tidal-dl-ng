@@ -283,9 +283,14 @@ class Download:
         if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
             # Try to retrieve lyrics.
             try:
-                lyrics: str = track.lyrics().subtitles
+                lyrics_obj = track.lyrics()
+
+                if lyrics_obj.subtitles:
+                    lyrics = lyrics_obj.subtitles
+                elif lyrics_obj.text:
+                    lyrics = lyrics_obj.text
             except (HTTPError, AttributeError):
-                lyrics: str = ""
+                lyrics = ""
                 # TODO: Implement proper logging.
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
