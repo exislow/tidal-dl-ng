@@ -111,21 +111,18 @@ def instantiate_media(
     session: Session,
     media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
     id_media: str,
-) -> Track | Video:
-    try:
-        if media_type == MediaType.TRACK:
-            media = Track(session, id_media)
-        elif media_type == MediaType.VIDEO:
-            media = Video(session, id_media)
-        elif media_type == MediaType.ALBUM:
-            media = Album(session, id_media)
-        elif media_type == MediaType.PLAYLIST:
-            media = Playlist(session, id_media)
-        elif media_type == MediaType.MIX:
-            media = Mix(session, id_media)
-        else:
-            raise MediaUnknown
-    except:
+) -> Track | Video | Album | Playlist | Mix:
+    if media_type == MediaType.TRACK:
+        media = session.track(id_media, with_album=True)
+    elif media_type == MediaType.VIDEO:
+        media = session.video(id_media)
+    elif media_type == MediaType.ALBUM:
+        media = session.album(id_media)
+    elif media_type == MediaType.PLAYLIST:
+        media = session.playlist(id_media)
+    elif media_type == MediaType.MIX:
+        media = session.mix(id_media)
+    else:
         raise MediaUnknown
 
     return media

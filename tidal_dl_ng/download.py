@@ -166,6 +166,8 @@ class Download:
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
             media = instantiate_media(self.session, media_type, media_id)
+        elif isinstance(media, Track):
+            media = self.session.track(media.id, with_album=True)
         elif not media:
             raise MediaMissing
 

@@ -318,7 +318,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self.s_tr_results_add_top_level_item.emit(child)
 
-    def populate_tree_result_child(self, item: [Mix | Album | Playlist], index_count_digits: int):
+    def populate_tree_result_child(self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int):
         # TODO: Duration needs to be calculated later to properly fill with zeros.
         # Format seconds to mm:ss.
         m, s = divmod(item.duration_sec, 60)
