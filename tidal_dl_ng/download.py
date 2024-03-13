@@ -156,20 +156,19 @@ class Download:
 
     def instantiate_media(
         self,
-        session: Session,
         media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
         id_media: str,
-    ) -> Track | Video:
+    ) -> Track | Video | Album | Playlist | Mix:
         if media_type == MediaType.TRACK:
-            media = Track(session, id_media)
+            media = self.session.track(id_media, with_album=True)
         elif media_type == MediaType.VIDEO:
-            media = Video(session, id_media)
+            media = self.session.video(id_media)
         elif media_type == MediaType.ALBUM:
-            media = Album(self.session, id_media)
+            media = self.session.album(id_media)
         elif media_type == MediaType.PLAYLIST:
-            media = Playlist(self.session, id_media)
+            media = self.session.playlist(id_media)
         elif media_type == MediaType.MIX:
-            media = Mix(self.session, id_media)
+            media = self.session.mix(id_media)
         else:
             raise MediaUnknown
 
@@ -186,7 +185,9 @@ class Download:
     ) -> (bool, str):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
-            media = self.instantiate_media(self.session, media_type, media_id)
+            media = self.instantiate_media(media_type, media_id)
+        elif isinstance(media, Track):
+            media = self.session.track(media.id, with_album=True)
         elif not media:
             raise MediaMissing
 
@@ -342,7 +343,7 @@ class Download:
     ):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
-            media = self.instantiate_media(self.session, media_type, media_id)
+            media = self.instantiate_media(media_type, media_id)
         elif not media:
             raise MediaMissing
 

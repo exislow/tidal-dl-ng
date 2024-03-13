@@ -101,16 +101,16 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
                 result = media.name
             elif isinstance(media, Track):
                 result = media.album.name
-        elif name == "track_num":
+        elif name == "album_track_num":
             if isinstance(media, Track | Video):
                 num_tracks: int = media.album.num_tracks if hasattr(media, "album") else 1
-                count_digits: int = int(math.log10(len(str(num_tracks)))) + 1
+                count_digits: int = int(math.log10(num_tracks)) + 1
                 result = str(media.track_num).zfill(count_digits)
+        elif name == "album_num_tracks":
+            if isinstance(media, Track | Video):
+                result = str(media.album.num_tracks if hasattr(media, "album") else 1)
         elif name == "track_id":
             if isinstance(media, Track | Video):
-                result = media.id
-        elif name == "track_id":
-            if isinstance(media, Track):
                 result = media.id
         elif name == "playlist_id":
             if isinstance(media, Playlist):
@@ -148,6 +148,7 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
+
         pass
 
     return result
