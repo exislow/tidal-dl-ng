@@ -10,6 +10,7 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 from tidal_dl_ng import __name_display__
 from tidal_dl_ng.constants import AudioExtensions, MediaType
+from tidal_dl_ng.helper.tidal import name_builder_artist, name_builder_title
 
 
 def path_home() -> str:
@@ -84,12 +85,12 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
     try:
         if name == "artist_name":
             if hasattr(media, "artists"):
-                result = ", ".join(artist.name for artist in media.artists)
+                result = name_builder_artist(media)
             elif hasattr(media, "artist"):
                 result = media.artist.name
         elif name == "track_title":
             if isinstance(media, Track | Video):
-                result = media.name
+                result = name_builder_title(media)
         elif name == "mix_name":
             if isinstance(media, Mix):
                 result = media.title

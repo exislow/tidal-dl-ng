@@ -30,7 +30,7 @@ from tidal_dl_ng.constants import (
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
-from tidal_dl_ng.helper.tidal import instantiate_media, items_results_all, name_builder_item
+from tidal_dl_ng.helper.tidal import instantiate_media, items_results_all, name_builder_item, name_builder_title
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
 from tidal_dl_ng.model.tidal import StreamManifest
@@ -304,7 +304,7 @@ class Download:
             path_file=path_file,
             lyrics=lyrics,
             copy_right=copy_right,
-            title=track.name,
+            title=name_builder_title(track),
             artists=[artist.name for artist in track.artists],
             album=track.album.name if track.album else "",
             tracknumber=track.track_num,
@@ -349,10 +349,10 @@ class Download:
         if isinstance(media, Mix):
             list_media_name = media.title[:30]
         elif video_download:
-            list_media_name = media.name[:30]
+            list_media_name = name_builder_title(media)[:30]
         else:
             videos_include = False
-            list_media_name = media.name[:30]
+            list_media_name = name_builder_title(media)[:30]
 
         # Get all items of the list.
         items = items_results_all(media, videos_include=videos_include)

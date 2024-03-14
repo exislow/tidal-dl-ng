@@ -13,6 +13,8 @@ from tidal_dl_ng.helper.tidal import (
     get_tidal_media_type,
     instantiate_media,
     items_results_all,
+    name_builder_artist,
+    name_builder_title,
     search_results_all,
     user_media_lists,
 )
@@ -388,8 +390,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
                     position=idx,
-                    artist=", ".join(artist.name for artist in item.artists),
-                    title=item.name,
+                    artist=name_builder_artist(item),
+                    title=name_builder_title(item),
                     album=item.album.name,
                     duration_sec=item.duration,
                     obj=item,
@@ -399,8 +401,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif isinstance(item, Video):
                 result_item: ResultItem = ResultItem(
                     position=idx,
-                    artist=", ".join(artist.name for artist in item.artists),
-                    title=item.name,
+                    artist=name_builder_artist(item),
+                    title=name_builder_title(item),
                     album=item.album.name if item.album else "",
                     duration_sec=item.duration,
                     obj=item,
@@ -421,7 +423,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             elif isinstance(item, Album):
                 result_item: ResultItem = ResultItem(
                     position=idx,
-                    artist=", ".join(artist.name for artist in item.artists),
+                    artist=name_builder_artist(item),
                     title="",
                     album=item.name,
                     duration_sec=item.duration,
