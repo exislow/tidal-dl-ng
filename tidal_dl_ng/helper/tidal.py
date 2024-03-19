@@ -1,5 +1,5 @@
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.artist import Role
+from tidalapi.artist import Role, Artist
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
@@ -12,8 +12,9 @@ def name_builder_artist(media: Track | Video | Album) -> str:
 
 def name_builder_album_artist(media: Track | Album) -> str:
     artists_tmp: [str] = []
+    artists: [Artist] = media.album.artists if isinstance(media, Track) else media.artists
 
-    for artist in media.album.artists:
+    for artist in artists:
         if Role.main in artist.roles:
             artists_tmp.append(artist.name)
 
