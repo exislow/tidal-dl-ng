@@ -30,7 +30,7 @@ class Metadata:
         path_file: str,
         album: str = "",
         title: str = "",
-        artists: list[str] | None = None,
+        artists: str = "",
         copy_right: str = "",
         tracknumber: int = 0,
         discnumber: int = 0,
@@ -105,7 +105,7 @@ class Metadata:
         self.m.tags["title"] = self.title
         self.m.tags["album"] = self.album
         self.m.tags["albumartist"] = self.albumartist
-        self.m.tags["artist"] = ", ".join(self.artists) if self.artists else ""
+        self.m.tags["artist"] = self.artists
         self.m.tags["copyright"] = self.copy_right
         self.m.tags["tracknumber"] = str(self.tracknumber)
         self.m.tags["tracktotal"] = str(self.totaltrack)
@@ -120,7 +120,7 @@ class Metadata:
         self.m.tags.add(TIT2(encoding=3, text=self.title))
         self.m.tags.add(TALB(encoding=3, text=self.album))
         self.m.tags.add(TOPE(encoding=3, text=self.albumartist))
-        self.m.tags.add(TPE1(encoding=3, text=", ".join(self.artists) if self.artists else ""))
+        self.m.tags.add(TPE1(encoding=3, text=self.artists))
         self.m.tags.add(TCOP(encoding=3, text=self.copy_right))
         self.m.tags.add(TRCK(encoding=3, text=str(self.tracknumber)))
         self.m.tags.add(TRCK(encoding=3, text=self.discnumber))
@@ -133,7 +133,7 @@ class Metadata:
         self.m.tags["\xa9nam"] = self.title
         self.m.tags["\xa9alb"] = self.album
         self.m.tags["aART"] = self.albumartist
-        self.m.tags["\xa9ART"] = ", ".join(self.artists) if self.artists else ""
+        self.m.tags["\xa9ART"] = self.artists
         self.m.tags["cprt"] = self.copy_right
         self.m.tags["trkn"] = [[self.tracknumber, self.totaltrack]]
         self.m.tags["disk"] = [[self.discnumber, self.totaldisc]]

@@ -1,4 +1,5 @@
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+from tidalapi.artist import Role
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
@@ -7,6 +8,16 @@ from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 def name_builder_artist(media: Track | Video | Album) -> str:
     return ", ".join(artist.name for artist in media.artists)
+
+
+def name_builder_album_artist(media: Track | Album) -> str:
+    artists_tmp: [str] = []
+
+    for artist in media.album.artists:
+        if Role.main in artist.roles:
+            artists_tmp.append(artist.name)
+
+    return ", ".join(artists_tmp)
 
 
 def name_builder_title(media: Track | Video) -> str:

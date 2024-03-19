@@ -30,7 +30,14 @@ from tidal_dl_ng.constants import (
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
-from tidal_dl_ng.helper.tidal import instantiate_media, items_results_all, name_builder_item, name_builder_title
+from tidal_dl_ng.helper.tidal import (
+    instantiate_media,
+    items_results_all,
+    name_builder_album_artist,
+    name_builder_artist,
+    name_builder_item,
+    name_builder_title,
+)
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
 from tidal_dl_ng.model.tidal import StreamManifest
@@ -306,12 +313,12 @@ class Download:
             lyrics=lyrics,
             copy_right=copy_right,
             title=name_builder_title(track),
-            artists=[artist.name for artist in track.artists],
+            artists=name_builder_artist(track),
             album=track.album.name if track.album else "",
             tracknumber=track.track_num,
             date=release_date,
             isrc=isrc,
-            albumartist=name_builder_item(track),
+            albumartist=name_builder_album_artist(track),
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
