@@ -2,14 +2,14 @@ import glob
 import math
 import os
 import re
-from pathlib import Path
+from pathlib import Path, PosixPath
 
 from pathvalidate import sanitize_filename, sanitize_filepath
 from pathvalidate.error import ValidationError
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 from tidal_dl_ng import __name_display__
-from tidal_dl_ng.constants import AudioExtensions, MediaType
+from tidal_dl_ng.constants import FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, AudioExtensions, MediaType
 from tidal_dl_ng.helper.tidal import name_builder_artist, name_builder_title
 
 
@@ -174,34 +174,34 @@ def get_format_template(
     return result
 
 
-def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
+def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = False) -> (bool, str):
     # Split into path and filename
     pathname, filename = os.path.split(path_file)
+    file_extension: str = Path(path_file).suffix
 
     # Sanitize path
     try:
-        pathname_sanitized = sanitize_filepath(
+        pathname_sanitized: str = sanitize_filepath(
             pathname, replacement_text=" ", validate_after_sanitize=True, platform="auto"
         )
     except ValidationError:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
-            pathname_sanitized = Path.home()
+            pathname_sanitized: str = Path.home()
         else:
             raise
 
     # Sanitize filename
     try:
-        filename_sanitized = sanitize_filename(
+        filename_sanitized: str = sanitize_filename(
             filename, replacement_text=" ", validate_after_sanitize=True, platform="auto"
         )
-        filename_sanitized_extension = Path(filename_sanitized).suffix
 
         # Check if the file extension was removed by shortening the filename length
-        if filename_sanitized_extension == "":
+        if not filename_sanitized.endswith(file_extension):
             # Add the original file extension
-            file_extension = "_" + Path(path_file).suffix
-            filename_sanitized = filename_sanitized[: -len(file_extension)] + file_extension
+            file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + file_extension
+            filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
     except ValidationError as e:
         # TODO: Implement proper exception handling and logging.
         print(e)
@@ -209,18 +209,50 @@ def path_file_sanitize(path_file: str, adapt: bool = False) -> (bool, str):
         raise
 
     # Join path and filename
-    result = os.path.join(pathname_sanitized, filename_sanitized)
+    result: str = os.path.join(pathname_sanitized, filename_sanitized)
+
+    # Uniquify
+    if uniquify:
+        unique_suffix: str = file_unique_suffix(result)
+
+        if unique_suffix:
+            file_suffix = unique_suffix + file_extension
+            # For most OS filename has a character limit of 255.
+            filename_sanitized = (
+                filename_sanitized[: -len(file_suffix)] + file_suffix
+                if len(filename_sanitized + unique_suffix) > 255
+                else filename_sanitized[: -len(file_extension)] + file_suffix
+            )
+
+            # Join path and filename
+            result = os.path.join(pathname_sanitized, filename_sanitized)
 
     return result
 
 
-def check_file_exists(path_file: str, extension_ignore: bool = False):
+def file_unique_suffix(path_file: str, seperator: str = "_") -> str:
+    threshold_zfill: int = len(str(UNIQUIFY_THRESHOLD))
+    count: int = 0
+    path_file_tmp: str = path_file
+    unique_suffix: str = ""
+
+    while check_file_exists(path_file_tmp) and count < UNIQUIFY_THRESHOLD:
+        count += 1
+        unique_suffix = seperator + str(count).zfill(threshold_zfill)
+        filename, file_extension = os.path.splitext(path_file_tmp)
+        path_file_tmp = filename + unique_suffix + file_extension
+
+    return unique_suffix
+
+
+def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
     if extension_ignore:
         path_file_stem: str = Path(path_file).stem
+        path_parent: PosixPath = Path(path_file).parent
         path_files: [str] = []
 
         for extension in AudioExtensions:
-            path_files.append(path_file_stem + extension.value)
+            path_files.append(str(path_parent.joinpath(path_file_stem + extension.value)))
     else:
         path_files: [str] = [path_file]
 

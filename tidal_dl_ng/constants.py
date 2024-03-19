@@ -1,8 +1,10 @@
 from enum import Enum
 
 CTX_TIDAL: str = "tidal"
-REQUESTS_TIMEOUT_SEC = 45
-EXTENSION_LYRICS = ".lrc"
+REQUESTS_TIMEOUT_SEC: int = 45
+EXTENSION_LYRICS: str = ".lrc"
+UNIQUIFY_THRESHOLD: int = 99
+FILENAME_SANITIZE_PLACEHOLDER: str = "_"
 
 
 class QualityVideo(Enum):
@@ -24,6 +26,7 @@ class SkipExisting(Enum):
     Disabled: bool = False
     Filename: str = "exact"
     ExtensionIgnore: str = "extension_ignore"
+    Append: str = "append"
 
 
 class StreamManifestMimeType(Enum):

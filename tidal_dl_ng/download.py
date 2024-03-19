@@ -187,12 +187,6 @@ class Download:
 
             return False, ""
 
-        # Create file name and path
-        file_name_relative = format_path_media(file_template, media)
-        path_file = os.path.abspath(
-            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
-        )
-
         # Populate StreamManifest for further download.
         if isinstance(media, Track):
             stream = media.get_stream()
@@ -204,15 +198,22 @@ class Download:
 
         stream_manifest = self.stream_manifest_parse(manifest, mime_type)
 
+        # Create file name and path
+        file_name_relative = format_path_media(file_template, media)
+        path_file = os.path.abspath(
+            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
+        )
+
         # Sanitize final path_file to fit into OS boundaries.
-        path_file = path_file_sanitize(path_file + stream_manifest.file_extension, adapt=True)
+        uniquify: bool = self.skip_existing == SkipExisting.Append
+        path_file = path_file_sanitize(path_file + stream_manifest.file_extension, adapt=True, uniquify=uniquify)
 
         # Compute if and how downloads need to be skipped.
-        if self.skip_existing.value:
-            extension_ignore = self.skip_existing == SkipExisting.ExtensionIgnore
-            download_skip = check_file_exists(path_file, extension_ignore=extension_ignore)
+        if self.skip_existing.value in (SkipExisting.ExtensionIgnore.value, SkipExisting.Filename.value):
+            extension_ignore: bool = self.skip_existing == SkipExisting.ExtensionIgnore
+            download_skip: bool = check_file_exists(path_file, extension_ignore=extension_ignore)
         else:
-            download_skip = False
+            download_skip: bool = False
 
         if not download_skip:
             # Create a temp directory and file.
