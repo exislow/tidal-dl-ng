@@ -284,7 +284,7 @@ class Download:
     def metadata_write(self, track: Track, path_file: str):
         result: bool = False
         release_date: str = (
-            track.album.release_date.strftime("%Y-%m-%d") if track.album and track.album.release_date else ""
+            track.album.available_release_date.strftime("%Y-%m-%d") if track.album.available_release_date else track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
         )
         copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
