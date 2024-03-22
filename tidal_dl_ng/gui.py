@@ -287,16 +287,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.list_items_show_result, point=point)
 
     def on_download_list_media(self, point: QtCore.QPoint):
-        self.b_download.setEnabled(False)
-        self.b_download.setText("Downloading...")
+        self.pb_download.setEnabled(False)
+        self.pb_download.setText("Downloading...")
 
         item = self.tr_lists_user.itemAt(point)
         media = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
         self.download(media, self.dl)
 
-        self.b_download.setText("Download")
-        self.b_download.setEnabled(True)
+        self.pb_download.setText("Download")
+        self.pb_download.setEnabled(True)
 
     def search_populate_results(self, query: str, type_media: SearchTypes):
         self.tr_results.clear()
@@ -447,11 +447,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return result
 
     def _init_signals(self):
-        self.b_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
+        self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
         self.l_search.returnPressed.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
-        self.b_search.clicked.connect(
+        self.pb_search.clicked.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
@@ -543,8 +543,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.threadpool.start(worker)
 
     def on_download_results(self):
-        self.b_download.setEnabled(False)
-        self.b_download.setText("Downloading...")
+        self.pb_download.setEnabled(False)
+        self.pb_download.setText("Downloading...")
 
         items: [QtWidgets.QTreeWidgetItem] = self.tr_results.selectedItems()
 
@@ -564,8 +564,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 self.download(media, self.dl, delay_track=download_delay)
 
-        self.b_download.setText("Download")
-        self.b_download.setEnabled(True)
+        self.pb_download.setText("Download")
+        self.pb_download.setEnabled(True)
 
     def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download, delay_track: bool = False) -> None:
         self.s_pb_reset.emit()

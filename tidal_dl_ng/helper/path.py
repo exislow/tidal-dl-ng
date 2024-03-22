@@ -10,7 +10,7 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 from tidal_dl_ng import __name_display__
 from tidal_dl_ng.constants import FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, AudioExtensions, MediaType
-from tidal_dl_ng.helper.tidal import name_builder_artist, name_builder_title, name_builder_album_artist
+from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_artist, name_builder_title
 
 
 def path_home() -> str:
