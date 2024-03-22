@@ -2,13 +2,13 @@ import os.path
 from enum import Enum
 from pathlib import Path
 
-from helper.path import is_installed_ffmpeg
 from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Quality as QualityAudio
 
 from tidal_dl_ng import version
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
+from tidal_dl_ng.helper.path import is_installed_ffmpeg
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.ui.dialog_login import Ui_DialogLogin
