@@ -6,7 +6,7 @@ from helper.path import is_installed_ffmpeg
 from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Quality as QualityAudio
 
-from tidal_dl_ng import __version__
+from tidal_dl_ng import version
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 from tidal_dl_ng.model.cfg import HelpSettings
@@ -30,7 +30,7 @@ class DialogVersion(QtWidgets.QDialog):
         # Run the .setupUi() method to show the GUI
         self.ui.setupUi(self)
         # Set the version.
-        self.ui.l_version.setText("v" + __version__)
+        self.ui.l_version.setText("v" + version)
         # Show
         self.exec()
 
