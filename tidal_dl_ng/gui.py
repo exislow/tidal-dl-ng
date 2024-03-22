@@ -615,7 +615,10 @@ def gui_activate(tidal: Tidal | None = None):
     # Set dark theme and create QT app.
     qdarktheme.enable_hi_dpi()
     app = QtWidgets.QApplication(sys.argv)
-    qdarktheme.setup_theme()
+    # Fix for Windows: Tooltips have bright font color
+    # https://github.com/5yutan5/PyQtDarkTheme/issues/239
+    # qdarktheme.setup_theme()
+    qdarktheme.setup_theme(additional_qss="QToolTip { border: 0px; }")
 
     # Create icon object and apply it to app window.
     pixmap: QtGui.QPixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
