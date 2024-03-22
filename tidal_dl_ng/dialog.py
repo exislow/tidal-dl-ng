@@ -105,19 +105,18 @@ class DialogPreferences(QtWidgets.QDialog):
     def _init_signals(self):
         self.ui.cb_video_convert_mp4.stateChanged.connect(self.on_cb_video_convert_mp4)
 
-    def on_cb_video_convert_mp4(self, int):
-        if self.ui.cb_video_convert_mp4.isChecked():
-            # Check if ffmpeg is in PATH otherwise show error message.
-            if not is_installed_ffmpeg():
-                self.ui.cb_video_convert_mp4.setChecked(False)
-                self.ui.cb_video_convert_mp4.setCheckState(QtCore.Qt.CheckState.Unchecked)
-                QtWidgets.QMessageBox.critical(
-                    self,
-                    "FFmpeg not found!",
-                    "Either FFmpeg is not installed on your computer or not set within "
-                    "your PATH variable. You cannot activate this option until FFmpeg "
-                    "is correctly installed and set to your environmental PATH variable.",
-                )
+    def on_cb_video_convert_mp4(self, change_status: int):
+        # Check if ffmpeg is in PATH otherwise show error message.
+        if self.ui.cb_video_convert_mp4.isChecked() and not is_installed_ffmpeg():
+            self.ui.cb_video_convert_mp4.setChecked(False)
+            self.ui.cb_video_convert_mp4.setCheckState(QtCore.Qt.CheckState.Unchecked)
+            QtWidgets.QMessageBox.critical(
+                self,
+                "FFmpeg not found!",
+                "Either FFmpeg is not installed on your computer or not set within "
+                "your PATH variable. You cannot activate this option until FFmpeg "
+                "is correctly installed and set to your environmental PATH variable.",
+            )
 
     def _init_line_edit(self):
         self.parameters_line_edit = [

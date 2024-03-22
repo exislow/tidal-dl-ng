@@ -30,6 +30,7 @@ except ImportError as e:
 import coloredlogs.converter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
+from tidalapi.artist import Artist
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import Settings, Tidal
@@ -178,10 +179,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: SearchTypes):
         for item in options:
-            if item and item.__name__ != "Artist":
+            if item:
                 ui_target.addItem(item.__name__, item)
 
-        self.cb_search_type.setCurrentIndex(1)
+        self.cb_search_type.setCurrentIndex(2)
 
     def _init_tree_results(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(5, True)
@@ -321,10 +322,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.s_tr_results_add_top_level_item.emit(child)
 
     def populate_tree_result_child(self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int):
+        duration: str = ""
+
         # TODO: Duration needs to be calculated later to properly fill with zeros.
-        # Format seconds to mm:ss.
-        m, s = divmod(item.duration_sec, 60)
-        duration: str = f"{m:02d}:{s:02d}"
+        if item.duration_sec > -1:
+            # Format seconds to mm:ss.
+            m, s = divmod(item.duration_sec, 60)
+            duration: str = f"{m:02d}:{s:02d}"
+
         # Since sorting happens only by string, we need to pad the index and add 1 (to avoid start at 0)
         index: str = str(item.position + 1).zfill(index_count_digits)
 
@@ -337,7 +342,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child.setText(4, duration)
         child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
 
-        if isinstance(item.obj, Mix | Playlist | Album):
+        if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
             child_dummy: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
 
@@ -443,6 +448,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 )
 
                 result.append(result_item)
+            elif isinstance(item, Artist):
+                result_item: ResultItem = ResultItem(
+                    position=idx,
+                    artist=item.name,
+                    title="",
+                    album="",
+                    duration_sec=-1,
+                    obj=item,
+                )
+
+                result.append(result_item)
 
         return result
 
@@ -521,7 +537,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def list_items_show_result(
         self,
-        media_list: Album | Playlist | Mix | None = None,
+        media_list: Album | Playlist | Mix | Artist | None = None,
         point: QtCore.QPoint | None = None,
         parent: QtWidgets.QTreeWidgetItem = None,
     ) -> None:
@@ -530,7 +546,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             media_list = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
 
         # Get all results
-        media_items: [Track | Video] = items_results_all(media_list)
+        media_items: [Track | Video | Album] = items_results_all(media_list)
         result: [ResultItem] = self.search_result_to_model(media_items)
 
         self.populate_tree_results(result, parent=parent)
@@ -551,10 +567,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if len(items) == 0:
             logger_gui.error("Please select a row first.")
         else:
+            # If it is an artist resolve it with all available albums of him
+            if len(items) == 1:
+                tmp_media: QtWidgets.QTreeWidgetItem = items[0].data(5, QtCore.Qt.ItemDataRole.UserRole)
+
+                if isinstance(tmp_media, Artist):
+                    tmp_children: [QtWidgets.QTreeWidgetItem] = []
+                    is_dummy_child = not bool(items[0].child(0).data(5, QtCore.Qt.ItemDataRole.UserRole))
+
+                    # Use the expand function to retrieve all albums.
+                    if is_dummy_child:
+                        self.on_tr_results_expanded(items[0])
+
+                    count_children: int = items[0].childCount()
+
+                    # Get all children.
+                    for idx in range(count_children):
+                        tmp_children.append(items[0].child(idx))
+
+                    items: [Album] = tmp_children
+
             items_pos_last = len(items) - 1
 
             for item in items:
-                media: Track | Album | Playlist | Video = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+                media: Track | Album | Playlist | Video | Artist = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
                 # Skip only if Track item, skip option set and the item is not the last in the list.
                 download_delay: bool = bool(
                     isinstance(media, Track | Video)
@@ -567,7 +603,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_download.setText("Download")
         self.pb_download.setEnabled(True)
 
-    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download, delay_track: bool = False) -> None:
+    def download(
+        self, media: Track | Album | Playlist | Video | Mix | Artist, dl: Download, delay_track: bool = False
+    ) -> None:
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
@@ -597,7 +635,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if load_children:
             list_item.removeChild(list_item.child(0))
-            media_list: [Mix | Album | Playlist] = list_item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+            media_list: [Mix | Album | Playlist | Artist] = list_item.data(5, QtCore.Qt.ItemDataRole.UserRole)
 
             self.list_items_show_result(media_list=media_list, parent=list_item)
 
