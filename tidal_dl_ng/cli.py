@@ -8,7 +8,7 @@ from rich.panel import Panel
 from rich.progress import BarColumn, Console, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from tidal_dl_ng import __version__
+from tidal_dl_ng import version
 from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
@@ -22,7 +22,7 @@ app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_
 
 def version_callback(value: bool):
     if value:
-        print(f"{__version__}")
+        print(f"{version}")
         raise typer.Exit()
 
 
