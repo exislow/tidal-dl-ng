@@ -567,10 +567,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if len(items) == 0:
             logger_gui.error("Please select a row first.")
         else:
+            # If it is an artist resolve it with all available albums of him
+            if len(items) == 1:
+                tmp_media: QtWidgets.QTreeWidgetItem = items[0].data(5, QtCore.Qt.ItemDataRole.UserRole)
+
+                if isinstance(tmp_media, Artist):
+                    tmp_children: [QtWidgets.QTreeWidgetItem] = []
+                    is_dummy_child = not bool(items[0].child(0).data(5, QtCore.Qt.ItemDataRole.UserRole))
+
+                    # Use the expand function to retrieve all albums.
+                    if is_dummy_child:
+                        self.on_tr_results_expanded(items[0])
+
+                    count_children: int = items[0].childCount()
+
+                    # Get all children.
+                    for idx in range(count_children):
+                        tmp_children.append(items[0].child(idx))
+
+                    items: [Album] = tmp_children
+
             items_pos_last = len(items) - 1
 
             for item in items:
-                media: Track | Album | Playlist | Video = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+                media: Track | Album | Playlist | Video | Artist = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
                 # Skip only if Track item, skip option set and the item is not the last in the list.
                 download_delay: bool = bool(
                     isinstance(media, Track | Video)
@@ -583,7 +603,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_download.setText("Download")
         self.pb_download.setEnabled(True)
 
-    def download(self, media: Track | Album | Playlist | Video | Mix, dl: Download, delay_track: bool = False) -> None:
+    def download(
+        self, media: Track | Album | Playlist | Video | Mix | Artist, dl: Download, delay_track: bool = False
+    ) -> None:
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
