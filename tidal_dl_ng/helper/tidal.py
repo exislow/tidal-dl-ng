@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.artist import Artist, Role
 from tidalapi.session import SearchTypes
@@ -87,21 +89,25 @@ def search_results_all(session: Session, needle: str, types_media: SearchTypes =
     return result
 
 
-def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool = True) -> [Track | Video]:
+def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool = True) -> [Track | Video | Album]:
     limit: int = 100
     offset: int = 0
     done: bool = False
-    result: [Track | Video] = []
+    result: [Track | Video | Album] = []
 
     if isinstance(media_list, Mix):
         result = media_list.items()
     else:
+        if isinstance(media_list, Playlist | Album):
+            if videos_include:
+                func_get_items_media: Callable = media_list.items
+            else:
+                func_get_items_media: Callable = media_list.tracks
+        else:
+            func_get_items_media: Callable = media_list.get_albums
+
         while not done:
-            tmp_result: [Track | Video] = (
-                media_list.items(limit=limit, offset=offset)
-                if videos_include
-                else media_list.tracks(limit=limit, offset=offset)
-            )
+            tmp_result: [Track | Video] = func_get_items_media(limit=limit, offset=offset)
 
             if bool(tmp_result):
                 result += tmp_result
