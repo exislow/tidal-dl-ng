@@ -2,6 +2,7 @@ import os.path
 from enum import Enum
 from pathlib import Path
 
+from helper.path import is_installed_ffmpeg
 from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Quality as QualityAudio
 
@@ -86,19 +87,39 @@ class DialogPreferences(QtWidgets.QDialog):
         pixmapi: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.SP_MessageBoxQuestion
         self.icon = self.style().standardIcon(pixmapi)
 
-        self.parameters_checkboxes = [
-            "lyrics_embed",
-            "lyrics_file",
-            "video_download",
-            "download_delay",
-            "video_convert_mp4",
-        ]
-        self.parameters_combo = [
-            ("skip_existing", SkipExisting),
-            ("quality_audio", QualityAudio),
-            ("quality_video", QualityVideo),
-            ("metadata_cover_dimension", CoverDimensions),
-        ]
+        self._init_checkboxes()
+        self._init_comboboxes()
+        self._init_line_edit()
+
+        # Create an instance of the GUI
+        self.ui = Ui_DialogSettings()
+
+        # Run the .setupUi() method to show the GUI
+        self.ui.setupUi(self)
+        # Set data.
+        self.gui_populate()
+        self._init_signals()
+
+        self.exec()
+
+    def _init_signals(self):
+        self.ui.cb_video_convert_mp4.stateChanged.connect(self.on_cb_video_convert_mp4)
+
+    def on_cb_video_convert_mp4(self, int):
+        if self.ui.cb_video_convert_mp4.isChecked():
+            # Check if ffmpeg is in PATH otherwise show error message.
+            if not is_installed_ffmpeg():
+                self.ui.cb_video_convert_mp4.setChecked(False)
+                self.ui.cb_video_convert_mp4.setCheckState(QtCore.Qt.CheckState.Unchecked)
+                QtWidgets.QMessageBox.critical(
+                    self,
+                    "FFmpeg not found!",
+                    "Either FFmpeg is not installed on your computer or not set within "
+                    "your PATH variable. You cannot activate this option until FFmpeg "
+                    "is correctly installed and set to your environmental PATH variable.",
+                )
+
+    def _init_line_edit(self):
         self.parameters_line_edit = [
             "download_base_path",
             "format_album",
@@ -108,15 +129,22 @@ class DialogPreferences(QtWidgets.QDialog):
             "format_video",
         ]
 
-        # Create an instance of the GUI
-        self.ui = Ui_DialogSettings()
+    def _init_comboboxes(self):
+        self.parameters_combo = [
+            ("skip_existing", SkipExisting),
+            ("quality_audio", QualityAudio),
+            ("quality_video", QualityVideo),
+            ("metadata_cover_dimension", CoverDimensions),
+        ]
 
-        # Run the .setupUi() method to show the GUI
-        self.ui.setupUi(self)
-        # Set data.
-        self.gui_populate()
-
-        self.exec()
+    def _init_checkboxes(self):
+        self.parameters_checkboxes = [
+            "lyrics_embed",
+            "lyrics_file",
+            "video_download",
+            "download_delay",
+            "video_convert_mp4",
+        ]
 
     def gui_populate(self):
         self.populate_checkboxes()
@@ -190,7 +218,7 @@ class DialogPreferences(QtWidgets.QDialog):
             checkbox.setChecked(getattr(self.data, pn))
 
     def accept(self):
-        # Get settings. TODO
+        # Get settings.
         self.to_settings()
         self.done(1)
 
