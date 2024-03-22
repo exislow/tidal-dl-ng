@@ -1,5 +1,5 @@
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.artist import Role, Artist
+from tidalapi.artist import Artist, Role
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType

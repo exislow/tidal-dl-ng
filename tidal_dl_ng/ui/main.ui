@@ -246,7 +246,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="b_search">
+           <widget class="QPushButton" name="pb_search">
             <property name="statusTip">
              <string notr="true"/>
             </property>
@@ -436,7 +436,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="b_download">
+           <widget class="QPushButton" name="pb_download">
             <property name="toolTip">
              <string notr="true"/>
             </property>

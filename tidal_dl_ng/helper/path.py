@@ -2,6 +2,7 @@ import glob
 import math
 import os
 import re
+import shutil
 from pathlib import Path, PosixPath
 
 from pathvalidate import sanitize_filename, sanitize_filepath
@@ -10,7 +11,7 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 
 from tidal_dl_ng import __name_display__
 from tidal_dl_ng.constants import FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, AudioExtensions, MediaType
-from tidal_dl_ng.helper.tidal import name_builder_artist, name_builder_title, name_builder_album_artist
+from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_artist, name_builder_title
 
 
 def path_home() -> str:
@@ -259,5 +260,12 @@ def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
         path_files: [str] = [path_file]
 
     result = bool(sum([glob.glob(_file) for _file in path_files], []))
+
+    return result
+
+
+def is_installed_ffmpeg() -> bool:
+    # Checks if ffmpeg is found in PATH.
+    result: bool = bool(shutil.which("ffmpeg"))
 
     return result
