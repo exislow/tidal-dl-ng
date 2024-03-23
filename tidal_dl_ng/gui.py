@@ -185,8 +185,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cb_search_type.setCurrentIndex(2)
 
     def _init_tree_results(self, tree: QtWidgets.QTableWidget):
-        tree.setColumnHidden(5, True)
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        tree.setColumnHidden(1, True)
 
     def tidal_user_lists(self):
         # Start loading spinner
@@ -228,8 +228,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 info: str = item.sub_title
 
             twi_child.setText(0, name)
-            twi_child.setText(1, info)
-            twi_child.setData(3, QtCore.Qt.ItemDataRole.UserRole, item)
+            twi_child.setData(1, QtCore.Qt.ItemDataRole.UserRole, item)
+            twi_child.setText(2, info)
 
         # Stop load spinner
         self.s_spinner_stop.emit()
@@ -238,8 +238,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _init_tree_lists(self, tree: QtWidgets.QTreeWidget):
         # Adjust Tree.
         tree.setColumnWidth(0, 200)
-        tree.setColumnWidth(1, 300)
-        tree.setColumnHidden(2, True)
+        tree.setColumnHidden(1, True)
+        tree.setColumnWidth(2, 300)
         tree.expandAll()
 
         # Connect the contextmenu
@@ -336,11 +336,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Populate child
         child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
         child.setText(0, index)
-        child.setText(1, item.artist)
-        child.setText(2, item.title)
-        child.setText(3, item.album)
-        child.setText(4, duration)
-        child.setData(5, QtCore.Qt.ItemDataRole.UserRole, item.obj)
+        child.setData(1, QtCore.Qt.ItemDataRole.UserRole, item.obj)
+        child.setText(2, item.artist)
+        child.setText(3, item.title)
+        child.setText(4, item.album)
+        child.setText(5, duration)
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
@@ -529,7 +529,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tidal.settings_apply()
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem):
-        media_list: Album | Playlist = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
+        media_list: Album | Playlist = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
 
         # Only if clicked item is not a top level item.
         if media_list:
@@ -543,7 +543,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     ) -> None:
         if point:
             item = self.tr_lists_user.itemAt(point)
-            media_list = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
+            media_list = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
 
         # Get all results
         media_items: [Track | Video | Album] = items_results_all(media_list)
@@ -569,11 +569,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             # If it is an artist resolve it with all available albums of him
             if len(items) == 1:
-                tmp_media: QtWidgets.QTreeWidgetItem = items[0].data(5, QtCore.Qt.ItemDataRole.UserRole)
+                tmp_media: QtWidgets.QTreeWidgetItem = items[0].data(1, QtCore.Qt.ItemDataRole.UserRole)
 
                 if isinstance(tmp_media, Artist):
                     tmp_children: [QtWidgets.QTreeWidgetItem] = []
-                    is_dummy_child = not bool(items[0].child(0).data(5, QtCore.Qt.ItemDataRole.UserRole))
+                    is_dummy_child = not bool(items[0].child(0).data(1, QtCore.Qt.ItemDataRole.UserRole))
 
                     # Use the expand function to retrieve all albums.
                     if is_dummy_child:
@@ -590,7 +590,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             items_pos_last = len(items) - 1
 
             for item in items:
-                media: Track | Album | Playlist | Video | Artist = item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+                media: Track | Album | Playlist | Video | Artist = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
                 # Skip only if Track item, skip option set and the item is not the last in the list.
                 download_delay: bool = bool(
                     isinstance(media, Track | Video)
@@ -635,7 +635,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if load_children:
             list_item.removeChild(list_item.child(0))
-            media_list: [Mix | Album | Playlist | Artist] = list_item.data(5, QtCore.Qt.ItemDataRole.UserRole)
+            media_list: [Mix | Album | Playlist | Artist] = list_item.data(1, QtCore.Qt.ItemDataRole.UserRole)
 
             self.list_items_show_result(media_list=media_list, parent=list_item)
 
