@@ -90,31 +90,36 @@ def search_results_all(session: Session, needle: str, types_media: SearchTypes =
 
 
 def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool = True) -> [Track | Video | Album]:
-    limit: int = 100
-    offset: int = 0
-    done: bool = False
     result: [Track | Video | Album] = []
 
     if isinstance(media_list, Mix):
         result = media_list.items()
     else:
+        func_get_items_media: [Callable] = []
+
         if isinstance(media_list, Playlist | Album):
             if videos_include:
-                func_get_items_media: Callable = media_list.items
+                func_get_items_media.append(media_list.items)
             else:
-                func_get_items_media: Callable = media_list.tracks
+                func_get_items_media.append(media_list.tracks)
         else:
-            func_get_items_media: Callable = media_list.get_albums
+            func_get_items_media.append(media_list.get_albums)
+            func_get_items_media.append(media_list.get_albums_ep_singles)
 
-        while not done:
-            tmp_result: [Track | Video] = func_get_items_media(limit=limit, offset=offset)
+        for func_media in func_get_items_media:
+            limit: int = 100
+            offset: int = 0
+            done: bool = False
 
-            if bool(tmp_result):
-                result += tmp_result
-                # Get the next page in the next iteration.
-                offset += limit
-            else:
-                done = True
+            while not done:
+                tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
+
+                if bool(tmp_result):
+                    result += tmp_result
+                    # Get the next page in the next iteration.
+                    offset += limit
+                else:
+                    done = True
 
     return result
 
