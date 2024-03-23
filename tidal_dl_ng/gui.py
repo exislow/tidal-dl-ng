@@ -81,6 +81,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self._init_tree_results(self.tr_results)
         self._init_tree_lists(self.tr_lists_user)
+        self._init_table_queue(self.ta_queue_dl)
+        self._init_info()
         self._init_progressbar()
         self._populate_quality(self.cb_quality_audio, Quality)
         self._populate_quality(self.cb_quality_video, QualityVideo)
@@ -156,6 +158,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # self.pb_progress.setVisible()
             self.statusbar.addPermanentWidget(pb)
 
+    def _init_info(self):
+        self.l_pm_cover.setPixmap(QtGui.QPixmap("tidal_dl_ng/ui/placeholder_cover.jpg"))
+
     def on_progress_reset(self):
         self.pb_list.setValue(0)
         self.pb_item.setValue(0)
@@ -185,6 +190,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cb_search_type.setCurrentIndex(2)
 
     def _init_tree_results(self, tree: QtWidgets.QTableWidget):
+        tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        tree.setColumnHidden(1, True)
+
+    def _init_table_queue(self, tree: QtWidgets.QTableWidget):
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
 
