@@ -177,20 +177,21 @@ class Download:
         video_download: bool = True,
         download_delay: bool = False,
     ) -> (bool, str):
-        # If no media instance is provided, we need to create the media instance.
-        if media_id and media_type:
-            media = instantiate_media(self.session, media_type, media_id)
-        elif isinstance(media, Track):
-            media = self.session.track(media.id, with_album=True)
-        elif not media:
-            raise MediaMissing
-
-        # Check if media is available not deactivated / removed from TIDAL.
-        if not media.available:
-            self.fn_logger.info(
-                f"This track is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
-            )
-
+        try:
+            if media_id and media_type:
+                # If no media instance is provided, we need to create the media instance.
+                media = instantiate_media(self.session, media_type, media_id)
+            elif isinstance(media, Track):  # Check if media is available not deactivated / removed from TIDAL.
+                if not media.available:
+                    self.fn_logger.info(
+                        f"This track is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
+                    )
+                else:
+                    # Re-create media instance with full album information
+                    media = self.session.track(media.id, with_album=True)
+            elif not media:
+                raise MediaMissing
+        except:
             return False, ""
 
         # If video download is not allowed end here

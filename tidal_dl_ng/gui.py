@@ -6,7 +6,6 @@ from requests.exceptions import HTTPError
 
 from tidal_dl_ng import version
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
-from tidal_dl_ng.helper.exceptions import MediaUnknown
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
@@ -367,7 +366,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             try:
                 media = instantiate_media(self.tidal.session, media_type, item_id)
-            except MediaUnknown:
+            except:
+                logger_gui.error(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
+
                 media = None
 
             result_search = {"direct": [media]}
