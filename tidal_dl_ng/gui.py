@@ -7,6 +7,7 @@ from requests.exceptions import HTTPError
 from tidal_dl_ng import version
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.exceptions import MediaUnknown
+from tidal_dl_ng.helper.gui import get_results_media_item
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
@@ -18,6 +19,7 @@ from tidal_dl_ng.helper.tidal import (
     search_results_all,
     user_media_lists,
 )
+from tidal_dl_ng.metadata import Metadata
 
 try:
     import qdarktheme
@@ -159,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.statusbar.addPermanentWidget(pb)
 
     def _init_info(self):
-        self.l_pm_cover.setPixmap(QtGui.QPixmap("tidal_dl_ng/ui/placeholder_cover.jpg"))
+        self.l_pm_cover.setPixmap(QtGui.QPixmap("tidal_dl_ng/ui/default_album_image.png"))
 
     def on_progress_reset(self):
         self.pb_list.setValue(0)
@@ -504,6 +506,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Results
         self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
+        self.tr_results.itemClicked.connect(self.on_result_item_clicked)
 
     def on_logout(self):
         result: bool = self.tidal.logout()
@@ -543,6 +546,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Only if clicked item is not a top level item.
         if media_list:
             self.list_items_show_result(media_list)
+
+    def on_result_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
+        media: Track | Video | Album | Artist = get_results_media_item(item)
+        data_cover: bytes = Metadata.cover_data(media.album.image())
+        pixmap: QtGui.QPixmap = QtGui.QPixmap()
+        pixmap.loadFromData(data_cover)
+        self.l_pm_cover.setPixmap(pixmap)
 
     def list_items_show_result(
         self,
