@@ -21,7 +21,6 @@ from tidal_dl_ng.constants import (
     EXTENSION_LYRICS,
     REQUESTS_TIMEOUT_SEC,
     AudioExtensions,
-    CoverDimensions,
     MediaType,
     SkipExisting,
     StreamManifestMimeType,
@@ -271,12 +270,6 @@ class Download:
             # Move it.
             shutil.move(tmp_lyrics_file_path, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
 
-    def cover_url(self, sid: str, dimension: CoverDimensions = CoverDimensions.Px320):
-        if sid is None:
-            return ""
-
-        return f"https://resources.tidal.com/images/{sid.replace('-', '/')}/{dimension.value}.jpg"
-
     def lyrics_write_file(self, file_path: str, lyrics: str) -> str:
         result: str = file_path
 
@@ -331,9 +324,7 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=(
-                self.cover_url(track.album.cover, self.settings.data.metadata_cover_dimension) if track.album else ""
-            ),
+            url_cover=track.album.image(self.settings.data.metadata_cover_dimension),
         )
 
         m.save()

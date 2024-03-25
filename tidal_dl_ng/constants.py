@@ -36,9 +36,11 @@ class StreamManifestMimeType(Enum):
 
 
 class CoverDimensions(Enum):
-    Px320: str = "320x320"
-    Px640: str = "640x640"
-    Px1280: str = "1280x1280"
+    Px80: int = 80
+    Px160: int = 160
+    Px320: int = 320
+    Px640: int = 640
+    Px1280: int = 1280
 
 
 class TidalLists(Enum):
