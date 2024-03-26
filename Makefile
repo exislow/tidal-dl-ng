@@ -60,7 +60,7 @@ help:
 .PHONY: gui-windows
 gui-windows: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
-		--windowed --onefile \
+		--windowed --onedir \
 		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.ico \
@@ -69,7 +69,7 @@ gui-windows: ## Build GUI app with PyInstaller
 .PHONY: gui-linux
 gui-linux: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
-		--windowed --onefile \
+		--windowed --onedir \
 		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.png \
@@ -78,10 +78,11 @@ gui-linux: ## Build GUI app with PyInstaller
 .PHONY: gui-macos
 gui-macos: ## Build GUI app with PyInstaller
 	@poetry run pyinstaller --noconfirm \
-		--windowed --onefile \
+		--windowed --onedir \
 		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.icns \
+		--add-binary="pyproject.toml:." \
 		tidal_dl_ng/gui.py
 
 # TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
