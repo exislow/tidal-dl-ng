@@ -2054,20 +2054,6 @@ socks = ["pysocks (>=1.5.6,!=1.5.7,<2.0)"]
 zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
-name = "usingversion"
-version = "0.1.2"
-description = "A package to make it easy for other packages to report their version."
-optional = false
-python-versions = ">=3.9,<4.0"
-files = [
-    {file = "usingversion-0.1.2-py3-none-any.whl", hash = "sha256:9ed8256e68d0b169f00c70f64f9a74a2d668a575032c30b12b3d13a97512fbde"},
-    {file = "usingversion-0.1.2.tar.gz", hash = "sha256:d254068f7080eaa6d28a7d602d27828da3bc1a8b3bc10911f5cbb9b46877e7c8"},
-]
-
-[package.dependencies]
-toml = ">=0.10.2,<0.11.0"
-
-[[package]]
 name = "virtualenv"
 version = "20.25.1"
 description = "Virtual Python Environment builder"
@@ -2134,4 +2120,4 @@ gui = ["pyqtdarktheme", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.12"
-content-hash = "2db1405cc187edc07636904cbfcba15f7e4ae5f7c3f96fcfebc239c7f84f79cc"
+content-hash = "44c015a2d93d1698fdc1236f88ea6bd74b60bc753863439703edbe0ff1c1f057"
