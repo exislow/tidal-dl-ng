@@ -64,6 +64,7 @@ gui-windows: ## Build GUI app with PyInstaller
 		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.ico \
+		--add-binary="pyproject.toml:." \
 		tidal_dl_ng/gui.py
 
 .PHONY: gui-linux
@@ -73,6 +74,7 @@ gui-linux: ## Build GUI app with PyInstaller
 		--name "$(APP_NAME)" \
 		--noupx \
 		--icon $(path_asset)/icon.png \
+		--add-binary="pyproject.toml:." \
 		tidal_dl_ng/gui.py
 
 .PHONY: gui-macos
