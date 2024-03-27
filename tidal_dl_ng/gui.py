@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from requests.exceptions import HTTPError
 
-from tidal_dl_ng import __version__
+from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
@@ -64,6 +64,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
     s_settings_save: QtCore.Signal = QtCore.Signal()
     s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
+    s_update_check: QtCore.Signal = QtCore.Signal()
+    s_update_show: QtCore.Signal = QtCore.Signal()
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -244,6 +246,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Connect the contextmenu
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_lists)
+
+    def on_update_check(self):
+        is_available, info = update_available()
+
+        if is_available:
+            QtWidgets.QMessageBox.information(
+                self, "New Version Available", "test", QtWidgets.QMessageBox.StandardButton.Ok
+            )
 
     def apply_settings(self, settings: Settings):
         l_cb = [
@@ -485,8 +495,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
         self.s_settings_save.connect(self.on_settings_save)
-        self.pb_reload_user_lists.clicked.connect(lambda x: self.thread_it(self.tidal_user_lists))
+        self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
         self.s_pb_reload_status.connect(self.button_reload_status)
+        self.s_update_check.connect(lambda: self.thread_it(self.on_update_check))
 
         # Menubar
         self.a_exit.triggered.connect(sys.exit)
@@ -676,6 +687,8 @@ def gui_activate(tidal: Tidal | None = None):
 
     window = MainWindow(tidal=tidal)
     window.show()
+    # Check for updates
+    window.s_update_check.emit()
 
     sys.exit(app.exec())
 
