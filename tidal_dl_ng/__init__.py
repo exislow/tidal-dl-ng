@@ -121,8 +121,9 @@ __version__ = version_app()
 def update_available() -> (bool, ReleaseLatest):
     latest_info: ReleaseLatest = latest_version_information()
     result: bool = False
+    version_current: str = "v" + __version__
 
-    if "v" + __version__ != latest_info.version:
+    if version_current != latest_info.version and version_current != "v0.0.0":
         result = True
 
     return result, latest_info
