@@ -1,4 +1,5 @@
 import os.path
+import webbrowser
 from enum import Enum
 from pathlib import Path
 
@@ -11,6 +12,7 @@ from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 from tidal_dl_ng.helper.path import is_installed_ffmpeg
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
+from tidal_dl_ng.model.meta import ReleaseLatest
 from tidal_dl_ng.ui.dialog_login import Ui_DialogLogin
 from tidal_dl_ng.ui.dialog_settings import Ui_DialogSettings
 from tidal_dl_ng.ui.dialog_version import Ui_DialogVersion
@@ -21,7 +23,9 @@ class DialogVersion(QtWidgets.QDialog):
 
     ui: Ui_DialogVersion
 
-    def __init__(self, parent=None):
+    def __init__(
+        self, parent=None, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest = None
+    ):
         super().__init__(parent)
 
         # Create an instance of the GUI
@@ -31,8 +35,38 @@ class DialogVersion(QtWidgets.QDialog):
         self.ui.setupUi(self)
         # Set the version.
         self.ui.l_version.setText("v" + __version__)
+
+        if not update_check:
+            self.update_info_hide()
+            self.error_hide()
+        else:
+            self.update_info(update_available, update_info)
+
         # Show
         self.exec()
+
+    def update_info(self, update_available: bool, update_info: ReleaseLatest):
+        if not update_available and update_info.version == "v0.0.0":
+            self.update_info_hide()
+            self.ui.l_error_details.setText(
+                "Cannot retrieve update information. Maybe something is wrong with your internet connection."
+            )
+        else:
+            self.error_hide()
+            self.ui.l_version_new.setText(update_info.version)
+            self.ui.l_changelog_details.setText(update_info.release_info)
+            self.ui.pb_download.clicked.connect(lambda: webbrowser.open(update_info.url))
+
+    def error_hide(self):
+        self.ui.l_error.setHidden(True)
+        self.ui.l_error_details.setHidden(True)
+
+    def update_info_hide(self):
+        self.ui.l_h_version_new.setHidden(True)
+        self.ui.l_version_new.setHidden(True)
+        self.ui.l_changelog.setHidden(True)
+        self.ui.l_changelog_details.setHidden(True)
+        self.ui.pb_download.setHidden(True)
 
 
 class DialogLogin(QtWidgets.QDialog):

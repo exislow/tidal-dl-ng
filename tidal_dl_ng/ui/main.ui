@@ -558,11 +558,18 @@
      <string>File</string>
     </property>
     <addaction name="a_preferences"/>
-    <addaction name="a_version"/>
     <addaction name="a_logout"/>
     <addaction name="a_exit"/>
    </widget>
+   <widget class="QMenu" name="m_help">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="a_version"/>
+    <addaction name="a_updates_check"/>
+   </widget>
    <addaction name="m_file"/>
+   <addaction name="m_help"/>
   </widget>
   <widget class="QStatusBar" name="statusbar">
    <property name="toolTip">
@@ -617,6 +624,11 @@
   <action name="a_logout">
    <property name="text">
     <string>Logout</string>
+   </property>
+  </action>
+  <action name="a_updates_check">
+   <property name="text">
+    <string>Check for Updates</string>
    </property>
   </action>
  </widget>

@@ -37,6 +37,7 @@ from tidal_dl_ng.constants import QualityVideo, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, ResultItem, StatusbarMessage
+from tidal_dl_ng.model.meta import ReleaseLatest
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
@@ -65,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_settings_save: QtCore.Signal = QtCore.Signal()
     s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
     s_update_check: QtCore.Signal = QtCore.Signal()
-    s_update_show: QtCore.Signal = QtCore.Signal()
+    s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -251,9 +252,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         is_available, info = update_available()
 
         if is_available:
-            QtWidgets.QMessageBox.information(
-                self, "New Version Available", "test", QtWidgets.QMessageBox.StandardButton.Ok
-            )
+            self.s_update_show.emit(True, is_available, info)
 
     def apply_settings(self, settings: Settings):
         l_cb = [
@@ -498,12 +497,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
         self.s_pb_reload_status.connect(self.button_reload_status)
         self.s_update_check.connect(lambda: self.thread_it(self.on_update_check))
+        self.s_update_show.connect(self.on_version)
 
         # Menubar
         self.a_exit.triggered.connect(sys.exit)
         self.a_version.triggered.connect(self.on_version)
         self.a_preferences.triggered.connect(self.on_preferences)
         self.a_logout.triggered.connect(self.on_logout)
+        self.a_updates_check.triggered.connect(self.on_update_check)
 
         # Results
         self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
@@ -635,8 +636,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
 
-    def on_version(self) -> None:
-        DialogVersion(self)
+    def on_version(
+        self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest = None
+    ) -> None:
+        DialogVersion(self, update_check, update_available, update_info)
 
     def on_preferences(self) -> None:
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)

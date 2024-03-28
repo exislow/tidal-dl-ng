@@ -53,6 +53,8 @@ class Ui_MainWindow:
         self.a_exit.setObjectName("a_exit")
         self.a_logout = QAction(MainWindow)
         self.a_logout.setObjectName("a_logout")
+        self.a_updates_check = QAction(MainWindow)
+        self.a_updates_check.setObjectName("a_updates_check")
         self.w_central = QWidget(MainWindow)
         self.w_central.setObjectName("w_central")
         self.w_central.setEnabled(True)
@@ -418,6 +420,8 @@ class Ui_MainWindow:
         # if QT_CONFIG(accessibility)
         self.m_file.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
+        self.m_help = QMenu(self.menubar)
+        self.m_help.setObjectName("m_help")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
@@ -440,10 +444,12 @@ class Ui_MainWindow:
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.m_file.menuAction())
+        self.menubar.addAction(self.m_help.menuAction())
         self.m_file.addAction(self.a_preferences)
-        self.m_file.addAction(self.a_version)
         self.m_file.addAction(self.a_logout)
         self.m_file.addAction(self.a_exit)
+        self.m_help.addAction(self.a_version)
+        self.m_help.addAction(self.a_updates_check)
 
         self.retranslateUi(MainWindow)
 
@@ -456,6 +462,7 @@ class Ui_MainWindow:
         self.a_version.setText(QCoreApplication.translate("MainWindow", "Version", None))
         self.a_exit.setText(QCoreApplication.translate("MainWindow", "Exit", None))
         self.a_logout.setText(QCoreApplication.translate("MainWindow", "Logout", None))
+        self.a_updates_check.setText(QCoreApplication.translate("MainWindow", "Check for Updates", None))
         ___qtreewidgetitem = self.tr_lists_user.headerItem()
         ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", "obj", None))
 
@@ -479,5 +486,6 @@ class Ui_MainWindow:
         ___qtreewidgetitem4.setText(0, QCoreApplication.translate("MainWindow", "#", None))
         self.te_debug.setPlaceholderText(QCoreApplication.translate("MainWindow", "Logs...", None))
         self.m_file.setTitle(QCoreApplication.translate("MainWindow", "File", None))
+        self.m_help.setTitle(QCoreApplication.translate("MainWindow", "Help", None))
 
     # retranslateUi
