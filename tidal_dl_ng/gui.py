@@ -67,6 +67,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
     s_settings_save: QtCore.Signal = QtCore.Signal()
     s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
+    cover_url_current: str
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -549,10 +550,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_result_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
         media: Track | Video | Album | Artist = get_results_media_item(item)
-        data_cover: bytes = Metadata.cover_data(media.album.image())
-        pixmap: QtGui.QPixmap = QtGui.QPixmap()
-        pixmap.loadFromData(data_cover)
-        self.l_pm_cover.setPixmap(pixmap)
+        cover_url: str = media.album.image()
+
+        if self.cover_url_current != cover_url:
+            self.cover_url_current = cover_url
+            data_cover: bytes = Metadata.cover_data(cover_url)
+            pixmap: QtGui.QPixmap = QtGui.QPixmap()
+            pixmap.loadFromData(data_cover)
+            self.l_pm_cover.setPixmap(pixmap)
 
     def list_items_show_result(
         self,
