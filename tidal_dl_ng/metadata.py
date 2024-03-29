@@ -142,7 +142,8 @@ class Metadata:
         self.m.tags["\xa9wrt"] = ", ".join(self.composer) if self.composer else ""
         self.m.tags["\xa9lyr"] = self.lyrics
 
-    def cover_data(self, url: str = None, path_file: str = None) -> str | bytes:
+    @staticmethod
+    def cover_data(url: str = None, path_file: str = None) -> str | bytes:
         result: str | bytes = ""
 
         if url:

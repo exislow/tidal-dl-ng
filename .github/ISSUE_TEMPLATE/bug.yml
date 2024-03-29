@@ -20,7 +20,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Version
+      label: Version App
       description: What version of our software are you running?
       placeholder: vX.Y.Z
     validations:

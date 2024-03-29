@@ -7,13 +7,13 @@
 ################################################################################
 
 from PySide6.QtCore import QCoreApplication, QLocale, QMetaObject, QRect, QSize, Qt
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QFont, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
-    QLayout,
     QLineEdit,
     QMenu,
     QMenuBar,
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QStatusBar,
+    QTableWidget,
+    QTableWidgetItem,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -32,7 +34,7 @@ class Ui_MainWindow:
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(900, 700)
+        MainWindow.resize(1200, 800)
         self.a_preferences = QAction(MainWindow)
         self.a_preferences.setObjectName("a_preferences")
         self.a_preferences.setEnabled(True)
@@ -80,14 +82,11 @@ class Ui_MainWindow:
         # endif // QT_CONFIG(accessibility)
         self.horizontalLayout = QHBoxLayout(self.w_central)
         self.horizontalLayout.setObjectName("horizontalLayout")
-        self.lh_main = QHBoxLayout()
-        self.lh_main.setObjectName("lh_main")
-        self.lh_main.setSizeConstraint(QLayout.SetNoConstraint)
-        self.verticalLayout = QVBoxLayout()
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.lv_list_user = QVBoxLayout()
+        self.lv_list_user.setObjectName("lv_list_user")
         self.tr_lists_user = QTreeWidget(self.w_central)
         __qtreewidgetitem = QTreeWidgetItem()
-        __qtreewidgetitem.setText(1, "Info")
+        __qtreewidgetitem.setText(2, "Info")
         __qtreewidgetitem.setText(0, "Name")
         self.tr_lists_user.setHeaderItem(__qtreewidgetitem)
         __qtreewidgetitem1 = QTreeWidgetItem(self.tr_lists_user)
@@ -121,8 +120,10 @@ class Ui_MainWindow:
         self.tr_lists_user.header().setHighlightSections(True)
         self.tr_lists_user.header().setProperty("showSortIndicator", True)
 
-        self.verticalLayout.addWidget(self.tr_lists_user)
+        self.lv_list_user.addWidget(self.tr_lists_user)
 
+        self.lv_list_control = QHBoxLayout()
+        self.lv_list_control.setObjectName("lv_list_control")
         self.pb_reload_user_lists = QPushButton(self.w_central)
         self.pb_reload_user_lists.setObjectName("pb_reload_user_lists")
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -131,9 +132,18 @@ class Ui_MainWindow:
         sizePolicy1.setHeightForWidth(self.pb_reload_user_lists.sizePolicy().hasHeightForWidth())
         self.pb_reload_user_lists.setSizePolicy(sizePolicy1)
 
-        self.verticalLayout.addWidget(self.pb_reload_user_lists)
+        self.lv_list_control.addWidget(self.pb_reload_user_lists)
 
-        self.lh_main.addLayout(self.verticalLayout)
+        self.pb_download_list = QPushButton(self.w_central)
+        self.pb_download_list.setObjectName("pb_download_list")
+        sizePolicy1.setHeightForWidth(self.pb_download_list.sizePolicy().hasHeightForWidth())
+        self.pb_download_list.setSizePolicy(sizePolicy1)
+
+        self.lv_list_control.addWidget(self.pb_download_list)
+
+        self.lv_list_user.addLayout(self.lv_list_control)
+
+        self.horizontalLayout.addLayout(self.lv_list_user)
 
         self.lv_search_result = QVBoxLayout()
         # ifndef Q_OS_MAC
@@ -377,17 +387,91 @@ class Ui_MainWindow:
 
         self.lv_search_result.addWidget(self.te_debug)
 
-        self.lh_main.addLayout(self.lv_search_result)
+        self.horizontalLayout.addLayout(self.lv_search_result)
 
-        self.lh_main.setStretch(0, 40)
-        self.lh_main.setStretch(1, 60)
+        self.lv_info = QVBoxLayout()
+        self.lv_info.setObjectName("lv_info")
+        self.lv_info_item = QVBoxLayout()
+        self.lv_info_item.setObjectName("lv_info_item")
+        self.horizontalLayout_2 = QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.l_pm_cover = QLabel(self.w_central)
+        self.l_pm_cover.setObjectName("l_pm_cover")
+        sizePolicy3 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.l_pm_cover.sizePolicy().hasHeightForWidth())
+        self.l_pm_cover.setSizePolicy(sizePolicy3)
+        self.l_pm_cover.setMaximumSize(QSize(280, 280))
+        self.l_pm_cover.setBaseSize(QSize(0, 0))
+        self.l_pm_cover.setFrameShape(QFrame.NoFrame)
+        self.l_pm_cover.setPixmap(QPixmap("default_album_image.png"))
+        self.l_pm_cover.setScaledContents(True)
+        self.l_pm_cover.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
 
-        self.horizontalLayout.addLayout(self.lh_main)
+        self.horizontalLayout_2.addWidget(self.l_pm_cover)
 
+        self.lv_info_item.addLayout(self.horizontalLayout_2)
+
+        self.lv_info.addLayout(self.lv_info_item)
+
+        self.lv_queue_dl = QVBoxLayout()
+        self.lv_queue_dl.setObjectName("lv_queue_dl")
+        self.l_h_queue_dl = QLabel(self.w_central)
+        self.l_h_queue_dl.setObjectName("l_h_queue_dl")
+        font = QFont()
+        font.setBold(True)
+        font.setItalic(False)
+        font.setKerning(True)
+        self.l_h_queue_dl.setFont(font)
+
+        self.lv_queue_dl.addWidget(self.l_h_queue_dl)
+
+        self.ta_queue_dl = QTableWidget(self.w_central)
+        if self.ta_queue_dl.columnCount() < 5:
+            self.ta_queue_dl.setColumnCount(5)
+        __qtablewidgetitem = QTableWidgetItem()
+        __qtablewidgetitem.setTextAlignment(Qt.AlignLeading | Qt.AlignVCenter)
+        self.ta_queue_dl.setHorizontalHeaderItem(0, __qtablewidgetitem)
+        __qtablewidgetitem1 = QTableWidgetItem()
+        self.ta_queue_dl.setHorizontalHeaderItem(1, __qtablewidgetitem1)
+        __qtablewidgetitem2 = QTableWidgetItem()
+        __qtablewidgetitem2.setTextAlignment(Qt.AlignLeading | Qt.AlignVCenter)
+        self.ta_queue_dl.setHorizontalHeaderItem(2, __qtablewidgetitem2)
+        __qtablewidgetitem3 = QTableWidgetItem()
+        __qtablewidgetitem3.setTextAlignment(Qt.AlignLeading | Qt.AlignVCenter)
+        self.ta_queue_dl.setHorizontalHeaderItem(3, __qtablewidgetitem3)
+        __qtablewidgetitem4 = QTableWidgetItem()
+        __qtablewidgetitem4.setTextAlignment(Qt.AlignLeading | Qt.AlignVCenter)
+        self.ta_queue_dl.setHorizontalHeaderItem(4, __qtablewidgetitem4)
+        self.ta_queue_dl.setObjectName("ta_queue_dl")
+        self.ta_queue_dl.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.ta_queue_dl.setTabKeyNavigation(False)
+        self.ta_queue_dl.setProperty("showDropIndicator", False)
+        self.ta_queue_dl.setDragDropOverwriteMode(False)
+        self.ta_queue_dl.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.ta_queue_dl.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.ta_queue_dl.setSortingEnabled(True)
+        self.ta_queue_dl.verticalHeader().setProperty("showSortIndicator", True)
+
+        self.lv_queue_dl.addWidget(self.ta_queue_dl)
+
+        self.pb_queue_item_remove = QPushButton(self.w_central)
+        self.pb_queue_item_remove.setObjectName("pb_queue_item_remove")
+        self.pb_queue_item_remove.setEnabled(False)
+
+        self.lv_queue_dl.addWidget(self.pb_queue_item_remove)
+
+        self.lv_info.addLayout(self.lv_queue_dl)
+
+        self.horizontalLayout.addLayout(self.lv_info)
+
+        self.horizontalLayout.setStretch(1, 50)
+        self.horizontalLayout.setStretch(2, 25)
         MainWindow.setCentralWidget(self.w_central)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName("menubar")
-        self.menubar.setGeometry(QRect(0, 0, 900, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1200, 24))
         # if QT_CONFIG(tooltip)
         self.menubar.setToolTip("")
         # endif // QT_CONFIG(tooltip)
@@ -464,7 +548,7 @@ class Ui_MainWindow:
         self.a_logout.setText(QCoreApplication.translate("MainWindow", "Logout", None))
         self.a_updates_check.setText(QCoreApplication.translate("MainWindow", "Check for Updates", None))
         ___qtreewidgetitem = self.tr_lists_user.headerItem()
-        ___qtreewidgetitem.setText(2, QCoreApplication.translate("MainWindow", "obj", None))
+        ___qtreewidgetitem.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
 
         __sortingEnabled = self.tr_lists_user.isSortingEnabled()
         self.tr_lists_user.setSortingEnabled(False)
@@ -477,14 +561,29 @@ class Ui_MainWindow:
         self.tr_lists_user.setSortingEnabled(__sortingEnabled)
 
         self.pb_reload_user_lists.setText(QCoreApplication.translate("MainWindow", "Reload", None))
+        self.pb_download_list.setText(QCoreApplication.translate("MainWindow", "Download List", None))
         ___qtreewidgetitem4 = self.tr_results.headerItem()
-        ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "obj", None))
-        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Duration", None))
-        ___qtreewidgetitem4.setText(3, QCoreApplication.translate("MainWindow", "Album", None))
-        ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Title", None))
-        ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "Artist", None))
+        ___qtreewidgetitem4.setText(6, QCoreApplication.translate("MainWindow", "Quality", None))
+        ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "Duration", None))
+        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Album", None))
+        ___qtreewidgetitem4.setText(3, QCoreApplication.translate("MainWindow", "Title", None))
+        ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Artist", None))
+        ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
         ___qtreewidgetitem4.setText(0, QCoreApplication.translate("MainWindow", "#", None))
         self.te_debug.setPlaceholderText(QCoreApplication.translate("MainWindow", "Logs...", None))
+        self.l_pm_cover.setText("")
+        self.l_h_queue_dl.setText(QCoreApplication.translate("MainWindow", "Download Queue", None))
+        ___qtablewidgetitem = self.ta_queue_dl.horizontalHeaderItem(0)
+        ___qtablewidgetitem.setText(QCoreApplication.translate("MainWindow", "#", None))
+        ___qtablewidgetitem1 = self.ta_queue_dl.horizontalHeaderItem(1)
+        ___qtablewidgetitem1.setText(QCoreApplication.translate("MainWindow", "obj", None))
+        ___qtablewidgetitem2 = self.ta_queue_dl.horizontalHeaderItem(2)
+        ___qtablewidgetitem2.setText(QCoreApplication.translate("MainWindow", "Name", None))
+        ___qtablewidgetitem3 = self.ta_queue_dl.horizontalHeaderItem(3)
+        ___qtablewidgetitem3.setText(QCoreApplication.translate("MainWindow", "Type", None))
+        ___qtablewidgetitem4 = self.ta_queue_dl.horizontalHeaderItem(4)
+        ___qtablewidgetitem4.setText(QCoreApplication.translate("MainWindow", "Quality", None))
+        self.pb_queue_item_remove.setText(QCoreApplication.translate("MainWindow", "Remove", None))
         self.m_file.setTitle(QCoreApplication.translate("MainWindow", "File", None))
         self.m_help.setTitle(QCoreApplication.translate("MainWindow", "Help", None))
 
