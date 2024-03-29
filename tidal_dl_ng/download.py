@@ -29,7 +29,7 @@ from tidal_dl_ng.constants import (
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
-from tidal_dl_ng.helper.path import check_file_exists, format_path_media, is_installed_ffmpeg, path_file_sanitize
+from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
 from tidal_dl_ng.helper.tidal import (
     instantiate_media,
     items_results_all,
@@ -82,11 +82,11 @@ class Download:
         self.progress = progress
         self.path_base = path_base
 
-        if not is_installed_ffmpeg() and self.settings.data.video_convert_mp4:
+        if not self.settings.data.path_binary_ffmpeg and self.settings.data.video_convert_mp4:
             self.settings.data.video_convert_mp4 = False
             self.fn_logger.error(
-                "Cannot find FFmpeg in PATH. Videos can be downloaded but will not be processed. "
-                "Make sure FFmpeg is installed correctly and present within your environmental PATH variable."
+                "FFmpeg in path is not set. Videos can be downloaded but will not be processed. "
+                "Make sure FFmpeg is installed and the path to the binary is configured ('path_binary_ffmpeg')."
             )
 
     def _download(
