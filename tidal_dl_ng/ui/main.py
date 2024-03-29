@@ -120,6 +120,8 @@ class Ui_MainWindow:
 
         self.lv_list_user.addWidget(self.tr_lists_user)
 
+        self.lv_list_control = QHBoxLayout()
+        self.lv_list_control.setObjectName("lv_list_control")
         self.pb_reload_user_lists = QPushButton(self.w_central)
         self.pb_reload_user_lists.setObjectName("pb_reload_user_lists")
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -128,7 +130,16 @@ class Ui_MainWindow:
         sizePolicy1.setHeightForWidth(self.pb_reload_user_lists.sizePolicy().hasHeightForWidth())
         self.pb_reload_user_lists.setSizePolicy(sizePolicy1)
 
-        self.lv_list_user.addWidget(self.pb_reload_user_lists)
+        self.lv_list_control.addWidget(self.pb_reload_user_lists)
+
+        self.pb_download_list = QPushButton(self.w_central)
+        self.pb_download_list.setObjectName("pb_download_list")
+        sizePolicy1.setHeightForWidth(self.pb_download_list.sizePolicy().hasHeightForWidth())
+        self.pb_download_list.setSizePolicy(sizePolicy1)
+
+        self.lv_list_control.addWidget(self.pb_download_list)
+
+        self.lv_list_user.addLayout(self.lv_list_control)
 
         self.horizontalLayout.addLayout(self.lv_list_user)
 
@@ -392,7 +403,7 @@ class Ui_MainWindow:
         self.l_pm_cover.setMaximumSize(QSize(280, 280))
         self.l_pm_cover.setBaseSize(QSize(0, 0))
         self.l_pm_cover.setFrameShape(QFrame.NoFrame)
-        self.l_pm_cover.setPixmap(QPixmap("placeholder_cover.jpg"))
+        self.l_pm_cover.setPixmap(QPixmap("default_album_image.png"))
         self.l_pm_cover.setScaledContents(True)
         self.l_pm_cover.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
 
@@ -453,7 +464,6 @@ class Ui_MainWindow:
 
         self.horizontalLayout.addLayout(self.lv_info)
 
-        self.horizontalLayout.setStretch(0, 25)
         self.horizontalLayout.setStretch(1, 50)
         self.horizontalLayout.setStretch(2, 25)
         MainWindow.setCentralWidget(self.w_central)
@@ -544,6 +554,7 @@ class Ui_MainWindow:
         self.tr_lists_user.setSortingEnabled(__sortingEnabled)
 
         self.pb_reload_user_lists.setText(QCoreApplication.translate("MainWindow", "Reload", None))
+        self.pb_download_list.setText(QCoreApplication.translate("MainWindow", "Download List", None))
         ___qtreewidgetitem4 = self.tr_results.headerItem()
         ___qtreewidgetitem4.setText(6, QCoreApplication.translate("MainWindow", "Quality", None))
         ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "Duration", None))

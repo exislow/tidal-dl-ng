@@ -38,7 +38,7 @@
    <property name="accessibleDescription">
     <string notr="true"/>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout" stretch="25,50,25">
+   <layout class="QHBoxLayout" name="horizontalLayout" stretch="0,50,25">
     <item>
      <layout class="QVBoxLayout" name="lv_list_user">
       <item>
@@ -160,17 +160,34 @@
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="pb_reload_user_lists">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Reload</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="lv_list_control">
+        <item>
+         <widget class="QPushButton" name="pb_reload_user_lists">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Reload</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pb_download_list">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Download List</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </item>

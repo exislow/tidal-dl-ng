@@ -7,7 +7,7 @@ from requests.exceptions import HTTPError
 from tidal_dl_ng import version
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.exceptions import MediaUnknown
-from tidal_dl_ng.helper.gui import get_results_media_item
+from tidal_dl_ng.helper.gui import get_results_media_item, get_user_list_media_item
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
@@ -299,14 +299,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.on_download_list_media, point)
         self.thread_it(self.list_items_show_result, point=point)
 
-    def on_download_list_media(self, point: QtCore.QPoint):
+    def on_download_list_media(self, point: QtCore.QPoint = None):
         self.pb_download.setEnabled(False)
         self.pb_download.setText("Downloading...")
 
-        item = self.tr_lists_user.itemAt(point)
-        media = item.data(3, QtCore.Qt.ItemDataRole.UserRole)
+        item: QtWidgets.QTreeWidgetItem
 
-        self.download(media, self.dl)
+        if point:
+            item = self.tr_lists_user.itemAt(point)
+        else:
+            items: [QtWidgets.QTreeWidgetItem] = self.tr_lists_user.selectedItems()
+
+            if len(items) == 0:
+                logger_gui.error("Please select a row first.")
+            else:
+                item = items[0]
+
+        if item:
+            media = get_user_list_media_item(item)
+
+            self.download(media, self.dl)
 
         self.pb_download.setText("Download")
         self.pb_download.setEnabled(True)
@@ -476,6 +488,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _init_signals(self):
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
+        self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
         self.l_search.returnPressed.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
