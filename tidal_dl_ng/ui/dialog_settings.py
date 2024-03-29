@@ -364,6 +364,24 @@ class Ui_DialogSettings:
 
         self.verticalLayout_2.addLayout(self.lh_path_fmt_mix)
 
+        self.lh_path_binary_ffmpeg = QHBoxLayout()
+        self.lh_path_binary_ffmpeg.setObjectName("lh_path_binary_ffmpeg")
+        self.l_icon_path_binary_ffmpeg = QLabel(self.gb_path)
+        self.l_icon_path_binary_ffmpeg.setObjectName("l_icon_path_binary_ffmpeg")
+        sizePolicy4.setHeightForWidth(self.l_icon_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.l_icon_path_binary_ffmpeg.setSizePolicy(sizePolicy4)
+
+        self.lh_path_binary_ffmpeg.addWidget(self.l_icon_path_binary_ffmpeg)
+
+        self.l_path_binary_ffmpeg = QLabel(self.gb_path)
+        self.l_path_binary_ffmpeg.setObjectName("l_path_binary_ffmpeg")
+        sizePolicy3.setHeightForWidth(self.l_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.l_path_binary_ffmpeg.setSizePolicy(sizePolicy3)
+
+        self.lh_path_binary_ffmpeg.addWidget(self.l_path_binary_ffmpeg)
+
+        self.verticalLayout_2.addLayout(self.lh_path_binary_ffmpeg)
+
         self.horizontalLayout_2.addLayout(self.verticalLayout_2)
 
         self.verticalLayout = QVBoxLayout()
@@ -432,6 +450,23 @@ class Ui_DialogSettings:
 
         self.verticalLayout.addLayout(self.horizontalLayout_8)
 
+        self.horizontalLayout_31 = QHBoxLayout()
+        self.horizontalLayout_31.setObjectName("horizontalLayout_31")
+        self.le_path_binary_ffmpeg = QLineEdit(self.gb_path)
+        self.le_path_binary_ffmpeg.setObjectName("le_path_binary_ffmpeg")
+        sizePolicy2.setHeightForWidth(self.le_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.le_path_binary_ffmpeg.setSizePolicy(sizePolicy2)
+        self.le_path_binary_ffmpeg.setDragEnabled(True)
+
+        self.horizontalLayout_31.addWidget(self.le_path_binary_ffmpeg)
+
+        self.pb_path_binary_ffmpeg = QPushButton(self.gb_path)
+        self.pb_path_binary_ffmpeg.setObjectName("pb_path_binary_ffmpeg")
+
+        self.horizontalLayout_31.addWidget(self.pb_path_binary_ffmpeg)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_31)
+
         self.horizontalLayout_2.addLayout(self.verticalLayout)
 
         self.horizontalLayout_2.setStretch(1, 50)
@@ -488,6 +523,9 @@ class Ui_DialogSettings:
         self.l_format_playlist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_format_mix.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_format_mix.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.pb_download_base_path.setText(QCoreApplication.translate("DialogSettings", "...", None))
+        self.pb_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "...", None))
 
     # retranslateUi

@@ -9,7 +9,6 @@ from tidalapi import Quality as QualityAudio
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
-from tidal_dl_ng.helper.path import is_installed_ffmpeg
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.meta import ReleaseLatest
@@ -132,25 +131,8 @@ class DialogPreferences(QtWidgets.QDialog):
         self.ui.setupUi(self)
         # Set data.
         self.gui_populate()
-        self._init_signals()
 
         self.exec()
-
-    def _init_signals(self):
-        self.ui.cb_video_convert_mp4.stateChanged.connect(self.on_cb_video_convert_mp4)
-
-    def on_cb_video_convert_mp4(self, change_status: int):
-        # Check if ffmpeg is in PATH otherwise show error message.
-        if self.ui.cb_video_convert_mp4.isChecked() and not is_installed_ffmpeg():
-            self.ui.cb_video_convert_mp4.setChecked(False)
-            self.ui.cb_video_convert_mp4.setCheckState(QtCore.Qt.CheckState.Unchecked)
-            QtWidgets.QMessageBox.critical(
-                self,
-                "FFmpeg not found!",
-                "Either FFmpeg is not installed on your computer or not set within "
-                "your PATH variable. You cannot activate this option until FFmpeg "
-                "is correctly installed and set to your environmental PATH variable.",
-            )
 
     def _init_line_edit(self):
         self.parameters_line_edit = [
@@ -160,6 +142,7 @@ class DialogPreferences(QtWidgets.QDialog):
             "format_mix",
             "format_track",
             "format_video",
+            "path_binary_ffmpeg",
         ]
 
     def _init_comboboxes(self):
@@ -184,30 +167,36 @@ class DialogPreferences(QtWidgets.QDialog):
         self.populate_combo()
         self.populate_line_edit()
 
-    def dialog_dir_open(self, obj_line_edit):
+    def dialog_chose_file(
+        self,
+        obj_line_edit: QtWidgets.QLineEdit,
+        file_mode: QtWidgets.QFileDialog | QtWidgets.QFileDialog.FileMode = QtWidgets.QFileDialog.Directory,
+    ):
         # If a path is set, use it otherwise the users home directory.
         settings_path: str = os.path.expanduser(obj_line_edit.text()) if obj_line_edit.text() else ""
-        dir_current = settings_path if settings_path and os.path.exists(settings_path) else str(Path.home())
-        dialog = QtWidgets.QFileDialog()
+        dir_current: str = settings_path if settings_path and os.path.exists(settings_path) else str(Path.home())
+        dialog: QtWidgets.QFileDialog = QtWidgets.QFileDialog()
 
         # Set to directory mode only but show files.
-        dialog.setFileMode(QtWidgets.QFileDialog.Directory)
+        dialog.setFileMode(file_mode)
         dialog.setViewMode(QtWidgets.QFileDialog.Detail)
         dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, False)
+        dialog.setOption(QtWidgets.QFileDialog.DontResolveSymlinks, True)
+
         # There is a bug in the PyQt implementation, which hides files in Directory mode.
         # Thus, we need to use the PyQt dialog instead of the native dialog.
-        if os.name == "nt":
+        if os.name == "nt" and file_mode == QtWidgets.QFileDialog.Directory:
             dialog.setOption(QtWidgets.QFileDialog.DontUseNativeDialog, True)
+
         dialog.setDirectory(dir_current)
 
         # Execute dialog and set path is something is choosen.
         if dialog.exec():
-            dir_name = dialog.selectedFiles()[0]
-            path = Path(dir_name)
+            dir_name: str = dialog.selectedFiles()[0]
+            path: Path = Path(dir_name)
             obj_line_edit.setText(str(path))
 
     def populate_line_edit(self):
-
         for pn in self.parameters_line_edit:
             label_icon: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + self.prefix_icon + pn)
             label: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + pn)
@@ -219,10 +208,14 @@ class DialogPreferences(QtWidgets.QDialog):
             line_edit.setText(getattr(self.data, pn))
 
         # Base Path File Dialog
-        self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_dir_open(self.ui.le_download_base_path))
+        self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_chose_file(self.ui.le_download_base_path))
+        self.ui.pb_path_binary_ffmpeg.clicked.connect(
+            lambda x: self.dialog_chose_file(
+                self.ui.le_path_binary_ffmpeg, file_mode=QtWidgets.QFileDialog.FileMode.ExistingFiles
+            )
+        )
 
     def populate_combo(self):
-
         for p in self.parameters_combo:
             pn: str = p[0]
             values: Enum = p[1]

@@ -31,6 +31,7 @@ class Settings:
     format_track: str = "Tracks/{artist_name} - {track_title}"
     format_video: str = "Videos/{artist_name} - {track_title}"
     video_convert_mp4: bool = True
+    path_binary_ffmpeg: str = ""
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
 
 
@@ -65,8 +66,9 @@ class HelpSettings:
     format_video: str = "Where to download videos and how to name the items."
     video_convert_mp4: str = (
         "Videos are downloaded as MPEG Transport Stream (TS) files. With this option each video "
-        "will be converted to MP4. FFMPEG must be installed and added to your 'PATH' variable."
+        "will be converted to MP4. FFmpeg must be installed and the binary path must be configured."
     )
+    path_binary_ffmpeg: str = "If you like to convert videos, this must point to your installed ffmpeg binary."
     metadata_cover_dimension: str = (
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
     )
