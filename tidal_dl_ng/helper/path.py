@@ -33,32 +33,14 @@ def path_config_base() -> str:
 
 
 def path_file_log() -> str:
-    # TODO: Remove this soon. Only for migration to new dir.
-    old = os.path.join(path_home(), ".tidal-dl-ng.log")
-    if os.path.isfile(old):
-        os.makedirs(path_config_base(), exist_ok=True)
-        os.rename(old, os.path.join(path_config_base(), "app.log"))
-
     return os.path.join(path_config_base(), "app.log")
 
 
 def path_file_token() -> str:
-    # TODO: Remove this soon. Only for migration to new dir.
-    old = os.path.join(path_home(), ".tidal-dl-ng_token.json")
-    if os.path.isfile(old):
-        os.makedirs(path_config_base(), exist_ok=True)
-        os.rename(old, os.path.join(path_config_base(), "token.json"))
-
     return os.path.join(path_config_base(), "token.json")
 
 
 def path_file_settings() -> str:
-    # TODO: Remove this soon. Only for migration to new dir.
-    old = os.path.join(path_home(), ".tidal-dl-ng_settings.json")
-    if os.path.isfile(old):
-        os.makedirs(path_config_base(), exist_ok=True)
-        os.rename(old, os.path.join(path_config_base(), "settings.json"))
-
     return os.path.join(path_config_base(), "settings.json")
 
 
