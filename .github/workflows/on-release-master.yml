@@ -132,7 +132,7 @@ jobs:
               source $VENV &&
               poetry run make gui-windows APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
-              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.exe &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
     runs-on: ${{ matrix.os }}
     steps:
