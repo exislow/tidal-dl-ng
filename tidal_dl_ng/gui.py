@@ -573,7 +573,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tidal.settings_apply()
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem):
-        media_list: Album | Playlist = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
+        media_list: Album | Playlist = get_user_list_media_item(item)
 
         # Only if clicked item is not a top level item.
         if media_list:
@@ -598,7 +598,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     ) -> None:
         if point:
             item = self.tr_lists_user.itemAt(point)
-            media_list = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
+            media_list = get_user_list_media_item(item)
 
         # Get all results
         media_items: [Track | Video | Album] = items_results_all(media_list)
@@ -614,6 +614,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.threadpool.start(worker)
 
     def on_download_results(self):
+        items: [QtWidgets.QTreeWidgetItem] = self.tr_results.selectedItems()
+
+        if len(items) == 0:
+            logger_gui.error("Please select a row first.")
+        else:
+            for item in items:
+                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
+
+                # Populate child
+                child: QtWidgets.QTableWidgetItem = QtWidgets.QTableWidgetItem()
+                child.setText(0, "1")
+                set_results_media(child, media)
+                child.setText(2, media.artist)
+                child.setText(3, "tbd")
+                child.setText(4, "")
+                self.ta_queue_dl.addChild(child)
+
+    def on_download_results1(self):
         self.pb_download.setEnabled(False)
         self.pb_download.setText("Downloading...")
 
@@ -624,11 +642,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             # If it is an artist resolve it with all available albums of him
             if len(items) == 1:
-                tmp_media: QtWidgets.QTreeWidgetItem = items[0].data(1, QtCore.Qt.ItemDataRole.UserRole)
+                tmp_media: Track | Video | Album | Artist = get_results_media_item(items[0])
 
                 if isinstance(tmp_media, Artist):
                     tmp_children: [QtWidgets.QTreeWidgetItem] = []
-                    is_dummy_child = not bool(items[0].child(0).data(1, QtCore.Qt.ItemDataRole.UserRole))
+                    is_dummy_child = not bool(get_results_media_item(items[0].child(0)))
 
                     # Use the expand function to retrieve all albums.
                     if is_dummy_child:
@@ -645,7 +663,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             items_pos_last = len(items) - 1
 
             for item in items:
-                media: Track | Album | Playlist | Video | Artist = item.data(1, QtCore.Qt.ItemDataRole.UserRole)
+                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
                 # Skip only if Track item, skip option set and the item is not the last in the list.
                 download_delay: bool = bool(
                     isinstance(media, Track | Video)
