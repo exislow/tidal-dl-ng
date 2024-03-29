@@ -6,7 +6,12 @@ from requests.exceptions import HTTPError
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
-from tidal_dl_ng.helper.gui import get_results_media_item, get_user_list_media_item
+from tidal_dl_ng.helper.gui import (
+    get_results_media_item,
+    get_user_list_media_item,
+    set_results_media,
+    set_user_list_media,
+)
 from tidal_dl_ng.helper.path import get_format_template
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
@@ -242,7 +247,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 info: str = item.sub_title
 
             twi_child.setText(0, name)
-            twi_child.setData(1, QtCore.Qt.ItemDataRole.UserRole, item)
+            set_user_list_media(twi_child, item)
             twi_child.setText(2, info)
 
         # Stop load spinner
@@ -368,7 +373,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Populate child
         child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
         child.setText(0, index)
-        child.setData(1, QtCore.Qt.ItemDataRole.UserRole, item.obj)
+        set_results_media(child, item.obj)
         child.setText(2, item.artist)
         child.setText(3, item.title)
         child.setText(4, item.album)
