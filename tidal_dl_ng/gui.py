@@ -58,7 +58,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     threadpool: QtCore.QThreadPool
     tray: QtWidgets.QSystemTrayIcon
     spinner: QtWaitingSpinner
-    cover_url_current: str
+    cover_url_current: str = ""
     s_spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
     s_spinner_stop: QtCore.Signal = QtCore.Signal()
     pb_item: QtWidgets.QProgressBar
@@ -578,12 +578,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Only if clicked item is not a top level item.
         if media_list:
             self.list_items_show_result(media_list)
+            self.cover_show(media_list)
 
     def on_result_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
         media: Track | Video | Album | Artist = get_results_media_item(item)
-        cover_url: str = media.album.image()
 
-        if self.cover_url_current != cover_url:
+        self.cover_show(media)
+
+    def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist):
+        cover_url: str
+
+        try:
+            cover_url = media.album.image()
+        except:
+            try:
+                cover_url = media.image()
+            except:
+                logger_gui.info(f"No cover available (media ID: {media.id}).")
+
+        if cover_url and self.cover_url_current != cover_url:
             self.cover_url_current = cover_url
             data_cover: bytes = Metadata.cover_data(cover_url)
             pixmap: QtGui.QPixmap = QtGui.QPixmap()
