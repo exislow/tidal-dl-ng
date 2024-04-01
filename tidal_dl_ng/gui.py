@@ -15,7 +15,7 @@ from tidal_dl_ng.helper.gui import (
     set_results_media,
     set_user_list_media,
 )
-from tidal_dl_ng.helper.path import get_format_template
+from tidal_dl_ng.helper.path import get_format_template, resource_path
 from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
     get_tidal_media_type,
@@ -179,7 +179,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.statusbar.addPermanentWidget(pb)
 
     def _init_info(self):
-        self.l_pm_cover.setPixmap(QtGui.QPixmap("tidal_dl_ng/ui/default_album_image.png"))
+        path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
+
+        logger_gui.info(path_image)
+        self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
 
     def on_progress_reset(self):
         self.pb_list.setValue(0)

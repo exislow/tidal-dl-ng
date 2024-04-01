@@ -65,6 +65,7 @@ gui-windows: ## Build GUI app with PyInstaller
 		--noupx \
 		--icon $(path_asset)/icon.ico \
 		--add-binary="pyproject.toml:." \
+		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
 		tidal_dl_ng/gui.py
 
 .PHONY: gui-linux
@@ -75,7 +76,7 @@ gui-linux: ## Build GUI app with PyInstaller
 		--noupx \
 		--icon $(path_asset)/icon.png \
 		--add-binary="pyproject.toml:." \
-		tidal_dl_ng/gui.py
+		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
 
 .PHONY: gui-macos
 gui-macos: ## Build GUI app with PyInstaller
@@ -85,6 +86,7 @@ gui-macos: ## Build GUI app with PyInstaller
 		--noupx \
 		--icon $(path_asset)/icon.icns \
 		--add-binary="pyproject.toml:." \
+		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
 		tidal_dl_ng/gui.py
 
 # TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43

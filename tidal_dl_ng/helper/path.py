@@ -2,6 +2,7 @@ import glob
 import math
 import os
 import re
+import sys
 from pathlib import Path, PosixPath
 
 from pathvalidate import sanitize_filename, sanitize_filepath
@@ -243,3 +244,12 @@ def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
     result = bool(sum([glob.glob(_file) for _file in path_files], []))
 
     return result
+
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
