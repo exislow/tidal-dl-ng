@@ -1,5 +1,6 @@
 import math
 import sys
+import time
 from collections.abc import Callable
 
 from requests.exceptions import HTTPError
@@ -77,6 +78,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
     s_update_check: QtCore.Signal = QtCore.Signal()
     s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
+    s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -89,8 +93,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
-        self.threadpool = QtCore.QThreadPool()
 
+        self._init_threads()
         self._init_tree_results(self.tr_results)
         self._init_tree_lists(self.tr_lists_user)
         self._init_table_queue(self.tr_queue_download)
@@ -141,6 +145,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if result:
             self._init_dl()
             self.thread_it(self.tidal_user_lists)
+
+    def _init_threads(self):
+        self.threadpool = QtCore.QThreadPool()
+        self.thread_it(self.watcher_queue_download)
 
     def _init_dl(self):
         # Init `Download` object.
@@ -547,6 +555,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Download Queue
         self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
+        self.s_queue_download_item_downloading.connect(self.on_queue_download_item_downloading)
 
     def on_logout(self):
         result: bool = self.tidal.logout()
@@ -693,7 +702,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 child.setText(4, "<quali>")
                 self.tr_queue_download.addTopLevelItem(child)
 
-    def on_download_results1(self):
+    def watcher_queue_download(self) -> None:
+        while True:
+            items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
+                QueueDownloadStatus.Waiting.value, QtCore.Qt.MatchFlag.MatchExactly, column=0
+            )
+
+            for item in items:
+                self.s_queue_download_item_downloading.emit(item)
+
+                self.s_queue_download_item_finished.emit(item)
+
+            time.sleep(2)
+
+    def on_queue_download_item_downloading(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        self.queue_download_item_status(item, QueueDownloadStatus.Downloading.value)
+
+    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        self.queue_download_item_status(item, QueueDownloadStatus.Finished.value)
+
+    def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        self.queue_download_item_status(item, QueueDownloadStatus.Failed.value)
+
+    def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
+        item.setText(0, status)
+
+    def on_download_queue(self, media):
         self.pb_download.setEnabled(False)
         self.pb_download.setText("Downloading...")
 
