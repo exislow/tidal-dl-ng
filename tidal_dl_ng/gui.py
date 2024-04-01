@@ -86,7 +86,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().__init__()
         self.setupUi(self)
         # self.setGeometry(50, 50, 500, 300)
-        self.setWindowTitle("TIDAL Downloader Next Gen!")
+        self.setWindowTitle("TIDAL Downloader Next Generation!")
 
         # Logging redirect.
         XStream.stdout().messageWritten.connect(self._log_output)
@@ -335,19 +335,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.list_items_show_result, point=point)
 
     def on_download_list_media(self, point: QtCore.QPoint = None):
-        item: QtWidgets.QTreeWidgetItem
+        items: [QtWidgets.QTreeWidgetItem]
 
         if point:
-            item = self.tr_lists_user.itemAt(point)
+            items = [self.tr_lists_user.itemAt(point)]
         else:
-            items: [QtWidgets.QTreeWidgetItem] = self.tr_lists_user.selectedItems()
+            items = self.tr_lists_user.selectedItems()
 
             if len(items) == 0:
                 logger_gui.error("Please select a mix or playlist first.")
-            else:
-                item = items[0]
 
-        if item:
+        for item in items:
             media = get_user_list_media_item(item)
             queue_dl_item: QueueDownloadItem | False = self.media_to_queue_download_model(media)
 

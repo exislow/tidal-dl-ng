@@ -111,6 +111,7 @@ class Ui_MainWindow:
         # endif // QT_CONFIG(accessibility)
         self.tr_lists_user.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tr_lists_user.setProperty("showDropIndicator", False)
+        self.tr_lists_user.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tr_lists_user.setIndentation(10)
         self.tr_lists_user.setUniformRowHeights(True)
         self.tr_lists_user.setSortingEnabled(True)
@@ -262,7 +263,7 @@ class Ui_MainWindow:
 
         self.cb_quality_audio = QComboBox(self.w_central)
         self.cb_quality_audio.setObjectName("cb_quality_audio")
-        self.cb_quality_audio.setMinimumSize(QSize(130, 0))
+        self.cb_quality_audio.setMinimumSize(QSize(140, 0))
         # if QT_CONFIG(tooltip)
         self.cb_quality_audio.setToolTip("")
         # endif // QT_CONFIG(tooltip)

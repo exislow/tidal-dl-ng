@@ -64,6 +64,9 @@
         <property name="showDropIndicator" stdset="0">
          <bool>false</bool>
         </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::ExtendedSelection</enum>
+        </property>
         <property name="indentation">
          <number>10</number>
         </property>
