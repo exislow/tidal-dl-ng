@@ -326,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             items: [QtWidgets.QTreeWidgetItem] = self.tr_lists_user.selectedItems()
 
             if len(items) == 0:
-                logger_gui.error("Please select a row first.")
+                logger_gui.error("Please select a mix or playlist first.")
             else:
                 item = items[0]
 
@@ -507,8 +507,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
         self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
         self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
-        self.pb_clear_all.clicked.connect(self.on_clear_all)
-        self.pb_clear_finished.clicked.connect(self.on_clear_finished)
+        self.pb_queue_download_clear_all.clicked.connect(self.on_queue_download_clear_all)
+        self.pb_queue_download_clear_finished.clicked.connect(self.on_queue_download_clear_finished)
+        self.pb_queue_download_remove.clicked.connect(self.on_queue_download_remove)
         self.l_search.returnPressed.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
@@ -643,12 +644,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Execute
         self.threadpool.start(worker)
 
-    def on_clear_all(self):
+    def on_queue_download_clear_all(self):
         self.on_clear_queue_download(
             f"[{QueueDownloadStatus.Waiting.value}{QueueDownloadStatus.Finished.value}{QueueDownloadStatus.Failed.value}]"
         )
 
-    def on_clear_finished(self):
+    def on_queue_download_clear_finished(self):
         self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished.value}]")
 
     def on_clear_queue_download(self, regex: str):
@@ -658,6 +659,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         for item in items:
             self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
+
+    def on_queue_download_remove(self):
+        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.selectedItems()
+
+        if len(items) == 0:
+            logger_gui.error("Please select an item from the queue first.")
+        else:
+            for item in items:
+                status: str = item.text(0)
+
+                if status is not QueueDownloadStatus.Downloading.value:
+                    self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
+                else:
+                    logger_gui.info("Cannot remove a currently downloading item from queue.")
 
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:

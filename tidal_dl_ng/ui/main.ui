@@ -656,9 +656,9 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pb_queue_download_item_remove">
+         <widget class="QPushButton" name="pb_queue_download_remove">
           <property name="enabled">
-           <bool>false</bool>
+           <bool>true</bool>
           </property>
           <property name="text">
            <string>Remove</string>
@@ -668,14 +668,14 @@
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QPushButton" name="pb_clear_finished">
+           <widget class="QPushButton" name="pb_queue_download_clear_finished">
             <property name="text">
              <string>Clear Finished</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="pb_clear_all">
+           <widget class="QPushButton" name="pb_queue_download_clear_all">
             <property name="text">
              <string>Clear All</string>
             </property>

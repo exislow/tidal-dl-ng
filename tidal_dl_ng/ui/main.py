@@ -445,23 +445,23 @@ class Ui_MainWindow:
 
         self.lv_queue_download.addWidget(self.tr_queue_download)
 
-        self.pb_queue_download_item_remove = QPushButton(self.w_central)
-        self.pb_queue_download_item_remove.setObjectName("pb_queue_download_item_remove")
-        self.pb_queue_download_item_remove.setEnabled(False)
+        self.pb_queue_download_remove = QPushButton(self.w_central)
+        self.pb_queue_download_remove.setObjectName("pb_queue_download_remove")
+        self.pb_queue_download_remove.setEnabled(True)
 
-        self.lv_queue_download.addWidget(self.pb_queue_download_item_remove)
+        self.lv_queue_download.addWidget(self.pb_queue_download_remove)
 
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
-        self.pb_clear_finished = QPushButton(self.w_central)
-        self.pb_clear_finished.setObjectName("pb_clear_finished")
+        self.pb_queue_download_clear_finished = QPushButton(self.w_central)
+        self.pb_queue_download_clear_finished.setObjectName("pb_queue_download_clear_finished")
 
-        self.horizontalLayout_3.addWidget(self.pb_clear_finished)
+        self.horizontalLayout_3.addWidget(self.pb_queue_download_clear_finished)
 
-        self.pb_clear_all = QPushButton(self.w_central)
-        self.pb_clear_all.setObjectName("pb_clear_all")
+        self.pb_queue_download_clear_all = QPushButton(self.w_central)
+        self.pb_queue_download_clear_all.setObjectName("pb_queue_download_clear_all")
 
-        self.horizontalLayout_3.addWidget(self.pb_clear_all)
+        self.horizontalLayout_3.addWidget(self.pb_queue_download_clear_all)
 
         self.lv_queue_download.addLayout(self.horizontalLayout_3)
 
@@ -581,9 +581,9 @@ class Ui_MainWindow:
         ___qtreewidgetitem5.setText(3, QCoreApplication.translate("MainWindow", "Type", None))
         ___qtreewidgetitem5.setText(2, QCoreApplication.translate("MainWindow", "Name", None))
         ___qtreewidgetitem5.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
-        self.pb_queue_download_item_remove.setText(QCoreApplication.translate("MainWindow", "Remove", None))
-        self.pb_clear_finished.setText(QCoreApplication.translate("MainWindow", "Clear Finished", None))
-        self.pb_clear_all.setText(QCoreApplication.translate("MainWindow", "Clear All", None))
+        self.pb_queue_download_remove.setText(QCoreApplication.translate("MainWindow", "Remove", None))
+        self.pb_queue_download_clear_finished.setText(QCoreApplication.translate("MainWindow", "Clear Finished", None))
+        self.pb_queue_download_clear_all.setText(QCoreApplication.translate("MainWindow", "Clear All", None))
         self.m_file.setTitle(QCoreApplication.translate("MainWindow", "File", None))
         self.m_help.setTitle(QCoreApplication.translate("MainWindow", "Help", None))
 
