@@ -11,8 +11,8 @@ def get_table_data(
     return result
 
 
-def get_results_media_item(item: QtWidgets.QTreeWidgetItem) -> Track | Video | Album | Artist:
-    result: Track | Video | Album | Artist = get_table_data(item, 1)
+def get_results_media_item(item: QtWidgets.QTreeWidgetItem) -> Track | Video | Album | Artist | Playlist | Mix:
+    result: Track | Video | Album | Artist | Playlist | Mix = get_table_data(item, 1)
 
     return result
 
@@ -41,7 +41,9 @@ def set_results_media(item: QtWidgets.QTreeWidgetItem, media: Track | Video | Al
     set_table_data(item, media, 1)
 
 
-def set_user_list_media(item: QtWidgets.QTreeWidgetItem, media: Mix | Playlist | UserPlaylist):
+def set_user_list_media(
+    item: QtWidgets.QTreeWidgetItem, media: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist
+):
     set_table_data(item, media, 1)
 
 

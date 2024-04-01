@@ -7,6 +7,7 @@ from requests.exceptions import HTTPError
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
+    get_queue_download_media,
     get_results_media_item,
     get_user_list_media_item,
     set_queue_download_media,
@@ -543,6 +544,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
         self.tr_results.itemClicked.connect(self.on_result_item_clicked)
 
+        # Download Queue
+        self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
+
     def on_logout(self):
         result: bool = self.tidal.logout()
 
@@ -588,12 +592,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cover_show(media)
 
+    def on_queue_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
+        media: Track | Video | Album | Artist | Mix | Playlist = get_queue_download_media(item)
+
+        self.cover_show(media)
+
     def on_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
         media: Track | Video | Album | Artist = get_results_media_item(item)
 
         self.cover_show(media)
 
-    def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist):
+    def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist) -> None:
         cover_url: str
 
         try:
