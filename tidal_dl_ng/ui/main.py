@@ -177,6 +177,7 @@ class Ui_MainWindow:
 
         self.cb_search_type = QComboBox(self.w_central)
         self.cb_search_type.setObjectName("cb_search_type")
+        self.cb_search_type.setMinimumSize(QSize(100, 0))
         # if QT_CONFIG(tooltip)
         self.cb_search_type.setToolTip("")
         # endif // QT_CONFIG(tooltip)
@@ -193,6 +194,7 @@ class Ui_MainWindow:
         self.cb_search_type.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_search_type.setCurrentText("")
+        self.cb_search_type.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
         self.cb_search_type.setPlaceholderText("")
 
         self.lh_search.addWidget(self.cb_search_type)
@@ -260,6 +262,7 @@ class Ui_MainWindow:
 
         self.cb_quality_audio = QComboBox(self.w_central)
         self.cb_quality_audio.setObjectName("cb_quality_audio")
+        self.cb_quality_audio.setMinimumSize(QSize(130, 0))
         # if QT_CONFIG(tooltip)
         self.cb_quality_audio.setToolTip("")
         # endif // QT_CONFIG(tooltip)
@@ -276,6 +279,7 @@ class Ui_MainWindow:
         self.cb_quality_audio.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_quality_audio.setCurrentText("")
+        self.cb_quality_audio.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
         self.cb_quality_audio.setPlaceholderText("")
         self.cb_quality_audio.setFrame(True)
 
@@ -305,6 +309,7 @@ class Ui_MainWindow:
 
         self.cb_quality_video = QComboBox(self.w_central)
         self.cb_quality_video.setObjectName("cb_quality_video")
+        self.cb_quality_video.setMinimumSize(QSize(100, 0))
         # if QT_CONFIG(tooltip)
         self.cb_quality_video.setToolTip("")
         # endif // QT_CONFIG(tooltip)
@@ -321,6 +326,7 @@ class Ui_MainWindow:
         self.cb_quality_video.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_quality_video.setCurrentText("")
+        self.cb_quality_video.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
         self.cb_quality_video.setPlaceholderText("")
 
         self.lh_download.addWidget(self.cb_quality_video)

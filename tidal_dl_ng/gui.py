@@ -97,7 +97,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._init_threads()
         self._init_tree_results(self.tr_results)
         self._init_tree_lists(self.tr_lists_user)
-        self._init_table_queue(self.tr_queue_download)
+        self._init_tree_queue(self.tr_queue_download)
         self._init_info()
         self._init_progressbar()
         self._populate_quality(self.cb_quality_audio, Quality)
@@ -212,10 +212,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _init_tree_results(self, tree: QtWidgets.QTableWidget):
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
+        tree.setColumnWidth(2, 150)
+        tree.setColumnWidth(3, 150)
+        tree.setColumnWidth(4, 150)
 
-    def _init_table_queue(self, tree: QtWidgets.QTableWidget):
-        tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
+        header = tree.header()
+
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+
+    def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(1, True)
+        tree.setColumnWidth(2, 200)
+
+        header = tree.header()
+
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        header.setStretchLastSection(False)
 
     def tidal_user_lists(self):
         # Start loading spinner

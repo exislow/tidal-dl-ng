@@ -234,6 +234,12 @@
         </item>
         <item>
          <widget class="QComboBox" name="cb_search_type">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string notr="true"/>
           </property>
@@ -251,6 +257,9 @@
           </property>
           <property name="currentText">
            <string notr="true"/>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
           </property>
           <property name="placeholderText">
            <string notr="true"/>
@@ -376,6 +385,12 @@
         </item>
         <item>
          <widget class="QComboBox" name="cb_quality_audio">
+          <property name="minimumSize">
+           <size>
+            <width>140</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string notr="true"/>
           </property>
@@ -393,6 +408,9 @@
           </property>
           <property name="currentText">
            <string notr="true"/>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
           </property>
           <property name="placeholderText">
            <string notr="true"/>
@@ -429,6 +447,12 @@
         </item>
         <item>
          <widget class="QComboBox" name="cb_quality_video">
+          <property name="minimumSize">
+           <size>
+            <width>100</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="toolTip">
            <string notr="true"/>
           </property>
@@ -446,6 +470,9 @@
           </property>
           <property name="currentText">
            <string notr="true"/>
+          </property>
+          <property name="sizeAdjustPolicy">
+           <enum>QComboBox::AdjustToContentsOnFirstShow</enum>
           </property>
           <property name="placeholderText">
            <string notr="true"/>
