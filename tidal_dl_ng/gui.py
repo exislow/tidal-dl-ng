@@ -46,7 +46,7 @@ from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import QualityVideo, QueueDownloadStatus, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
-from tidal_dl_ng.model.gui_data import ProgressBars, ResultItem, StatusbarMessage
+from tidal_dl_ng.model.gui_data import ProgressBars, QueueDownloadItem, ResultItem, StatusbarMessage
 from tidal_dl_ng.model.meta import ReleaseLatest
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
@@ -323,9 +323,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.list_items_show_result, point=point)
 
     def on_download_list_media(self, point: QtCore.QPoint = None):
-        self.pb_download.setEnabled(False)
-        self.pb_download.setText("Downloading...")
-
         item: QtWidgets.QTreeWidgetItem
 
         if point:
@@ -340,11 +337,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if item:
             media = get_user_list_media_item(item)
+            queue_dl_item: QueueDownloadItem | False = self.media_to_queue_download_model(media)
 
-            self.download(media, self.dl)
-
-        self.pb_download.setText("Download")
-        self.pb_download.setEnabled(True)
+            if queue_dl_item:
+                self.queue_download_media(queue_dl_item)
 
     def search_populate_results(self, query: str, type_media: SearchTypes):
         self.tr_results.clear()
@@ -511,6 +507,38 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         return result
 
+    def media_to_queue_download_model(
+        self, media: Artist | Track | Video | Album | Playlist | Mix
+    ) -> QueueDownloadItem | bool:
+        result: QueueDownloadItem | False
+        name: str = ""
+
+        # Check if item is available on TIDAL.
+        if hasattr(media, "available") and not media.available:
+            return False
+
+        if isinstance(media, Track | Video):
+            name = f"{name_builder_artist(media)} - {name_builder_title(media)}"
+        elif isinstance(media, Playlist | Artist):
+            name = media.name
+        elif isinstance(media, Album):
+            name = f"{name_builder_artist(media)} - {media.name}"
+        elif isinstance(media, Mix):
+            name = media.title
+
+        if name:
+            result = QueueDownloadItem(
+                name=name,
+                quality="<quality>",
+                type_media=type(media).__name__,
+                status=QueueDownloadStatus.Waiting.value,
+                obj=media,
+            )
+        else:
+            result = False
+
+        return result
+
     def _init_signals(self):
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
         self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
@@ -657,7 +685,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_queue_download_clear_all(self):
         self.on_clear_queue_download(
-            f"[{QueueDownloadStatus.Waiting.value}{QueueDownloadStatus.Finished.value}{QueueDownloadStatus.Failed.value}]"
+            f"({QueueDownloadStatus.Waiting.value}|{QueueDownloadStatus.Finished.value}|{QueueDownloadStatus.Failed.value})"
         )
 
     def on_queue_download_clear_finished(self):
@@ -680,7 +708,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for item in items:
                 status: str = item.text(0)
 
-                if status is not QueueDownloadStatus.Downloading.value:
+                if status != QueueDownloadStatus.Downloading.value:
                     self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
                 else:
                     logger_gui.info("Cannot remove a currently downloading item from queue.")
@@ -694,15 +722,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             for item in items:
                 media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
+                queue_dl_item: QueueDownloadItem = self.media_to_queue_download_model(media)
 
-                # Populate child
-                child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
-                child.setText(0, QueueDownloadStatus.Waiting.value)
-                set_queue_download_media(child, media)
-                child.setText(2, media.artist.name)
-                child.setText(3, type(media).__name__)
-                child.setText(4, "<quali>")
-                self.tr_queue_download.addTopLevelItem(child)
+                if queue_dl_item:
+                    self.queue_download_media(queue_dl_item)
+
+    def queue_download_media(self, queue_dl_item: QueueDownloadItem) -> None:
+        # Populate child
+        child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
+
+        child.setText(0, queue_dl_item.status)
+        set_queue_download_media(child, queue_dl_item.obj)
+        child.setText(2, queue_dl_item.name)
+        child.setText(3, queue_dl_item.type_media)
+        child.setText(4, queue_dl_item.quality)
+        self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
         while True:
@@ -714,10 +748,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item: QtWidgets.QTreeWidgetItem = items[0]
                 media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
 
-                # TODO: Try catch and set FAILED status
-                self.s_queue_download_item_downloading.emit(item)
-                self.on_queue_download(media)
-                self.s_queue_download_item_finished.emit(item)
+                try:
+                    self.s_queue_download_item_downloading.emit(item)
+                    self.on_queue_download(media)
+                    self.s_queue_download_item_finished.emit(item)
+                except:
+                    self.s_queue_download_item_failed.emit(item)
             else:
                 time.sleep(2)
 
@@ -734,25 +770,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         item.setText(0, status)
 
     def on_queue_download(self, media: Track | Album | Playlist | Video | Mix | Artist) -> None:
-        # if isinstance(media, Artist):
-        #     tmp_children: [QtWidgets.QTreeWidgetItem] = []
-        #     is_dummy_child = not bool(get_results_media_item(items[0].child(0)))
-        #
-        #     # Use the expand function to retrieve all albums.
-        #     if is_dummy_child:
-        #         self.on_tr_results_expanded(items[0])
-        #
-        #     count_children: int = items[0].childCount()
-        #
-        #     # Get all children.
-        #     for idx in range(count_children):
-        #         tmp_children.append(items[0].child(idx))
-        #
-        #     items: [Album] = tmp_children
+        items_media: [Track | Album | Playlist | Video | Mix | Artist]
+
+        if isinstance(media, Artist):
+            items_media: [Album] = items_results_all(media)
+        else:
+            items_media = [media]
 
         download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
-        self.download(media, self.dl, delay_track=download_delay)
+        for item_media in items_media:
+            self.download(item_media, self.dl, delay_track=download_delay)
 
     def download(
         self, media: Track | Album | Playlist | Video | Mix | Artist, dl: Download, delay_track: bool = False

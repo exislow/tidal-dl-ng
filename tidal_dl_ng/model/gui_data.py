@@ -30,3 +30,12 @@ class ResultItem:
 class StatusbarMessage:
     message: str
     timout: int = 0
+
+
+@dataclass
+class QueueDownloadItem:
+    status: str
+    name: str
+    type_media: str
+    quality: str
+    obj: object
