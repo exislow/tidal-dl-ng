@@ -9,6 +9,7 @@ from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
     get_results_media_item,
     get_user_list_media_item,
+    set_queue_download_media,
     set_results_media,
     set_user_list_media,
 )
@@ -40,7 +41,7 @@ from tidalapi.artist import Artist
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import Settings, Tidal
-from tidal_dl_ng.constants import QualityVideo, TidalLists
+from tidal_dl_ng.constants import QualityVideo, QueueDownloadStatus, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, ResultItem, StatusbarMessage
@@ -91,7 +92,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self._init_tree_results(self.tr_results)
         self._init_tree_lists(self.tr_lists_user)
-        self._init_table_queue(self.ta_queue_dl)
+        self._init_table_queue(self.tr_queue_download)
         self._init_info()
         self._init_progressbar()
         self._populate_quality(self.cb_quality_audio, Quality)
@@ -218,13 +219,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_populate_tree_lists(self, user_lists: [Playlist | UserPlaylist | Mix]):
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.PLAYLISTS.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Playlists.value, QtCore.Qt.MatchExactly, 0
         )[0]
         twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.FAVORITES.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Favorites.value, QtCore.Qt.MatchExactly, 0
         )[0]
         twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.MIXES.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Mixes.value, QtCore.Qt.MatchExactly, 0
         )[0]
 
         # Remove all children if present
@@ -504,6 +505,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _init_signals(self):
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
         self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
+        self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
+        self.pb_clear_all.clicked.connect(self.on_clear_all)
+        self.pb_clear_finished.clicked.connect(self.on_clear_finished)
         self.l_search.returnPressed.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
@@ -524,7 +528,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
         self.s_settings_save.connect(self.on_settings_save)
-        self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
         self.s_pb_reload_status.connect(self.button_reload_status)
         self.s_update_check.connect(lambda: self.thread_it(self.on_update_check))
         self.s_update_show.connect(self.on_version)
@@ -585,6 +588,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cover_show(media)
 
+    def on_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
+        media: Track | Video | Album | Artist = get_results_media_item(item)
+
+        self.cover_show(media)
+
     def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist):
         cover_url: str
 
@@ -626,8 +634,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Execute
         self.threadpool.start(worker)
 
-    def on_download_results(self):
-        items: [QtWidgets.QTreeWidgetItem] = self.tr_results.selectedItems()
+    def on_clear_all(self):
+        self.on_clear_queue_download(
+            f"[{QueueDownloadStatus.Waiting.value}{QueueDownloadStatus.Finished.value}{QueueDownloadStatus.Failed.value}]"
+        )
+
+    def on_clear_finished(self):
+        self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished.value}]")
+
+    def on_clear_queue_download(self, regex: str):
+        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
+            regex, QtCore.Qt.MatchFlag.MatchRegularExpression, column=0
+        )
+
+        for item in items:
+            self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
+
+    # TODO: Must happen in main thread. Do not thread this.
+    def on_download_results(self) -> None:
+        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_results.selectedItems()
 
         if len(items) == 0:
             logger_gui.error("Please select a row first.")
@@ -636,13 +661,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
 
                 # Populate child
-                child: QtWidgets.QTableWidgetItem = QtWidgets.QTableWidgetItem()
-                child.setText(0, "1")
-                set_results_media(child, media)
-                child.setText(2, media.artist)
-                child.setText(3, "tbd")
-                child.setText(4, "")
-                self.ta_queue_dl.addChild(child)
+                child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
+                child.setText(0, QueueDownloadStatus.Waiting.value)
+                set_queue_download_media(child, media)
+                child.setText(2, media.artist.name)
+                child.setText(3, type(media).__name__)
+                child.setText(4, "<quali>")
+                self.tr_queue_download.addTopLevelItem(child)
 
     def on_download_results1(self):
         self.pb_download.setEnabled(False)

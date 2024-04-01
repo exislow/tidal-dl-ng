@@ -23,6 +23,14 @@ def get_user_list_media_item(item: QtWidgets.QTreeWidgetItem) -> Mix | Playlist 
     return result
 
 
+def get_queue_download_media(
+    item: QtWidgets.QTreeWidgetItem,
+) -> Mix | Playlist | UserPlaylist | Track | Video | Album | Artist:
+    result: Mix | Playlist | UserPlaylist | Track | Video | Album | Artist = get_table_data(item, 1)
+
+    return result
+
+
 def set_table_data(
     item: QtWidgets.QTreeWidgetItem, data: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist, column: int
 ):
@@ -34,4 +42,10 @@ def set_results_media(item: QtWidgets.QTreeWidgetItem, media: Track | Video | Al
 
 
 def set_user_list_media(item: QtWidgets.QTreeWidgetItem, media: Mix | Playlist | UserPlaylist):
+    set_table_data(item, media, 1)
+
+
+def set_queue_download_media(
+    item: QtWidgets.QTreeWidgetItem, media: Mix | Playlist | UserPlaylist | Track | Video | Album | Artist
+):
     set_table_data(item, media, 1)

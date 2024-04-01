@@ -44,16 +44,23 @@ class CoverDimensions(Enum):
 
 
 class TidalLists(Enum):
-    PLAYLISTS: str = "Playlists"
-    FAVORITES: str = "Favorites"
-    MIXES: str = "Mixes"
+    Playlists: str = "Playlists"
+    Favorites: str = "Favorites"
+    Mixes: str = "Mixes"
 
 
 class AudioExtensions(Enum):
-    FLAC = ".flac"
-    M4A = ".m4a"
-    MP4 = ".mp4"
+    FLAC: str = ".flac"
+    M4A: str = ".m4a"
+    MP4: str = ".mp4"
 
 
 class VideoExtensions(Enum):
-    TS = ".ts"
+    TS: str = ".ts"
+
+
+class QueueDownloadStatus(Enum):
+    Waiting: str = "⏳️"
+    Downloading: str = "▶️"
+    Finished: str = "✅"
+    Failed: str = "❌"
