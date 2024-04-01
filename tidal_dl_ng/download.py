@@ -371,7 +371,7 @@ class Download:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
-            self.progress_gui.item_name.emit(list_media_name[:30])
+            self.progress_gui.list_name.emit(list_media_name[:30])
 
         # Create the list progress task.
         p_task1: TaskID = self.progress.add_task(
