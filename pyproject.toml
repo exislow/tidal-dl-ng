@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "tidal-dl-ng"
 authors = ["Robert Honz <cen.sored@gmail.com>"]
-version = "0.12.0"
+version = "0.12.1"
 description = "TIDAL Medial Downloader Next Generation!"
 repository = "https://github.com/exislow/tidal-dl-ng"
 documentation = "https://exislow.github.io/tidal-dl-ng/"
