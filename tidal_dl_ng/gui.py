@@ -556,6 +556,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Download Queue
         self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
         self.s_queue_download_item_downloading.connect(self.on_queue_download_item_downloading)
+        self.s_queue_download_item_finished.connect(self.on_queue_download_item_finished)
+        self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
 
     def on_logout(self):
         result: bool = self.tidal.logout()
@@ -708,12 +710,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 QueueDownloadStatus.Waiting.value, QtCore.Qt.MatchFlag.MatchExactly, column=0
             )
 
-            for item in items:
+            if len(items) > 0:
+                item: QtWidgets.QTreeWidgetItem = items[0]
+                media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
+
+                # TODO: Try catch and set FAILED status
                 self.s_queue_download_item_downloading.emit(item)
-
+                self.on_queue_download(media)
                 self.s_queue_download_item_finished.emit(item)
-
-            time.sleep(2)
+            else:
+                time.sleep(2)
 
     def on_queue_download_item_downloading(self, item: QtWidgets.QTreeWidgetItem) -> None:
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading.value)
@@ -727,50 +733,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
         item.setText(0, status)
 
-    def on_download_queue(self, media):
-        self.pb_download.setEnabled(False)
-        self.pb_download.setText("Downloading...")
+    def on_queue_download(self, media: Track | Album | Playlist | Video | Mix | Artist) -> None:
+        # if isinstance(media, Artist):
+        #     tmp_children: [QtWidgets.QTreeWidgetItem] = []
+        #     is_dummy_child = not bool(get_results_media_item(items[0].child(0)))
+        #
+        #     # Use the expand function to retrieve all albums.
+        #     if is_dummy_child:
+        #         self.on_tr_results_expanded(items[0])
+        #
+        #     count_children: int = items[0].childCount()
+        #
+        #     # Get all children.
+        #     for idx in range(count_children):
+        #         tmp_children.append(items[0].child(idx))
+        #
+        #     items: [Album] = tmp_children
 
-        items: [QtWidgets.QTreeWidgetItem] = self.tr_results.selectedItems()
+        download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
-        if len(items) == 0:
-            logger_gui.error("Please select a row first.")
-        else:
-            # If it is an artist resolve it with all available albums of him
-            if len(items) == 1:
-                tmp_media: Track | Video | Album | Artist = get_results_media_item(items[0])
-
-                if isinstance(tmp_media, Artist):
-                    tmp_children: [QtWidgets.QTreeWidgetItem] = []
-                    is_dummy_child = not bool(get_results_media_item(items[0].child(0)))
-
-                    # Use the expand function to retrieve all albums.
-                    if is_dummy_child:
-                        self.on_tr_results_expanded(items[0])
-
-                    count_children: int = items[0].childCount()
-
-                    # Get all children.
-                    for idx in range(count_children):
-                        tmp_children.append(items[0].child(idx))
-
-                    items: [Album] = tmp_children
-
-            items_pos_last = len(items) - 1
-
-            for item in items:
-                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
-                # Skip only if Track item, skip option set and the item is not the last in the list.
-                download_delay: bool = bool(
-                    isinstance(media, Track | Video)
-                    and self.settings.data.download_delay
-                    and items.index(item) < items_pos_last
-                )
-
-                self.download(media, self.dl, delay_track=download_delay)
-
-        self.pb_download.setText("Download")
-        self.pb_download.setEnabled(True)
+        self.download(media, self.dl, delay_track=download_delay)
 
     def download(
         self, media: Track | Album | Playlist | Video | Mix | Artist, dl: Download, delay_track: bool = False
