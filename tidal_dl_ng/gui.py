@@ -181,7 +181,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _init_info(self):
         path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
 
-        logger_gui.info(path_image)
         self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
 
     def on_progress_reset(self):
