@@ -1,4 +1,3 @@
-import glob
 import math
 import os
 import re
@@ -241,7 +240,7 @@ def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
     else:
         path_files: [str] = [path_file]
 
-    result = bool(sum([glob.glob(_file) for _file in path_files], []))
+    result = bool(sum([[True] if os.path.isfile(_file) else [] for _file in path_files], []))
 
     return result
 

@@ -227,11 +227,11 @@ class Download:
         # Compute if and how downloads need to be skipped.
         if self.skip_existing.value in (SkipExisting.ExtensionIgnore.value, SkipExisting.Filename.value):
             extension_ignore: bool = self.skip_existing == SkipExisting.ExtensionIgnore
-            download_skip: bool = check_file_exists(path_file, extension_ignore=extension_ignore)
+            file_exists: bool = check_file_exists(path_file, extension_ignore=extension_ignore)
         else:
-            download_skip: bool = False
+            file_exists: bool = False
 
-        if not download_skip:
+        if not file_exists:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
                 tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + stream_manifest.file_extension)
@@ -253,7 +253,7 @@ class Download:
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
 
-        status_download: bool = not download_skip
+        status_download: bool = not file_exists
 
         # If a file was downloaded and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items. Do not use this for list items.
@@ -263,7 +263,7 @@ class Download:
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
 
-        return not download_skip, path_file
+        return not file_exists, path_file
 
     def _move_lyrics(self, file_media_dst: str, file_media_src: str):
         # Build tmp lyrics filename
