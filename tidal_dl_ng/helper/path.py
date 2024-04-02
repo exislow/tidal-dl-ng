@@ -236,7 +236,7 @@ def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
         path_files: [str] = []
 
         for extension in AudioExtensions:
-            path_files.append(str(path_parent.joinpath(path_file_stem + extension.value)))
+            path_files.append(str(path_parent.joinpath(path_file_stem + extension)))
     else:
         path_files: [str] = [path_file]
 

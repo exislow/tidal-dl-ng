@@ -1,4 +1,4 @@
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 
 CTX_TIDAL: str = "tidal"
 REQUESTS_TIMEOUT_SEC: int = 45
@@ -7,7 +7,7 @@ UNIQUIFY_THRESHOLD: int = 99
 FILENAME_SANITIZE_PLACEHOLDER: str = "_"
 
 
-class QualityVideo(StrEnum):
+class QualityVideo(IntEnum):
     P360: int = 360
     P480: int = 480
     P720: int = 720
@@ -23,7 +23,7 @@ class MediaType(StrEnum):
 
 
 class SkipExisting(StrEnum):
-    Disabled: bool = False
+    Disabled: str = "False"
     Filename: str = "exact"
     ExtensionIgnore: str = "extension_ignore"
     Append: str = "append"
@@ -35,7 +35,7 @@ class StreamManifestMimeType(StrEnum):
     VIDEO: str = "video/mp2t"
 
 
-class CoverDimensions(StrEnum):
+class CoverDimensions(IntEnum):
     Px80: int = 80
     Px160: int = 160
     Px320: int = 320

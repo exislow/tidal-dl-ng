@@ -242,13 +242,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_populate_tree_lists(self, user_lists: [Playlist | UserPlaylist | Mix]):
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Playlists.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
         )[0]
         twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Favorites.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Favorites, QtCore.Qt.MatchExactly, 0
         )[0]
         twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Mixes.value, QtCore.Qt.MatchExactly, 0
+            TidalLists.Mixes, QtCore.Qt.MatchExactly, 0
         )[0]
 
         # Remove all children if present
@@ -543,7 +543,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 name=name,
                 quality="<quality>",
                 type_media=type(media).__name__,
-                status=QueueDownloadStatus.Waiting.value,
+                status=QueueDownloadStatus.Waiting,
                 obj=media,
             )
         else:
@@ -618,14 +618,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_list.setFormat(f"%p% {value}")
 
     def on_quality_set_audio(self, index):
-        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index).value)
+        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
         self.settings.save()
 
         if self.tidal:
             self.tidal.settings_apply()
 
     def on_quality_set_video(self, index):
-        self.settings.data.quality_video = QualityVideo(self.cb_quality_video.itemData(index).value)
+        self.settings.data.quality_video = QualityVideo(self.cb_quality_video.itemData(index))
         self.settings.save()
 
         if self.tidal:
@@ -697,11 +697,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_queue_download_clear_all(self):
         self.on_clear_queue_download(
-            f"({QueueDownloadStatus.Waiting.value}|{QueueDownloadStatus.Finished.value}|{QueueDownloadStatus.Failed.value})"
+            f"({QueueDownloadStatus.Waiting}|{QueueDownloadStatus.Finished}|{QueueDownloadStatus.Failed})"
         )
 
     def on_queue_download_clear_finished(self):
-        self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished.value}]")
+        self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished}]")
 
     def on_clear_queue_download(self, regex: str):
         items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
@@ -720,7 +720,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for item in items:
                 status: str = item.text(0)
 
-                if status != QueueDownloadStatus.Downloading.value:
+                if status != QueueDownloadStatus.Downloading:
                     self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
                 else:
                     logger_gui.info("Cannot remove a currently downloading item from queue.")
@@ -753,7 +753,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def watcher_queue_download(self) -> None:
         while True:
             items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
-                QueueDownloadStatus.Waiting.value, QtCore.Qt.MatchFlag.MatchExactly, column=0
+                QueueDownloadStatus.Waiting, QtCore.Qt.MatchFlag.MatchExactly, column=0
             )
 
             if len(items) > 0:
@@ -770,13 +770,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 time.sleep(2)
 
     def on_queue_download_item_downloading(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        self.queue_download_item_status(item, QueueDownloadStatus.Downloading.value)
+        self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
     def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        self.queue_download_item_status(item, QueueDownloadStatus.Finished.value)
+        self.queue_download_item_status(item, QueueDownloadStatus.Finished)
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        self.queue_download_item_status(item, QueueDownloadStatus.Failed.value)
+        self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
         item.setText(0, status)

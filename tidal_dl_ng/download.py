@@ -59,7 +59,7 @@ class RequestsClient:
 class Download:
     settings: Settings
     session: Session
-    skip_existing: SkipExisting = False
+    skip_existing: SkipExisting = SkipExisting.Disabled
     fn_logger: Callable
     progress_gui: ProgressBars
     progress: Progress
@@ -210,7 +210,7 @@ class Download:
             mime_type: str = stream.manifest_mime_type
         else:
             manifest: str = media.get_url()
-            mime_type: str = StreamManifestMimeType.VIDEO.value
+            mime_type: str = StreamManifestMimeType.VIDEO
 
         stream_manifest = self.stream_manifest_parse(manifest, mime_type)
 
@@ -225,7 +225,7 @@ class Download:
         path_file = path_file_sanitize(path_file + stream_manifest.file_extension, adapt=True, uniquify=uniquify)
 
         # Compute if and how downloads need to be skipped.
-        if self.skip_existing.value in (SkipExisting.ExtensionIgnore.value, SkipExisting.Filename.value):
+        if self.skip_existing in (SkipExisting.ExtensionIgnore, SkipExisting.Filename):
             extension_ignore: bool = self.skip_existing == SkipExisting.ExtensionIgnore
             file_exists: bool = check_file_exists(path_file, extension_ignore=extension_ignore)
         else:
@@ -327,7 +327,7 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=track.album.image(self.settings.data.metadata_cover_dimension.value),
+            url_cover=track.album.image(self.settings.data.metadata_cover_dimension),
         )
 
         m.save()
@@ -408,28 +408,28 @@ class Download:
         return result
 
     def get_file_extension(self, stream_url: str, stream_codec: str) -> str:
-        if AudioExtensions.FLAC.value in stream_url:
-            result: str = AudioExtensions.FLAC.value
-        elif AudioExtensions.MP4.value in stream_url:
+        if AudioExtensions.FLAC in stream_url:
+            result: str = AudioExtensions.FLAC
+        elif AudioExtensions.MP4 in stream_url:
             if "ac4" in stream_codec or "mha1" in stream_codec or "flac" in stream_codec or "mp4a" in stream_codec:
-                result: str = AudioExtensions.M4A.value
+                result: str = AudioExtensions.M4A
             else:
-                result: str = AudioExtensions.MP4.value
-        elif VideoExtensions.TS.value in stream_url:
-            result: str = VideoExtensions.TS.value
+                result: str = AudioExtensions.MP4
+        elif VideoExtensions.TS in stream_url:
+            result: str = VideoExtensions.TS
         else:
-            result: str = AudioExtensions.MP4.value
+            result: str = AudioExtensions.MP4
 
         return result
 
     def _video_convert(self, path_file: str) -> str:
-        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4.value
+        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4
         result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
 
         return path_file_out
 
     def stream_manifest_parse(self, manifest: str, mime_type: str) -> StreamManifest:
-        if mime_type == StreamManifestMimeType.MPD.value:
+        if mime_type == StreamManifestMimeType.MPD:
             # Stream Manifest is base64 encoded.
             manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             mpd = MPEGDASHParser.parse(manifest_parsed)
@@ -451,7 +451,7 @@ class Download:
             for index in range(segments_count):
                 stream_urls.append(segment_template.media.replace("$Number$", str(index)))
 
-        elif mime_type == StreamManifestMimeType.BTS.value:
+        elif mime_type == StreamManifestMimeType.BTS:
             # Stream Manifest is base64 encoded.
             manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             # JSON string to object.
@@ -464,11 +464,11 @@ class Download:
             encryption_key: str | None = (
                 stream_manifest["encryptionKey"] if self.is_encrypted(encryption_type) else None
             )
-        elif mime_type == StreamManifestMimeType.VIDEO.value:
+        elif mime_type == StreamManifestMimeType.VIDEO:
             # Parse M3U8 video playlist
             m3u8_variant: m3u8.M3U8 = m3u8.load(manifest)
             # Find the desired video resolution or the next best one.
-            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, self.settings.data.quality_video.value)
+            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, self.settings.data.quality_video)
             # Populate urls.
             stream_urls: list[str] = m3u8_playlist.files
 
