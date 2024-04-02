@@ -185,6 +185,8 @@ class Download:
                     self.fn_logger.info(
                         f"This track is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
                     )
+
+                    return False, ""
                 else:
                     # Re-create media instance with full album information
                     media = self.session.track(media.id, with_album=True)
