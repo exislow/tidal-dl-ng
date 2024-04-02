@@ -77,6 +77,7 @@ gui-linux: ## Build GUI app with PyInstaller
 		--icon $(path_asset)/icon.png \
 		--add-binary="pyproject.toml:." \
 		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
+		tidal_dl_ng/gui.py
 
 .PHONY: gui-macos
 gui-macos: ## Build GUI app with PyInstaller
