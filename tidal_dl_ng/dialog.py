@@ -1,6 +1,6 @@
 import os.path
 import webbrowser
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -102,7 +102,7 @@ class DialogPreferences(QtWidgets.QDialog):
     icon: QtGui.QIcon
     help_settings: HelpSettings
     parameters_checkboxes: [str]
-    parameters_combo: [(str, Enum)]
+    parameters_combo: [(str, StrEnum)]
     parameters_line_edit: [str]
     prefix_checkbox: str = "cb_"
     prefix_label: str = "l_"

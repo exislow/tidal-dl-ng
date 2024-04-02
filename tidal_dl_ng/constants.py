@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
 CTX_TIDAL: str = "tidal"
 REQUESTS_TIMEOUT_SEC: int = 45
@@ -7,14 +7,14 @@ UNIQUIFY_THRESHOLD: int = 99
 FILENAME_SANITIZE_PLACEHOLDER: str = "_"
 
 
-class QualityVideo(Enum):
+class QualityVideo(StrEnum):
     P360: int = 360
     P480: int = 480
     P720: int = 720
     P1080: int = 1080
 
 
-class MediaType(Enum):
+class MediaType(StrEnum):
     TRACK: str = "track"
     VIDEO: str = "video"
     PLAYLIST: str = "playlist"
@@ -22,20 +22,20 @@ class MediaType(Enum):
     MIX: str = "mix"
 
 
-class SkipExisting(Enum):
+class SkipExisting(StrEnum):
     Disabled: bool = False
     Filename: str = "exact"
     ExtensionIgnore: str = "extension_ignore"
     Append: str = "append"
 
 
-class StreamManifestMimeType(Enum):
+class StreamManifestMimeType(StrEnum):
     MPD: str = "application/dash+xml"
     BTS: str = "application/vnd.tidal.bts"
     VIDEO: str = "video/mp2t"
 
 
-class CoverDimensions(Enum):
+class CoverDimensions(StrEnum):
     Px80: int = 80
     Px160: int = 160
     Px320: int = 320
@@ -43,23 +43,23 @@ class CoverDimensions(Enum):
     Px1280: int = 1280
 
 
-class TidalLists(Enum):
+class TidalLists(StrEnum):
     Playlists: str = "Playlists"
     Favorites: str = "Favorites"
     Mixes: str = "Mixes"
 
 
-class AudioExtensions(Enum):
+class AudioExtensions(StrEnum):
     FLAC: str = ".flac"
     M4A: str = ".m4a"
     MP4: str = ".mp4"
 
 
-class VideoExtensions(Enum):
+class VideoExtensions(StrEnum):
     TS: str = ".ts"
 
 
-class QueueDownloadStatus(Enum):
+class QueueDownloadStatus(StrEnum):
     Waiting: str = "⏳️"
     Downloading: str = "▶️"
     Finished: str = "✅"
