@@ -29,3 +29,6 @@ class Worker(QtCore.QRunnable):
         Initialise the runner function with passed args, kwargs.
         """
         self.fn(*self.args, **self.kwargs)
+
+    def thread(self) -> QtCore.QThread:
+        return QtCore.QThread.currentThread()
