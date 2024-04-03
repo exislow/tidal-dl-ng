@@ -17,3 +17,20 @@ body:
       placeholder: Write at least three sentences and be as precise as possible.
     validations:
       required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: What operating system are you seeing the problem on?
+      multiple: false
+      options:
+        - macOS
+        - Linux
+        - Windows
+  - type: textarea
+    id: config
+    attributes:
+      label: Your settings
+      description: Please copy and paste your settings from `~/.config/tidal_dl_ng/settings.json` (macOS & Linux) / `%HOMEPATH%\.config\tidal_dl_ng\settings.json` (Windows). This will be automatically formatted into code, so no need for backticks.
+      render: json
+    validations:
+      required: true
