@@ -255,9 +255,9 @@ class Download:
 
         status_download: bool = not file_exists
 
-        # If a file was downloaded and the download delay is enabled, wait until the next download.
-        # Only use this, if you have a list of several Track items. Do not use this for list items.
-        if download_delay and status_download:
+        # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
+        # Only use this, if you have a list of several Track items.
+        if download_delay:
             time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
 
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
