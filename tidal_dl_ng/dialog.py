@@ -1,6 +1,6 @@
 import os.path
 import webbrowser
-from enum import StrEnum
+from enum import Enum, StrEnum
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets

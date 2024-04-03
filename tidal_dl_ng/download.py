@@ -263,7 +263,7 @@ class Download:
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
 
-        return not file_exists, path_file
+        return status_download, path_file
 
     def _move_lyrics(self, file_media_dst: str, file_media_src: str):
         # Build tmp lyrics filename
