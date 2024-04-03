@@ -107,7 +107,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._init_signals()
         self.init_tidal(tidal)
 
-        logger_gui.debug("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
         logger_gui.debug("All setup.")
 
     def init_tidal(self, tidal: Tidal = None):
