@@ -8,12 +8,13 @@ import requests
 import toml
 
 from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC
-from tidal_dl_ng.model.meta import ReleaseLatest
+from tidal_dl_ng.model.meta import ProjectInformation, ReleaseLatest
 
 
-def metadata_project() -> dict:
+def metadata_project() -> ProjectInformation:
+    result: ProjectInformation
     file_path: Path = Path(__file__)
-    result: dict = {}
+    tmp_result: dict = {}
 
     paths: [Path] = [
         file_path.parent,
@@ -25,28 +26,34 @@ def metadata_project() -> dict:
         pyproject_toml_file: Path = pyproject_toml_dir / "pyproject.toml"
 
         if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
-            result: str = toml.load(pyproject_toml_file)
+            tmp_result = toml.load(pyproject_toml_file)
 
             break
+
+    if tmp_result:
+        result = ProjectInformation(
+            version=tmp_result["tool"]["poetry"]["version"], repository_url=tmp_result["tool"]["poetry"]["repository"]
+        )
+    else:
+        try:
+            meta_info = importlib.metadata.metadata(name_package())
+            result = ProjectInformation(version=meta_info["Version"], repository_url=meta_info["Home-page"])
+        except:
+            result = ProjectInformation(version="0.0.0", repository_url="https://anerroroccur.ed/sorry/for/that")
 
     return result
 
 
 def version_app() -> str:
-    metadata: dict = metadata_project()
-    version: str = "0.0.0"
-
-    if metadata:
-        package_version: str = metadata["tool"]["poetry"]["version"]
-
-        version = package_version
+    metadata: ProjectInformation = metadata_project()
+    version: str = metadata.version
 
     return version
 
 
 def repository_url() -> str:
-    metadata: dict = metadata_project()
-    url_repo: str = metadata["tool"]["poetry"]["repository"]
+    metadata: ProjectInformation = metadata_project()
+    url_repo: str = metadata.repository_url
 
     return url_repo
 
@@ -61,18 +68,16 @@ def repository_path() -> str:
 def latest_version_information() -> ReleaseLatest:
     release_info: ReleaseLatest
     repo_path: str = repository_path()
+    url: str = f"https://api.github.com/repos{repo_path}/releases/latest"
 
     try:
-        response = requests.get(
-            f"https://api.github.com/repos{repo_path}/releases/latest", timeout=REQUESTS_TIMEOUT_SEC
-        )
+        response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
         release_info: str = response.json()
 
         release_info = ReleaseLatest(
             version=release_info["tag_name"], url=release_info["html_url"], release_info=release_info["body"]
         )
     except:
-        url: str = repository_url()
         release_info = ReleaseLatest(
             version="v0.0.0",
             url=url,

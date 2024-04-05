@@ -9,9 +9,6 @@ readme = "README.md"
 packages = [
   { include = "tidal_dl_ng" }
 ]
-include = [
-  { path = "pyproject.toml", format = ["sdist", "wheel"] }
-]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
