@@ -97,14 +97,14 @@ def is_dev_env() -> bool:
     package_name: str = name_package()
     result: bool = False
 
-    # Check if package is running from source code  == dev mode
+    # Check if package is running from source code == dev mode
     # If package is not running in PyInstaller environment.
-    if getattr(sys, "frozen", True) and not hasattr(sys, "_MEIPASS"):
+    if not getattr(sys, "frozen", False) and not hasattr(sys, "_MEIPASS"):
         try:
             importlib.metadata.version(package_name)
         except:
             # If package is not installed
-            result = False
+            result = True
 
     return result
 
