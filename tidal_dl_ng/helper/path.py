@@ -101,6 +101,9 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
             case "playlist_id":
                 if isinstance(media, Playlist):
                     result = media.id
+            case "album_id":
+                if isinstance(media, Album):
+                    result = media.id
             case "track_duration_seconds":
                 if isinstance(media, Track | Video):
                     result = str(media.duration)
@@ -124,7 +127,9 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
                     result = f"{m:01d}:{s:02d}"
             case "album_year":
                 if isinstance(media, Album):
-                    result = str(media.release_date.year)
+                    result = str(media.year)
+                elif isinstance(media, Track):
+                    result = str(media.album.year)
             case "video_quality":
                 if isinstance(media, Video):
                     result = media.video_quality

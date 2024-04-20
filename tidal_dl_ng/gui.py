@@ -463,7 +463,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     duration_sec=item.duration,
                     obj=item,
                     quality=quality_audio_highest(item),
-                    explicit=item.explicit,
+                    explicit=bool(item.explicit),
                 )
 
                 result.append(result_item)
@@ -476,7 +476,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     duration_sec=item.duration,
                     obj=item,
                     quality=item.video_quality,
-                    explicit=item.explicit,
+                    explicit=bool(item.explicit),
                 )
 
                 result.append(result_item)
@@ -502,7 +502,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     duration_sec=item.duration,
                     obj=item,
                     quality=quality_audio_highest(item),
-                    explicit=item.explicit,
+                    explicit=bool(item.explicit),
                 )
 
                 result.append(result_item)
