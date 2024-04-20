@@ -25,11 +25,13 @@ class Settings:
     download_base_path: str = "~/download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
-    format_album: str = "Albums/{album_artist} - {album_title}/{album_track_num}. {artist_name} - {track_title}"
+    format_album: str = (
+        "Albums/{album_artist} - {album_title}{album_explicit}/{album_track_num}. {artist_name} - {track_title}"
+    )
     format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}"
     format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}"
-    format_track: str = "Tracks/{artist_name} - {track_title}"
-    format_video: str = "Videos/{artist_name} - {track_title}"
+    format_track: str = "Tracks/{artist_name} - {track_title}{track_explicit}"
+    format_video: str = "Videos/{artist_name} - {track_title}{track_explicit}"
     video_convert_mp4: bool = True
     path_binary_ffmpeg: str = ""
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320

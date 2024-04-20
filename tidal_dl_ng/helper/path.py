@@ -131,6 +131,12 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
             case "track_quality":
                 if isinstance(media, Track):
                     result = ", ".join(tag for tag in media.media_metadata_tags)
+            case "track_explicit":
+                if isinstance(media, Track | Video):
+                    result = " (Explicit)" if media.explicit else ""
+            case "album_explicit":
+                if isinstance(media, Album):
+                    result = " (Explicit)" if media.explicit else ""
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
