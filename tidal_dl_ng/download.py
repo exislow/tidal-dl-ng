@@ -10,6 +10,7 @@ import requests
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+from tidalapi.media import StreamManifest
 
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
@@ -26,7 +27,6 @@ from tidal_dl_ng.helper.tidal import (
 )
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.gui_data import ProgressBars
-from tidal_dl_ng.model.tidal import StreamManifest
 
 
 # TODO: Set appropriate client string and use it for video download.
