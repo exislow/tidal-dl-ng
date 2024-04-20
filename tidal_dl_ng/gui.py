@@ -23,6 +23,7 @@ from tidal_dl_ng.helper.tidal import (
     items_results_all,
     name_builder_artist,
     name_builder_title,
+    quality_audio_highest,
     search_results_all,
     user_media_lists,
 )
@@ -395,6 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child.setText(3, item.title)
         child.setText(4, item.album)
         child.setText(5, duration)
+        child.setText(6, item.quality)
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
@@ -444,18 +446,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         result = []
 
         for idx, item in enumerate(items):
+            explicit: str = ""
             # Check if item is available on TIDAL.
             if hasattr(item, "available") and not item.available:
                 continue
+
+            if isinstance(item, Track | Video | Album):
+                explicit = " 🅴" if item.explicit else ""
 
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=name_builder_artist(item),
-                    title=name_builder_title(item),
+                    title=f"{name_builder_title(item)}{explicit}",
                     album=item.album.name,
                     duration_sec=item.duration,
                     obj=item,
+                    quality=quality_audio_highest(item),
+                    explicit=item.explicit,
                 )
 
                 result.append(result_item)
@@ -463,10 +471,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 result_item: ResultItem = ResultItem(
                     position=idx,
                     artist=name_builder_artist(item),
-                    title=name_builder_title(item),
+                    title=f"{name_builder_title(item)}{explicit}",
                     album=item.album.name if item.album else "",
                     duration_sec=item.duration,
                     obj=item,
+                    quality=item.video_quality,
+                    explicit=item.explicit,
                 )
 
                 result.append(result_item)
@@ -478,6 +488,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     album="",
                     duration_sec=item.duration,
                     obj=item,
+                    quality="",
+                    explicit=False,
                 )
 
                 result.append(result_item)
@@ -486,9 +498,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     position=idx,
                     artist=name_builder_artist(item),
                     title="",
-                    album=item.name,
+                    album=f"{item.name}{explicit}",
                     duration_sec=item.duration,
                     obj=item,
+                    quality=quality_audio_highest(item),
+                    explicit=item.explicit,
                 )
 
                 result.append(result_item)
@@ -501,6 +515,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     # TODO: Calculate total duration.
                     duration_sec=-1,
                     obj=item,
+                    quality="",
+                    explicit=False,
                 )
 
                 result.append(result_item)
@@ -512,6 +528,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     album="",
                     duration_sec=-1,
                     obj=item,
+                    quality="",
+                    explicit=False,
                 )
 
                 result.append(result_item)
@@ -523,24 +541,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     ) -> QueueDownloadItem | bool:
         result: QueueDownloadItem | False
         name: str = ""
+        quality: str = ""
+        explicit: str = ""
 
         # Check if item is available on TIDAL.
         if hasattr(media, "available") and not media.available:
             return False
 
+        if isinstance(media, Track | Video | Album):
+            explicit = " 🅴" if media.explicit else ""
+
         if isinstance(media, Track | Video):
-            name = f"{name_builder_artist(media)} - {name_builder_title(media)}"
+            name = f"{name_builder_artist(media)} - {name_builder_title(media)}{explicit}"
         elif isinstance(media, Playlist | Artist):
             name = media.name
         elif isinstance(media, Album):
-            name = f"{name_builder_artist(media)} - {media.name}"
+            name = f"{name_builder_artist(media)} - {media.name}{explicit}"
         elif isinstance(media, Mix):
             name = media.title
+
+        if isinstance(media, Track | Album):
+            quality_highest: str = quality_audio_highest(media)
+
+            if (
+                self.settings.data.quality_audio == quality_highest
+                or self.settings.data.quality_audio == Quality.hi_res_lossless
+                or (self.settings.data.quality_audio == Quality.hi_res and quality_highest == Quality.hi_res)
+            ):
+                quality = quality_highest
+            else:
+                quality = self.settings.data.quality_audio
+        elif isinstance(media, Video):
+            quality = media.video_quality
 
         if name:
             result = QueueDownloadItem(
                 name=name,
-                quality="<quality>",
+                quality=quality,
                 type_media=type(media).__name__,
                 status=QueueDownloadStatus.Waiting,
                 obj=media,
