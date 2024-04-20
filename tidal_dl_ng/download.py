@@ -144,10 +144,7 @@ class Download:
             # TODO: Handle Exception...
             self.fn_logger(e)
 
-        # Check if file is encrypted.
-        needs_decryption = self.is_encrypted(stream_manifest.encryption_type)
-
-        if needs_decryption:
+        if stream_manifest.is_encrypted:
             key, nonce = decrypt_security_token(stream_manifest.encryption_key)
             tmp_path_file_decrypted = path_file + "_decrypted"
             decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
@@ -289,7 +286,7 @@ class Download:
                     lyrics = lyrics_obj.subtitles
                 elif lyrics_obj.text:
                     lyrics = lyrics_obj.text
-            except (HTTPError, AttributeError):
+            except:
                 lyrics = ""
                 # TODO: Implement proper logging.
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
