@@ -639,7 +639,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
         self.s_queue_download_item_skipped.connect(self.on_queue_download_item_skipped)
 
-
     def on_logout(self):
         result: bool = self.tidal.logout()
 
@@ -869,7 +868,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             # Dummy values
             result_dl = True
-            path_file = "/tmp/dummy"
+            path_file = "dummy"
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
 
