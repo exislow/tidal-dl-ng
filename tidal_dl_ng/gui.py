@@ -2,6 +2,7 @@ import math
 import sys
 import time
 from collections.abc import Callable
+from enum import Enum
 
 from requests.exceptions import HTTPError
 
@@ -297,12 +298,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def apply_settings(self, settings: Settings):
         l_cb = [
-            {"element": self.cb_quality_audio, "setting": settings.data.quality_audio.name, "default_id": 1},
-            {"element": self.cb_quality_video, "setting": settings.data.quality_video.name, "default_id": 0},
+            {"element": self.cb_quality_audio, "setting": settings.data.quality_audio, "default_id": 1},
+            {"element": self.cb_quality_video, "setting": settings.data.quality_video, "default_id": 0},
         ]
 
         for item in l_cb:
-            idx = item["element"].findText(item["setting"])
+            needle: str | int = item["setting"].name if isinstance(item["setting"], Enum) else item["setting"]
+            idx = item["element"].findText(needle)
 
             if idx > -1:
                 item["element"].setCurrentIndex(idx)

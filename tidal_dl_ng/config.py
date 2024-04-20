@@ -34,6 +34,11 @@ class BaseConfig:
             f.write(data_json)
 
     def set_option(self, key: str, value: Any) -> None:
+        tmp_data: Any = getattr(self.data, key)
+
+        if isinstance(tmp_data, int) and not isinstance(value, int):
+            value = int(value)
+
         setattr(self.data, key, value)
 
     def read(self, path: str) -> bool:
