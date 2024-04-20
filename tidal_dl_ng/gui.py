@@ -83,6 +83,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
 
     def __init__(self, tidal: Tidal | None = None):
         super().__init__()
@@ -636,6 +637,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_queue_download_item_downloading.connect(self.on_queue_download_item_downloading)
         self.s_queue_download_item_finished.connect(self.on_queue_download_item_finished)
         self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
+        self.s_queue_download_item_skipped.connect(self.on_queue_download_item_skipped)
+
 
     def on_logout(self):
         result: bool = self.tidal.logout()
@@ -795,13 +798,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             )
 
             if len(items) > 0:
+                result: QueueDownloadStatus
                 item: QtWidgets.QTreeWidgetItem = items[0]
                 media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
-                    self.on_queue_download(media)
-                    self.s_queue_download_item_finished.emit(item)
+                    result = self.on_queue_download(media)
+
+                    if result == QueueDownloadStatus.Finished:
+                        self.s_queue_download_item_finished.emit(item)
+                    elif result == QueueDownloadStatus.Skipped:
+                        self.s_queue_download_item_skipped.emit(item)
                 except:
                     self.s_queue_download_item_failed.emit(item)
             else:
@@ -816,10 +824,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
         self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
+    def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
+
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
         item.setText(0, status)
 
-    def on_queue_download(self, media: Track | Album | Playlist | Video | Mix | Artist) -> None:
+    def on_queue_download(self, media: Track | Album | Playlist | Video | Mix | Artist) -> QueueDownloadStatus:
+        result: QueueDownloadStatus
         items_media: [Track | Album | Playlist | Video | Mix | Artist]
 
         if isinstance(media, Artist):
@@ -830,18 +842,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
         for item_media in items_media:
-            self.download(item_media, self.dl, delay_track=download_delay)
+            result = self.download(item_media, self.dl, delay_track=download_delay)
+
+        return result
 
     def download(
         self, media: Track | Album | Playlist | Video | Mix | Artist, dl: Download, delay_track: bool = False
-    ) -> None:
+    ) -> QueueDownloadStatus:
+        result_dl: bool
+        path_file: str
+        result: QueueDownloadStatus
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
-            dl.item(media=media, file_template=file_template, download_delay=delay_track)
+            result_dl, path_file = dl.item(media=media, file_template=file_template, download_delay=delay_track)
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(
                 media=media,
@@ -850,7 +867,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 download_delay=self.settings.data.download_delay,
             )
 
+            # Dummy values
+            result_dl = True
+            path_file = "/tmp/dummy"
+
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
+
+        if result_dl and path_file:
+            result = QueueDownloadStatus.Finished
+        elif not result_dl and path_file:
+            result = QueueDownloadStatus.Skipped
+        else:
+            result = QueueDownloadStatus.Failed
+
+        return result
 
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest = None

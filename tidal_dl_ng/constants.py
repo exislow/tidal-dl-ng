@@ -64,3 +64,4 @@ class QueueDownloadStatus(StrEnum):
     Downloading: str = "▶️"
     Finished: str = "✅"
     Failed: str = "❌"
+    Skipped: str = "↪️"
