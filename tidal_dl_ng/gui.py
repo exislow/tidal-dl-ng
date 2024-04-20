@@ -2,7 +2,6 @@ import math
 import sys
 import time
 from collections.abc import Callable
-from enum import Enum
 
 from requests.exceptions import HTTPError
 
@@ -304,8 +303,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ]
 
         for item in l_cb:
-            needle: str | int = item["setting"].name if isinstance(item["setting"], Enum) else item["setting"]
-            idx = item["element"].findText(needle)
+            idx = item["element"].findData(item["setting"])
 
             if idx > -1:
                 item["element"].setCurrentIndex(idx)

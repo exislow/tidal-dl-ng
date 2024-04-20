@@ -1,4 +1,4 @@
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 
 CTX_TIDAL: str = "tidal"
 REQUESTS_TIMEOUT_SEC: int = 45
@@ -7,11 +7,11 @@ UNIQUIFY_THRESHOLD: int = 99
 FILENAME_SANITIZE_PLACEHOLDER: str = "_"
 
 
-class QualityVideo(IntEnum):
-    P360: int = 360
-    P480: int = 480
-    P720: int = 720
-    P1080: int = 1080
+class QualityVideo(StrEnum):
+    P360: str = "360"
+    P480: str = "480"
+    P720: str = "720"
+    P1080: str = "1080"
 
 
 class MediaType(StrEnum):
@@ -29,12 +29,12 @@ class SkipExisting(StrEnum):
     Append: str = "append"
 
 
-class CoverDimensions(IntEnum):
-    Px80: int = 80
-    Px160: int = 160
-    Px320: int = 320
-    Px640: int = 640
-    Px1280: int = 1280
+class CoverDimensions(StrEnum):
+    Px80: str = "80"
+    Px160: str = "160"
+    Px320: str = "320"
+    Px640: str = "640"
+    Px1280: str = "1280"
 
 
 class TidalLists(StrEnum):
