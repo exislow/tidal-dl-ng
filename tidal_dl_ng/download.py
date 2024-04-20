@@ -1,5 +1,3 @@
-import base64
-import json
 import os
 import random
 import shutil
@@ -8,19 +6,15 @@ import time
 from collections.abc import Callable
 from uuid import uuid4
 
-import ffmpeg
-import m3u8
 import requests
-from mpegdash.parser import MPEGDASHParser
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.media import AudioExtensions, ManifestMimeType, VideoExtensions
 
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
-from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
+from tidal_dl_ng.helper.exceptions import MediaMissing
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
 from tidal_dl_ng.helper.tidal import (
     instantiate_media,
@@ -383,109 +377,3 @@ class Download:
 
                     self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
                     time.sleep(time_sleep)
-
-    def is_encrypted(self, encryption_type: str) -> bool:
-        result = encryption_type != "NONE"
-
-        return result
-
-    def get_file_extension(self, stream_url: str, stream_codec: str) -> str:
-        if AudioExtensions.FLAC in stream_url:
-            result: str = AudioExtensions.FLAC
-        elif AudioExtensions.MP4 in stream_url:
-            if "ac4" in stream_codec or "mha1" in stream_codec or "flac" in stream_codec or "mp4a" in stream_codec:
-                result: str = AudioExtensions.M4A
-            else:
-                result: str = AudioExtensions.MP4
-        elif VideoExtensions.TS in stream_url:
-            result: str = VideoExtensions.TS
-        else:
-            result: str = AudioExtensions.MP4
-
-        return result
-
-    def _video_convert(self, path_file: str) -> str:
-        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4
-        result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
-
-        return path_file_out
-
-    def stream_manifest_parse(self, manifest: str, mime_type: str) -> StreamManifest:
-        if mime_type == ManifestMimeType.MPD:
-            # Stream Manifest is base64 encoded.
-            manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
-            mpd = MPEGDASHParser.parse(manifest_parsed)
-            codecs: str = mpd.periods[0].adaptation_sets[0].representations[0].codecs
-            mime_type: str = mpd.periods[0].adaptation_sets[0].mime_type
-            # TODO: Handle encryption key. But I have never seen an encrypted file so far.
-            encryption_type: str = "NONE"
-            encryption_key: str | None = None
-            # .initialization + the very first of .media; See https://developers.broadpeak.io/docs/foundations-dash
-            segments_count = 1 + 1
-
-            for s in mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0].segment_timelines[0].Ss:
-                segments_count += s.r if s.r else 1
-
-            # Populate segment urls.
-            segment_template = mpd.periods[0].adaptation_sets[0].representations[0].segment_templates[0]
-            stream_urls: list[str] = []
-
-            for index in range(segments_count):
-                stream_urls.append(segment_template.media.replace("$Number$", str(index)))
-
-        elif mime_type == ManifestMimeType.BTS:
-            # Stream Manifest is base64 encoded.
-            manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
-            # JSON string to object.
-            stream_manifest = json.loads(manifest_parsed)
-            # TODO: Handle more than one download URL
-            stream_urls: str = stream_manifest["urls"]
-            codecs: str = stream_manifest["codecs"]
-            mime_type: str = stream_manifest["mimeType"]
-            encryption_type: str = stream_manifest["encryptionType"]
-            encryption_key: str | None = (
-                stream_manifest["encryptionKey"] if self.is_encrypted(encryption_type) else None
-            )
-        elif mime_type == ManifestMimeType.VIDEO:
-            # Parse M3U8 video playlist
-            m3u8_variant: m3u8.M3U8 = m3u8.load(manifest)
-            # Find the desired video resolution or the next best one.
-            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, self.settings.data.quality_video)
-            # Populate urls.
-            stream_urls: list[str] = m3u8_playlist.files
-
-            # TODO: Handle encryption key. But I have never seen an encrypted file so far.
-            encryption_type: str = "NONE"
-            encryption_key: str | None = None
-        else:
-            raise UnknownManifestFormat
-
-        file_extension: str = self.get_file_extension(stream_urls[0], codecs)
-
-        result: StreamManifest = StreamManifest(
-            urls=stream_urls,
-            codecs=codecs,
-            file_extension=file_extension,
-            encryption_type=encryption_type,
-            encryption_key=encryption_key,
-            mime_type=mime_type,
-        )
-
-        return result
-
-    def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: str) -> (m3u8.M3U8 | bool, str):
-        m3u8_playlist: m3u8.M3U8 | bool = False
-        resolution_best: int = 0
-        mime_type: str = ""
-
-        if m3u8_variant.is_variant:
-            for playlist in m3u8_variant.playlists:
-                if resolution_best < playlist.stream_info.resolution[1]:
-                    resolution_best = playlist.stream_info.resolution[1]
-                    m3u8_playlist = m3u8.load(playlist.uri)
-                    mime_type = playlist.stream_info.codecs
-
-                    if quality == playlist.stream_info.resolution[1]:
-                        break
-
-        return m3u8_playlist, mime_type
