@@ -6,11 +6,13 @@ import time
 from collections.abc import Callable
 from uuid import uuid4
 
+import ffmpeg
+import m3u8
 import requests
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.media import StreamManifest
+from tidalapi.media import AudioExtensions, StreamManifest, VideoExtensions
 
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
@@ -78,10 +80,21 @@ class Download:
     def _download(
         self,
         media: Track | Video,
-        stream_manifest: StreamManifest,
         path_file: str,
     ) -> str:
         media_name: str = name_builder_item(media)
+        urls: [str]
+
+        # Get urls for media.
+        if isinstance(media, Track):
+            urls = media.get_stream().get_stream_manifest().urls
+            stream_manifest: StreamManifest = media.get_stream().get_stream_manifest()
+        elif isinstance(media, Video):
+            m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
+            # Find the desired video resolution or the next best one.
+            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, int(self.settings.data.quality_video))
+            # Populate urls.
+            urls = m3u8_playlist.files
 
         # Set the correct progress output channel.
         if self.progress_gui is None:
@@ -93,14 +106,14 @@ class Download:
 
         try:
             # Compute total iterations for progress
-            urls_count: int = len(stream_manifest.urls)
+            urls_count: int = len(urls)
 
             if urls_count > 1:
                 progress_total: int = urls_count
                 block_size: int | None = None
-            else:
+            elif urls_count == 1:
                 # Compute progress iterations based on the file size.
-                r = requests.get(stream_manifest.urls[0], stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+                r = requests.get(urls[0], stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
                 r.raise_for_status()
 
@@ -108,6 +121,8 @@ class Download:
                 total_size_in_bytes: int = int(r.headers.get("content-length", 0))
                 block_size: int | None = 4096
                 progress_total: float = total_size_in_bytes / block_size
+            else:
+                raise ValueError
 
             # Create progress Task
             p_task: TaskID = self.progress.add_task(
@@ -119,7 +134,7 @@ class Download:
             # Write content to file until progress is finished.
             while not self.progress.tasks[p_task].finished:
                 with open(path_file, "wb") as f:
-                    for url in stream_manifest.urls:
+                    for url in urls:
                         # Create the request object with stream=True, so the content won't be loaded into memory at once.
                         r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
@@ -138,7 +153,7 @@ class Download:
             # TODO: Handle Exception...
             self.fn_logger(e)
 
-        if stream_manifest.is_encrypted:
+        if isinstance(media, Track) and stream_manifest.is_encrypted:
             key, nonce = decrypt_security_token(stream_manifest.encryption_key)
             tmp_path_file_decrypted = path_file + "_decrypted"
             decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
@@ -187,8 +202,13 @@ class Download:
 
             return False, ""
 
-        # Populate StreamManifest for further download action.
-        stream_manifest = media.get_stream().get_stream_manifest()
+        # Get extension.
+        file_extension: str
+
+        if isinstance(media, Track):
+            file_extension = media.get_stream().get_stream_manifest().file_extension
+        elif isinstance(media, Video):
+            file_extension = VideoExtensions.TS
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
@@ -198,7 +218,7 @@ class Download:
 
         # Sanitize final path_file to fit into OS boundaries.
         uniquify: bool = self.skip_existing == SkipExisting.Append
-        path_file = path_file_sanitize(path_file + stream_manifest.file_extension, adapt=True, uniquify=uniquify)
+        path_file = path_file_sanitize(path_file + file_extension, adapt=True, uniquify=uniquify)
 
         # Compute if and how downloads need to be skipped.
         if self.skip_existing in (SkipExisting.ExtensionIgnore, SkipExisting.Filename):
@@ -210,9 +230,9 @@ class Download:
         if not file_exists:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + stream_manifest.file_extension)
+                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + file_extension)
                 # Download media.
-                tmp_path_file = self._download(media=media, stream_manifest=stream_manifest, path_file=tmp_path_file)
+                tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
@@ -303,7 +323,7 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=track.album.image(self.settings.data.metadata_cover_dimension),
+            url_cover=track.album.image(int(self.settings.data.metadata_cover_dimension)),
         )
 
         m.save()
@@ -377,3 +397,26 @@ class Download:
 
                     self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
                     time.sleep(time_sleep)
+
+    def _video_convert(self, path_file: str) -> str:
+        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4
+        result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
+
+        return path_file_out
+
+    def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> (m3u8.M3U8 | bool, str):
+        m3u8_playlist: m3u8.M3U8 | bool = False
+        resolution_best: int = 0
+        mime_type: str = ""
+
+        if m3u8_variant.is_variant:
+            for playlist in m3u8_variant.playlists:
+                if resolution_best < playlist.stream_info.resolution[1]:
+                    resolution_best = playlist.stream_info.resolution[1]
+                    m3u8_playlist = m3u8.load(playlist.uri)
+                    mime_type = playlist.stream_info.codecs
+
+                    if quality == playlist.stream_info.resolution[1]:
+                        break
+
+        return m3u8_playlist, mime_type
