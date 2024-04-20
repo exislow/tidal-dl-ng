@@ -15,17 +15,10 @@ from mpegdash.parser import MPEGDASHParser
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+from tidalapi.media import AudioExtensions, ManifestMimeType, VideoExtensions
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import (
-    EXTENSION_LYRICS,
-    REQUESTS_TIMEOUT_SEC,
-    AudioExtensions,
-    MediaType,
-    SkipExisting,
-    StreamManifestMimeType,
-    VideoExtensions,
-)
+from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing, UnknownManifestFormat
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
@@ -203,16 +196,8 @@ class Download:
 
             return False, ""
 
-        # Populate StreamManifest for further download.
-        if isinstance(media, Track):
-            stream = media.get_stream()
-            manifest: str = stream.manifest
-            mime_type: str = stream.manifest_mime_type
-        else:
-            manifest: str = media.get_url()
-            mime_type: str = StreamManifestMimeType.VIDEO
-
-        stream_manifest = self.stream_manifest_parse(manifest, mime_type)
+        # Populate StreamManifest for further download action.
+        stream_manifest = media.get_stream().get_stream_manifest()
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
@@ -429,7 +414,7 @@ class Download:
         return path_file_out
 
     def stream_manifest_parse(self, manifest: str, mime_type: str) -> StreamManifest:
-        if mime_type == StreamManifestMimeType.MPD:
+        if mime_type == ManifestMimeType.MPD:
             # Stream Manifest is base64 encoded.
             manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             mpd = MPEGDASHParser.parse(manifest_parsed)
@@ -451,7 +436,7 @@ class Download:
             for index in range(segments_count):
                 stream_urls.append(segment_template.media.replace("$Number$", str(index)))
 
-        elif mime_type == StreamManifestMimeType.BTS:
+        elif mime_type == ManifestMimeType.BTS:
             # Stream Manifest is base64 encoded.
             manifest_parsed: str = base64.b64decode(manifest).decode("utf-8")
             # JSON string to object.
@@ -464,7 +449,7 @@ class Download:
             encryption_key: str | None = (
                 stream_manifest["encryptionKey"] if self.is_encrypted(encryption_type) else None
             )
-        elif mime_type == StreamManifestMimeType.VIDEO:
+        elif mime_type == ManifestMimeType.VIDEO:
             # Parse M3U8 video playlist
             m3u8_variant: m3u8.M3U8 = m3u8.load(manifest)
             # Find the desired video resolution or the next best one.

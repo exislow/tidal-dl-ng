@@ -29,12 +29,6 @@ class SkipExisting(StrEnum):
     Append: str = "append"
 
 
-class StreamManifestMimeType(StrEnum):
-    MPD: str = "application/dash+xml"
-    BTS: str = "application/vnd.tidal.bts"
-    VIDEO: str = "video/mp2t"
-
-
 class CoverDimensions(IntEnum):
     Px80: int = 80
     Px160: int = 160
@@ -47,16 +41,6 @@ class TidalLists(StrEnum):
     Playlists: str = "Playlists"
     Favorites: str = "Favorites"
     Mixes: str = "Mixes"
-
-
-class AudioExtensions(StrEnum):
-    FLAC: str = ".flac"
-    M4A: str = ".m4a"
-    MP4: str = ".mp4"
-
-
-class VideoExtensions(StrEnum):
-    TS: str = ".ts"
 
 
 class QueueDownloadStatus(StrEnum):
