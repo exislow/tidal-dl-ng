@@ -2,6 +2,7 @@ from collections.abc import Callable
 
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.artist import Artist, Role
+from tidalapi.media import MediaMetadataTags, Quality
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.constants import MediaType
@@ -151,3 +152,18 @@ def instantiate_media(
         raise MediaUnknown
 
     return media
+
+
+def quality_audio_highest(media: Track | Album) -> str:
+    quality: str
+
+    if MediaMetadataTags.hires_lossless in media.media_metadata_tags:
+        quality = Quality.hi_res_lossless
+    elif MediaMetadataTags.mqa in media.media_metadata_tags:
+        quality = f"{Quality.hi_res}"
+    elif MediaMetadataTags.lossless in media.media_metadata_tags:
+        quality = Quality.high_lossless
+    else:
+        quality = media.audio_quality
+
+    return quality

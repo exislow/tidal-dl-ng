@@ -24,6 +24,8 @@ class ResultItem:
     album: str
     duration_sec: int
     obj: object
+    quality: str
+    explicit: bool
 
 
 @dataclass
