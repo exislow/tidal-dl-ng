@@ -114,11 +114,13 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         result = False
 
         if self.token_from_storage:
-            self.session.client_enable_hires()
-
             try:
                 result = self.session.load_oauth_session(
-                    self.data.token_type, self.data.access_token, self.data.refresh_token, self.data.expiry_time
+                    self.data.token_type,
+                    self.data.access_token,
+                    self.data.refresh_token,
+                    self.data.expiry_time,
+                    is_pkce=True,
                 )
             except HTTPError:
                 result = False
