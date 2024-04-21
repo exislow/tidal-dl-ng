@@ -543,7 +543,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     ) -> QueueDownloadItem | bool:
         result: QueueDownloadItem | False
         name: str = ""
-        quality: Quality
+        quality: Quality | QualityVideo | str = ""
         explicit: str = ""
 
         # Check if item is available on TIDAL.
@@ -574,7 +574,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 quality = self.settings.data.quality_audio
         elif isinstance(media, Video):
-            quality = media.video_quality
+            quality = self.settings.data.quality_video
 
         if name:
             result = QueueDownloadItem(
@@ -799,7 +799,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 result: QueueDownloadStatus
                 item: QtWidgets.QTreeWidgetItem = items[0]
                 media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
-                quality: Quality = get_queue_download_quality(item)
+                tmp_quality: str = get_queue_download_quality(item)
+                quality: Quality | QualityVideo | None = tmp_quality if tmp_quality else None
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
@@ -830,7 +831,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         item.setText(0, status)
 
     def on_queue_download(
-        self, media: Track | Album | Playlist | Video | Mix | Artist, quality: Quality | None = None
+        self, media: Track | Album | Playlist | Video | Mix | Artist, quality: Quality | QualityVideo | None = None
     ) -> QueueDownloadStatus:
         result: QueueDownloadStatus
         items_media: [Track | Album | Playlist | Video | Mix | Artist]
@@ -852,27 +853,48 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media: Track | Album | Playlist | Video | Mix | Artist,
         dl: Download,
         delay_track: bool = False,
-        quality: Quality | None = None,
+        quality: Quality | QualityVideo | None = None,
     ) -> QueueDownloadStatus:
         result_dl: bool
         path_file: str
         result: QueueDownloadStatus
+        quality_audio: Quality | None
+        quality_video: QualityVideo | None
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
+            if isinstance(media, Track):
+                quality_audio = quality
+                quality_video = None
+            else:
+                quality_audio = None
+                quality_video = quality
+
             result_dl, path_file = dl.item(
-                media=media, file_template=file_template, download_delay=delay_track, quality_audio=quality
+                media=media,
+                file_template=file_template,
+                download_delay=delay_track,
+                quality_audio=quality_audio,
+                quality_video=quality_video,
             )
         elif isinstance(media, Album | Playlist | Mix):
+            if isinstance(media, Album):
+                quality_audio = quality
+                quality_video = None
+            else:
+                quality_audio = None
+                quality_video = None
+
             dl.items(
                 media=media,
                 file_template=file_template,
                 video_download=self.settings.data.video_download,
                 download_delay=self.settings.data.download_delay,
-                quality=quality,
+                quality_audio=quality_audio,
+                quality_video=quality_video,
             )
 
             # Dummy values

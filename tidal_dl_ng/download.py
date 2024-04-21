@@ -12,10 +12,10 @@ import requests
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions, VideoQuality
+from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions
 
 from tidal_dl_ng.config import Settings, Tidal
-from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
+from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
@@ -179,7 +179,7 @@ class Download:
         video_download: bool = True,
         download_delay: bool = False,
         quality_audio: Quality | None = None,
-        quality_video: VideoQuality | None = None,
+        quality_video: QualityVideo | None = None,
     ) -> (bool, str):
         try:
             if media_id and media_type:
@@ -213,7 +213,7 @@ class Download:
 
         if isinstance(media, Track):
             # If hi_res is forbidden in settings and highest track quality is hi_res, downgrade to high_lossless.
-            if self.settings.data.downgrade_on_hires and media.get_stream().audio_quality == Quality.hi_res:
+            if self.settings.data.downgrade_on_hi_res and media.get_stream().audio_quality == Quality.hi_res:
                 quality_audio = Quality.high_lossless
 
             # If a quality is explicitly set, change it.
@@ -233,7 +233,7 @@ class Download:
                     do_flac_extract = True
         elif isinstance(media, Video):
             if quality_video:
-                quality_video_old = self.adjust_quality_video(quality_video)
+                quality_video_old: QualityVideo = self.adjust_quality_video(quality_video)
 
             file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
@@ -267,7 +267,7 @@ class Download:
                     tmp_path_file = self._video_convert(tmp_path_file)
 
                 # Extract FLAC from MP4 container using ffmpeg
-                if self.settings.data.extract_flac and do_flac_extract:
+                if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
                     tmp_path_file = self._extract_flac(tmp_path_file, media.isrc)
 
                 # Move final file to the configured destination directory.
@@ -314,10 +314,10 @@ class Download:
 
         return quality_old
 
-    def adjust_quality_video(self, quality) -> VideoQuality:
-        quality_old: VideoQuality = self.session.video_quality
+    def adjust_quality_video(self, quality) -> QualityVideo:
+        quality_old: QualityVideo = self.settings.data.quality_video
 
-        self.session.video_quality = quality
+        self.settings.data.quality_video = quality
 
         return quality_old
 
@@ -400,7 +400,8 @@ class Download:
         media_type: MediaType = None,
         video_download: bool = False,
         download_delay: bool = True,
-        quality: Quality | None = None,
+        quality_audio: Quality | None = None,
+        quality_video: QualityVideo | None = None,
     ):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
@@ -442,7 +443,10 @@ class Download:
             for media in items:
                 # Download the item.
                 status_download, result_path_file = self.item(
-                    media=media, file_template=file_name_relative, quality_audio=quality
+                    media=media,
+                    file_template=file_name_relative,
+                    quality_audio=quality_audio,
+                    quality_video=quality_video,
                 )
 
                 # Advance progress bar.
