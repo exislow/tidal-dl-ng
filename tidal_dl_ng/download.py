@@ -12,7 +12,7 @@ import requests
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.media import AudioExtensions, Quality, StreamManifest, VideoExtensions
+from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions, VideoQuality
 
 from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
@@ -70,11 +70,15 @@ class Download:
         self.progress = progress
         self.path_base = path_base
 
-        if not self.settings.data.path_binary_ffmpeg and self.settings.data.video_convert_mp4:
+        if not self.settings.data.path_binary_ffmpeg and (
+            self.settings.data.video_convert_mp4 or self.settings.data.extract_flac
+        ):
             self.settings.data.video_convert_mp4 = False
+            self.settings.data.extract_flac = False
+
             self.fn_logger.error(
-                "FFmpeg in path is not set. Videos can be downloaded but will not be processed. "
-                "Make sure FFmpeg is installed and the path to the binary is configured ('path_binary_ffmpeg')."
+                "FFmpeg is not set. Videos can be downloaded but will not be processed. FLAC cannot be extracted from MP4 containers. "
+                "Make sure FFmpeg is installed and the path to the binary is configured (`path_binary_ffmpeg`)."
             )
 
     def _download(
@@ -174,7 +178,8 @@ class Download:
         media_type: MediaType = None,
         video_download: bool = True,
         download_delay: bool = False,
-        quality: Quality | None = None,
+        quality_audio: Quality | None = None,
+        quality_video: VideoQuality | None = None,
     ) -> (bool, str):
         try:
             if media_id and media_type:
@@ -203,17 +208,34 @@ class Download:
 
             return False, ""
 
-        # If a quality is explicitly set, change it.
-        if quality:
-            quality_old: Quality = self.quality_adjust(quality)
-
         # Get extension.
         file_extension: str
 
         if isinstance(media, Track):
+            # If hi_res is forbidden in settings and highest track quality is hi_res, downgrade to high_lossless.
+            if self.settings.data.downgrade_on_hires and media.get_stream().audio_quality == Quality.hi_res:
+                quality_audio = Quality.high_lossless
+
+            # If a quality is explicitly set, change it.
+            if quality_audio:
+                quality_audio_old: Quality = self.adjust_quality_audio(quality_audio)
+
             file_extension = media.get_stream().get_stream_manifest().file_extension
+
+            if self.settings.data.extract_flac:
+                do_flac_extract = False
+
+                if (
+                    media.get_stream().get_stream_manifest().codecs.upper() == Codec.FLAC
+                    and file_extension != AudioExtensions.FLAC
+                ):
+                    file_extension = AudioExtensions.FLAC
+                    do_flac_extract = True
         elif isinstance(media, Video):
-            file_extension = VideoExtensions.TS
+            if quality_video:
+                quality_video_old = self.adjust_quality_video(quality_video)
+
+            file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
@@ -235,14 +257,18 @@ class Download:
         if not file_exists:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()) + file_extension)
+                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
                 # Download media.
                 tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
+                # Convert video from TS to MP4
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
                     # Convert `*.ts` file to `*.mp4` using ffmpeg
                     tmp_path_file = self._video_convert(tmp_path_file)
-                    path_file = os.path.splitext(path_file)[0] + ".mp4"
+
+                # Extract FLAC from MP4 container using ffmpeg
+                if self.settings.data.extract_flac and do_flac_extract:
+                    tmp_path_file = self._extract_flac(tmp_path_file, media.isrc)
 
                 # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_file), exist_ok=True)
@@ -256,9 +282,13 @@ class Download:
 
         status_download: bool = not file_exists
 
-        if quality:
+        if quality_audio:
             # Set quality back to the global user value
-            self.quality_adjust(quality_old)
+            self.adjust_quality_audio(quality_audio_old)
+
+        if quality_video:
+            # Set quality back to the global user value
+            self.adjust_quality_video(quality_video_old)
 
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
@@ -270,7 +300,7 @@ class Download:
 
         return status_download, path_file
 
-    def quality_adjust(self, quality) -> Quality:
+    def adjust_quality_audio(self, quality) -> Quality:
         # Save original quality settings
         quality_old: Quality = self.session.audio_quality
         self.session.audio_quality = quality
@@ -281,6 +311,13 @@ class Download:
             tidal.login_token(do_pkce=True)
         elif quality != Quality.hi_res_lossless and tidal.is_pkce:
             tidal.login_token(do_pkce=False)
+
+        return quality_old
+
+    def adjust_quality_video(self, quality) -> VideoQuality:
+        quality_old: VideoQuality = self.session.video_quality
+
+        self.session.video_quality = quality
 
         return quality_old
 
@@ -405,7 +442,7 @@ class Download:
             for media in items:
                 # Download the item.
                 status_download, result_path_file = self.item(
-                    media=media, file_template=file_name_relative, quality=quality
+                    media=media, file_template=file_name_relative, quality_audio=quality
                 )
 
                 # Advance progress bar.
@@ -422,8 +459,25 @@ class Download:
                     time.sleep(time_sleep)
 
     def _video_convert(self, path_file: str) -> str:
-        path_file_out = os.path.splitext(path_file)[0] + AudioExtensions.MP4
+        path_file_out = path_file + AudioExtensions.MP4
         result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy").run()
+
+        return path_file_out
+
+    def _extract_flac(self, path_file: str, isrc: str) -> str:
+        path_file_out = path_file + AudioExtensions.FLAC
+        result, _ = (
+            ffmpeg.input(path_file)
+            .output(
+                path_file_out,
+                map=0,
+                movflags="use_metadata_tags",
+                acodec="copy",
+                map_metadata="0:g",
+                metadata=f"isrc={isrc}",
+            )
+            .run()
+        )
 
         return path_file_out
 

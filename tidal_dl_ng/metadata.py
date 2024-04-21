@@ -141,7 +141,7 @@ class Metadata:
         self.m.tags["\xa9day"] = self.date
         self.m.tags["\xa9wrt"] = ", ".join(self.composer) if self.composer else ""
         self.m.tags["\xa9lyr"] = self.lyrics
-        self.m.tags["ISRC"] = self.isrc
+        self.m.tags["isrc"] = self.isrc
 
     @staticmethod
     def cover_data(url: str = None, path_file: str = None) -> str | bytes:

@@ -35,6 +35,8 @@ class Settings:
     video_convert_mp4: bool = True
     path_binary_ffmpeg: str = ""
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
+    extract_flac: bool = True
+    downgrade_on_hi_res: bool = False
 
 
 @dataclass_json
@@ -73,6 +75,10 @@ class HelpSettings:
     path_binary_ffmpeg: str = "If you like to convert videos, this must point to your installed ffmpeg binary."
     metadata_cover_dimension: str = (
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
+    )
+    extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
+    downgrade_on_hi_res: bool = (
+        "Never download HI_RES (MQA) quality. Downgrade to the next best available quality instead."
     )
 
 

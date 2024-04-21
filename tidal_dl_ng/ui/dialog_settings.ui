@@ -70,7 +70,7 @@
         <item>
          <layout class="QHBoxLayout" name="lh_flags_1">
           <item>
-           <layout class="QVBoxLayout" name="lv_flags_video_download">
+           <layout class="QVBoxLayout" name="lv_flag_video_download">
             <item>
              <widget class="QCheckBox" name="cb_video_download">
               <property name="sizePolicy">
@@ -87,7 +87,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="lv_flags_video_convert">
+           <layout class="QVBoxLayout" name="lv_flag_video_convert">
             <item>
              <widget class="QCheckBox" name="cb_video_convert_mp4">
               <property name="sizePolicy">
@@ -108,7 +108,7 @@
         <item>
          <layout class="QHBoxLayout" name="lh_flags_2">
           <item>
-           <layout class="QHBoxLayout" name="lh_flags_lyrics_embed">
+           <layout class="QHBoxLayout" name="lh_flag_lyrics_embed">
             <item>
              <widget class="QCheckBox" name="cb_lyrics_embed">
               <property name="sizePolicy">
@@ -128,7 +128,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="lh_flags_lyrics_file">
+           <layout class="QHBoxLayout" name="lh_flag_lyrics_file">
             <item>
              <widget class="QCheckBox" name="cb_lyrics_file">
               <property name="sizePolicy">
@@ -166,7 +166,36 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_4"/>
+           <layout class="QVBoxLayout" name="lv_flag_extract_flac">
+            <item>
+             <widget class="QCheckBox" name="cb_extract_flac">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <layout class="QVBoxLayout" name="lv_flag_downgrade_on_hi_res">
+            <item>
+             <widget class="QCheckBox" name="cb_downgrade_on_hi_res">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
@@ -519,41 +548,41 @@
            </layout>
           </item>
           <item>
-                     <layout class="QHBoxLayout" name="lh_path_binary_ffmpeg">
-                      <item>
-                       <widget class="QLabel" name="l_icon_path_binary_ffmpeg">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>TextLabel</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QLabel" name="l_path_binary_ffmpeg">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="text">
-                         <string>TextLabel</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
+           <layout class="QHBoxLayout" name="lh_path_binary_ffmpeg">
+            <item>
+             <widget class="QLabel" name="l_icon_path_binary_ffmpeg">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>TextLabel</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="l_path_binary_ffmpeg">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>TextLabel</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </item>
         <item>
          <layout class="QVBoxLayout" name="verticalLayout">
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
             <item>
              <widget class="QLineEdit" name="le_download_base_path">
               <property name="sizePolicy">
@@ -619,29 +648,29 @@
            </layout>
           </item>
           <item>
-                     <layout class="QHBoxLayout" name="horizontalLayout_3">
-                      <item>
-                       <widget class="QLineEdit" name="le_path_binary_ffmpeg">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="dragEnabled">
-                         <bool>true</bool>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
-                       <widget class="QPushButton" name="pb_path_binary_ffmpeg">
-                        <property name="text">
-                         <string>...</string>
-                        </property>
-                       </widget>
-                      </item>
-                     </layout>
-                    </item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLineEdit" name="le_path_binary_ffmpeg">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="dragEnabled">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pb_path_binary_ffmpeg">
+              <property name="text">
+               <string>...</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
          </layout>
         </item>
        </layout>

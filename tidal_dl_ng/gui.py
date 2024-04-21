@@ -864,7 +864,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if isinstance(media, Track | Video):
             result_dl, path_file = dl.item(
-                media=media, file_template=file_template, download_delay=delay_track, quality=quality
+                media=media, file_template=file_template, download_delay=delay_track, quality_audio=quality
             )
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(

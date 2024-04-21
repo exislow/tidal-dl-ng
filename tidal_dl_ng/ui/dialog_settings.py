@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'dialog_settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.1
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -27,7 +27,7 @@ class Ui_DialogSettings:
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
         DialogSettings.resize(640, 682)
-        sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
         sizePolicy.setHeightForWidth(DialogSettings.sizePolicy().hasHeightForWidth())
@@ -41,7 +41,7 @@ class Ui_DialogSettings:
         self.lv_main.setContentsMargins(12, 12, 12, 12)
         self.gb_flags = QGroupBox(DialogSettings)
         self.gb_flags.setObjectName("gb_flags")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy1.setHorizontalStretch(100)
         sizePolicy1.setVerticalStretch(100)
         sizePolicy1.setHeightForWidth(self.gb_flags.sizePolicy().hasHeightForWidth())
@@ -52,56 +52,56 @@ class Ui_DialogSettings:
         self.lv_flags.setObjectName("lv_flags")
         self.lh_flags_1 = QHBoxLayout()
         self.lh_flags_1.setObjectName("lh_flags_1")
-        self.lv_flags_video_download = QVBoxLayout()
-        self.lv_flags_video_download.setObjectName("lv_flags_video_download")
+        self.lv_flag_video_download = QVBoxLayout()
+        self.lv_flag_video_download.setObjectName("lv_flag_video_download")
         self.cb_video_download = QCheckBox(self.gb_flags)
         self.cb_video_download.setObjectName("cb_video_download")
         sizePolicy1.setHeightForWidth(self.cb_video_download.sizePolicy().hasHeightForWidth())
         self.cb_video_download.setSizePolicy(sizePolicy1)
 
-        self.lv_flags_video_download.addWidget(self.cb_video_download)
+        self.lv_flag_video_download.addWidget(self.cb_video_download)
 
-        self.lh_flags_1.addLayout(self.lv_flags_video_download)
+        self.lh_flags_1.addLayout(self.lv_flag_video_download)
 
-        self.lv_flags_video_convert = QVBoxLayout()
-        self.lv_flags_video_convert.setObjectName("lv_flags_video_convert")
+        self.lv_flag_video_convert = QVBoxLayout()
+        self.lv_flag_video_convert.setObjectName("lv_flag_video_convert")
         self.cb_video_convert_mp4 = QCheckBox(self.gb_flags)
         self.cb_video_convert_mp4.setObjectName("cb_video_convert_mp4")
         sizePolicy1.setHeightForWidth(self.cb_video_convert_mp4.sizePolicy().hasHeightForWidth())
         self.cb_video_convert_mp4.setSizePolicy(sizePolicy1)
 
-        self.lv_flags_video_convert.addWidget(self.cb_video_convert_mp4)
+        self.lv_flag_video_convert.addWidget(self.cb_video_convert_mp4)
 
-        self.lh_flags_1.addLayout(self.lv_flags_video_convert)
+        self.lh_flags_1.addLayout(self.lv_flag_video_convert)
 
         self.lv_flags.addLayout(self.lh_flags_1)
 
         self.lh_flags_2 = QHBoxLayout()
         self.lh_flags_2.setObjectName("lh_flags_2")
-        self.lh_flags_lyrics_embed = QHBoxLayout()
-        self.lh_flags_lyrics_embed.setObjectName("lh_flags_lyrics_embed")
+        self.lh_flag_lyrics_embed = QHBoxLayout()
+        self.lh_flag_lyrics_embed.setObjectName("lh_flag_lyrics_embed")
         self.cb_lyrics_embed = QCheckBox(self.gb_flags)
         self.cb_lyrics_embed.setObjectName("cb_lyrics_embed")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(self.cb_lyrics_embed.sizePolicy().hasHeightForWidth())
         self.cb_lyrics_embed.setSizePolicy(sizePolicy2)
 
-        self.lh_flags_lyrics_embed.addWidget(self.cb_lyrics_embed)
+        self.lh_flag_lyrics_embed.addWidget(self.cb_lyrics_embed)
 
-        self.lh_flags_2.addLayout(self.lh_flags_lyrics_embed)
+        self.lh_flags_2.addLayout(self.lh_flag_lyrics_embed)
 
-        self.lh_flags_lyrics_file = QHBoxLayout()
-        self.lh_flags_lyrics_file.setObjectName("lh_flags_lyrics_file")
+        self.lh_flag_lyrics_file = QHBoxLayout()
+        self.lh_flag_lyrics_file.setObjectName("lh_flag_lyrics_file")
         self.cb_lyrics_file = QCheckBox(self.gb_flags)
         self.cb_lyrics_file.setObjectName("cb_lyrics_file")
         sizePolicy1.setHeightForWidth(self.cb_lyrics_file.sizePolicy().hasHeightForWidth())
         self.cb_lyrics_file.setSizePolicy(sizePolicy1)
 
-        self.lh_flags_lyrics_file.addWidget(self.cb_lyrics_file)
+        self.lh_flag_lyrics_file.addWidget(self.cb_lyrics_file)
 
-        self.lh_flags_2.addLayout(self.lh_flags_lyrics_file)
+        self.lh_flags_2.addLayout(self.lh_flag_lyrics_file)
 
         self.lv_flags.addLayout(self.lh_flags_2)
 
@@ -118,18 +118,37 @@ class Ui_DialogSettings:
 
         self.lh_flag_3.addLayout(self.lv_flag_download_delay)
 
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.lv_flag_extract_flac = QVBoxLayout()
+        self.lv_flag_extract_flac.setObjectName("lv_flag_extract_flac")
+        self.cb_extract_flac = QCheckBox(self.gb_flags)
+        self.cb_extract_flac.setObjectName("cb_extract_flac")
+        sizePolicy2.setHeightForWidth(self.cb_extract_flac.sizePolicy().hasHeightForWidth())
+        self.cb_extract_flac.setSizePolicy(sizePolicy2)
 
-        self.lh_flag_3.addLayout(self.verticalLayout_4)
+        self.lv_flag_extract_flac.addWidget(self.cb_extract_flac)
+
+        self.lh_flag_3.addLayout(self.lv_flag_extract_flac)
 
         self.lv_flags.addLayout(self.lh_flag_3)
+
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.lv_flag_downgrade_on_hi_res = QVBoxLayout()
+        self.lv_flag_downgrade_on_hi_res.setObjectName("lv_flag_downgrade_on_hi_res")
+        self.cb_downgrade_on_hi_res = QCheckBox(self.gb_flags)
+        self.cb_downgrade_on_hi_res.setObjectName("cb_downgrade_on_hi_res")
+
+        self.lv_flag_downgrade_on_hi_res.addWidget(self.cb_downgrade_on_hi_res)
+
+        self.horizontalLayout.addLayout(self.lv_flag_downgrade_on_hi_res)
+
+        self.lv_flags.addLayout(self.horizontalLayout)
 
         self.lv_main.addWidget(self.gb_flags)
 
         self.gb_choices = QGroupBox(DialogSettings)
         self.gb_choices.setObjectName("gb_choices")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
         sizePolicy3.setHeightForWidth(self.gb_choices.sizePolicy().hasHeightForWidth())
@@ -140,7 +159,7 @@ class Ui_DialogSettings:
         self.lh_choices_skip_existing.setObjectName("lh_choices_skip_existing")
         self.l_icon_skip_existing = QLabel(self.gb_choices)
         self.l_icon_skip_existing.setObjectName("l_icon_skip_existing")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
         sizePolicy4.setVerticalStretch(0)
         sizePolicy4.setHeightForWidth(self.l_icon_skip_existing.sizePolicy().hasHeightForWidth())
@@ -233,7 +252,7 @@ class Ui_DialogSettings:
 
         self.c_metadata_cover_dimension = QComboBox(self.gb_choices)
         self.c_metadata_cover_dimension.setObjectName("c_metadata_cover_dimension")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         sizePolicy5.setHorizontalStretch(10)
         sizePolicy5.setVerticalStretch(0)
         sizePolicy5.setHeightForWidth(self.c_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
@@ -311,7 +330,7 @@ class Ui_DialogSettings:
         self.lh_path_fmt_album.setObjectName("lh_path_fmt_album")
         self.l_icon_format_album = QLabel(self.gb_path)
         self.l_icon_format_album.setObjectName("l_icon_format_album")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Preferred)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         sizePolicy6.setHorizontalStretch(0)
         sizePolicy6.setVerticalStretch(0)
         sizePolicy6.setHeightForWidth(self.l_icon_format_album.sizePolicy().hasHeightForWidth())
@@ -386,22 +405,22 @@ class Ui_DialogSettings:
 
         self.verticalLayout = QVBoxLayout()
         self.verticalLayout.setObjectName("verticalLayout")
-        self.horizontalLayout_3 = QHBoxLayout()
-        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.horizontalLayout_10 = QHBoxLayout()
+        self.horizontalLayout_10.setObjectName("horizontalLayout_10")
         self.le_download_base_path = QLineEdit(self.gb_path)
         self.le_download_base_path.setObjectName("le_download_base_path")
         sizePolicy2.setHeightForWidth(self.le_download_base_path.sizePolicy().hasHeightForWidth())
         self.le_download_base_path.setSizePolicy(sizePolicy2)
         self.le_download_base_path.setDragEnabled(True)
 
-        self.horizontalLayout_3.addWidget(self.le_download_base_path)
+        self.horizontalLayout_10.addWidget(self.le_download_base_path)
 
         self.pb_download_base_path = QPushButton(self.gb_path)
         self.pb_download_base_path.setObjectName("pb_download_base_path")
 
-        self.horizontalLayout_3.addWidget(self.pb_download_base_path)
+        self.horizontalLayout_10.addWidget(self.pb_download_base_path)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_3)
+        self.verticalLayout.addLayout(self.horizontalLayout_10)
 
         self.horizontalLayout_7 = QHBoxLayout()
         self.horizontalLayout_7.setObjectName("horizontalLayout_7")
@@ -450,22 +469,22 @@ class Ui_DialogSettings:
 
         self.verticalLayout.addLayout(self.horizontalLayout_8)
 
-        self.horizontalLayout_31 = QHBoxLayout()
-        self.horizontalLayout_31.setObjectName("horizontalLayout_31")
+        self.horizontalLayout_3 = QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.le_path_binary_ffmpeg = QLineEdit(self.gb_path)
         self.le_path_binary_ffmpeg.setObjectName("le_path_binary_ffmpeg")
         sizePolicy2.setHeightForWidth(self.le_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
         self.le_path_binary_ffmpeg.setSizePolicy(sizePolicy2)
         self.le_path_binary_ffmpeg.setDragEnabled(True)
 
-        self.horizontalLayout_31.addWidget(self.le_path_binary_ffmpeg)
+        self.horizontalLayout_3.addWidget(self.le_path_binary_ffmpeg)
 
         self.pb_path_binary_ffmpeg = QPushButton(self.gb_path)
         self.pb_path_binary_ffmpeg.setObjectName("pb_path_binary_ffmpeg")
 
-        self.horizontalLayout_31.addWidget(self.pb_path_binary_ffmpeg)
+        self.horizontalLayout_3.addWidget(self.pb_path_binary_ffmpeg)
 
-        self.verticalLayout.addLayout(self.horizontalLayout_31)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
 
         self.horizontalLayout_2.addLayout(self.verticalLayout)
 
@@ -501,6 +520,8 @@ class Ui_DialogSettings:
         self.cb_lyrics_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_lyrics_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_delay.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_downgrade_on_hi_res.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
