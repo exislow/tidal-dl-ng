@@ -5,7 +5,7 @@
 [![Commit activity](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)
 [![License](https://img.shields.io/github/license/exislow/tidal-dl-ng)](https://img.shields.io/github/license/exislow/tidal-dl-ng)
 
-This tool allows to download songs and videos from TIDAL. A paid plan is required! Audio quality varies up to HiRes / TIDAL MAX 24 Bit, 192 kHz depending on the song and your TIDAL plan. You can use the command line or GUI version of this tool.
+This tool allows to download songs and videos from TIDAL. A paid plan is required! Audio quality varies up to HiRes Lossless / TIDAL MAX 24 Bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
