@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from tidalapi.media import Quality
+
 try:
     from PySide6 import QtCore
 
@@ -39,5 +41,5 @@ class QueueDownloadItem:
     status: str
     name: str
     type_media: str
-    quality: str
+    quality: Quality
     obj: object

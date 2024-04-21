@@ -12,9 +12,9 @@ import requests
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
-from tidalapi.media import AudioExtensions, StreamManifest, VideoExtensions
+from tidalapi.media import AudioExtensions, Quality, StreamManifest, VideoExtensions
 
-from tidal_dl_ng.config import Settings
+from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
@@ -174,6 +174,7 @@ class Download:
         media_type: MediaType = None,
         video_download: bool = True,
         download_delay: bool = False,
+        quality: Quality | None = None,
     ) -> (bool, str):
         try:
             if media_id and media_type:
@@ -201,6 +202,10 @@ class Download:
             )
 
             return False, ""
+
+        # If a quality is explicitly set, change it.
+        if quality:
+            quality_old: Quality = self.quality_adjust(quality)
 
         # Get extension.
         file_extension: str
@@ -251,6 +256,10 @@ class Download:
 
         status_download: bool = not file_exists
 
+        if quality:
+            # Set quality back to the global user value
+            self.quality_adjust(quality_old)
+
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
         if download_delay:
@@ -260,6 +269,20 @@ class Download:
             time.sleep(time_sleep)
 
         return status_download, path_file
+
+    def quality_adjust(self, quality) -> Quality:
+        # Save original quality settings
+        quality_old: Quality = self.session.audio_quality
+        self.session.audio_quality = quality
+        tidal: Tidal = Tidal()
+
+        # If track is not requested as hires_lossless do not use PKCE, because BTS downloads are faster than MPD.
+        if quality == Quality.hi_res_lossless and not tidal.is_pkce:
+            tidal.login_token(do_pkce=True)
+        elif quality != Quality.hi_res_lossless and tidal.is_pkce:
+            tidal.login_token(do_pkce=False)
+
+        return quality_old
 
     def _move_lyrics(self, file_media_dst: str, file_media_src: str):
         # Build tmp lyrics filename
@@ -340,6 +363,7 @@ class Download:
         media_type: MediaType = None,
         video_download: bool = False,
         download_delay: bool = True,
+        quality: Quality | None = None,
     ):
         # If no media instance is provided, we need to create the media instance.
         if media_id and media_type:
@@ -381,8 +405,7 @@ class Download:
             for media in items:
                 # Download the item.
                 status_download, result_path_file = self.item(
-                    media=media,
-                    file_template=file_name_relative,
+                    media=media, file_template=file_name_relative, quality=quality
                 )
 
                 # Advance progress bar.

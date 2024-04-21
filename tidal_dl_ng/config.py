@@ -86,6 +86,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
     session: tidalapi.Session
     token_from_storage: bool = False
     settings: Settings
+    is_pkce: bool
 
     def __init__(self, settings: Settings = None):
         self.cls_model = ModelToken
@@ -110,8 +111,12 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return True
 
-    def login_token(self) -> bool:
+    def login_token(self, do_pkce: bool = True) -> bool:
         result = False
+
+        # Do not login via PKCE, if HiRes LOSSLESS is not set as global audio quality.
+        if self.session.audio_quality != tidalapi.media.Quality.hi_res_lossless:
+            do_pkce = False
 
         if self.token_from_storage:
             try:
@@ -120,8 +125,9 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                     self.data.access_token,
                     self.data.refresh_token,
                     self.data.expiry_time,
-                    is_pkce=True,
+                    is_pkce=do_pkce,
                 )
+                self.is_pkce = do_pkce
             except HTTPError:
                 result = False
 

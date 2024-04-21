@@ -1,12 +1,19 @@
 from PySide6 import QtCore, QtWidgets
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
+from tidalapi.media import Quality
 
 
 def get_table_data(
     item: QtWidgets.QTreeWidgetItem, column: int
 ) -> Track | Video | Album | Artist | Mix | Playlist | UserPlaylist:
     result: Track | Video | Album | Artist = item.data(column, QtCore.Qt.ItemDataRole.UserRole)
+
+    return result
+
+
+def get_table_text(item: QtWidgets.QTreeWidgetItem, column: int) -> str:
+    result: str = item.text(column)
 
     return result
 
@@ -27,6 +34,14 @@ def get_queue_download_media(
     item: QtWidgets.QTreeWidgetItem,
 ) -> Mix | Playlist | UserPlaylist | Track | Video | Album | Artist:
     result: Mix | Playlist | UserPlaylist | Track | Video | Album | Artist = get_table_data(item, 1)
+
+    return result
+
+
+def get_queue_download_quality(
+    item: QtWidgets.QTreeWidgetItem,
+) -> Quality:
+    result: Quality = get_table_text(item, 4)
 
     return result
 
