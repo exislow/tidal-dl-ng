@@ -221,6 +221,8 @@ class Download:
                 quality_audio_old: Quality = self.adjust_quality_audio(quality_audio)
 
             file_extension = media.get_stream().get_stream_manifest().file_extension
+            # Use M4A extension for MP4 audio tracks, because it looks better and is completely interchangeable.
+            file_extension = AudioExtensions.M4A if file_extension == AudioExtensions.MP4 else file_extension
 
             if self.settings.data.extract_flac:
                 do_flac_extract = False
