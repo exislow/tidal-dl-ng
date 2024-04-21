@@ -209,7 +209,7 @@ def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = Fal
         # TODO: Implement proper exception handling and logging.
         # print(e)
         # Hacky stuff, since the sanitizing function does not shorten the filename somehow (bug?)
-        # Remove after pathvalidate update.
+        # TODO: Remove after pathvalidate update.
         # If filename too long
         if e.description.startswith("[PV1101]"):
             byte_ct: int = len(filename.encode("utf-8")) - 255
