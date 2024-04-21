@@ -207,9 +207,17 @@ def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = Fal
             filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
     except ValidationError as e:
         # TODO: Implement proper exception handling and logging.
-        print(e)
-
-        raise
+        # print(e)
+        # Hacky stuff, since the sanitizing function does not shorten the filename somehow (bug?)
+        # Remove after pathvalidate update.
+        # If filename too long
+        if e.description.startswith("[PV1101]"):
+            byte_ct: int = len(filename.encode("utf-8")) - 255
+            filename_sanitized = (
+                filename[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(file_extension)]
+                + FILENAME_SANITIZE_PLACEHOLDER
+                + file_extension
+            )
 
     # Join path and filename
     result: str = os.path.join(pathname_sanitized, filename_sanitized)
