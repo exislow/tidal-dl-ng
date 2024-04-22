@@ -810,7 +810,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.s_queue_download_item_finished.emit(item)
                     elif result == QueueDownloadStatus.Skipped:
                         self.s_queue_download_item_skipped.emit(item)
-                except:
+                except e:
+                    logger_gui.error(e)
                     self.s_queue_download_item_failed.emit(item)
             else:
                 time.sleep(2)
