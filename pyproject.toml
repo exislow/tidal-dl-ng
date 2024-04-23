@@ -33,6 +33,7 @@ tidalapi = "0.7.6"
 dataclasses-json = "^0.6.4"
 pathvalidate = "^3.2.0"
 m3u8 = "^4.0.0"
+ffmpeg = "^1.4"
 ffmpeg-python = "^0.2.0"
 coloredlogs = "^15.0.1"
 pyside6 = {version = "^6.6.3.1", optional = true}
@@ -41,7 +42,6 @@ mpegdash = "^0.4.0"
 rich = "^13.7.1"
 toml = "^0.10.2"
 typer = "^0.12.3"
-ffmpeg = "^1.4"
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme"]
