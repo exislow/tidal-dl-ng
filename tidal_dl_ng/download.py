@@ -1,4 +1,5 @@
 import os
+import pathlib
 import random
 import shutil
 import tempfile
@@ -45,6 +46,7 @@ class RequestsClient:
         return o.text, o.url
 
 
+# TODO: Use pathlib.Path everywhere
 class Download:
     settings: Settings
     session: Session
@@ -85,7 +87,7 @@ class Download:
         self,
         media: Track | Video,
         path_file: str,
-    ) -> str:
+    ) -> (str, pathlib.Path | None):
         media_name: str = name_builder_item(media)
         urls: [str]
 
@@ -164,11 +166,13 @@ class Download:
         else:
             tmp_path_file_decrypted = path_file
 
+        path_lyrics: pathlib.Path | None = None
+
         # Write metadata to file.
         if not isinstance(media, Video):
-            self.metadata_write(media, tmp_path_file_decrypted)
+            result_write, path_lyrics = self.metadata_write(media, tmp_path_file_decrypted)
 
-        return tmp_path_file_decrypted
+        return tmp_path_file_decrypted, path_lyrics
 
     def item(
         self,
@@ -241,18 +245,18 @@ class Download:
 
         # Create file name and path
         file_name_relative = format_path_media(file_template, media)
-        path_file = os.path.abspath(
+        path_media_dst = os.path.abspath(
             os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
         )
 
         # Sanitize final path_file to fit into OS boundaries.
         uniquify: bool = self.skip_existing == SkipExisting.Append
-        path_file = path_file_sanitize(path_file + file_extension, adapt=True, uniquify=uniquify)
+        path_media_dst = path_file_sanitize(path_media_dst + file_extension, adapt=True, uniquify=uniquify)
 
         # Compute if and how downloads need to be skipped.
         if self.skip_existing in (SkipExisting.ExtensionIgnore, SkipExisting.Filename):
             extension_ignore: bool = self.skip_existing == SkipExisting.ExtensionIgnore
-            file_exists: bool = check_file_exists(path_file, extension_ignore=extension_ignore)
+            file_exists: bool = check_file_exists(path_media_dst, extension_ignore=extension_ignore)
         else:
             file_exists: bool = False
 
@@ -261,7 +265,7 @@ class Download:
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
                 tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
                 # Download media.
-                tmp_path_file = self._download(media=media, path_file=tmp_path_file)
+                tmp_path_file, tmp_path_lyrics = self._download(media=media, path_file=tmp_path_file)
 
                 # Convert video from TS to MP4
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
@@ -273,14 +277,14 @@ class Download:
                     tmp_path_file = self._extract_flac(tmp_path_file, media.isrc)
 
                 # Move final file to the configured destination directory.
-                os.makedirs(os.path.dirname(path_file), exist_ok=True)
-                shutil.move(tmp_path_file, path_file)
+                os.makedirs(os.path.dirname(path_media_dst), exist_ok=True)
+                shutil.move(tmp_path_file, path_media_dst)
 
                 # Move lyrics file
                 if self.settings.data.lyrics_file:
-                    self._move_lyrics(path_file, tmp_path_file)
+                    self._move_lyrics(path_media_dst, tmp_path_lyrics)
         else:
-            self.fn_logger.debug(f"Download skipped, since file exists: '{path_file}'")
+            self.fn_logger.debug(f"Download skipped, since file exists: '{path_media_dst}'")
 
         status_download: bool = not file_exists
 
@@ -300,7 +304,7 @@ class Download:
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
 
-        return status_download, path_file
+        return status_download, path_media_dst
 
     def adjust_quality_audio(self, quality) -> Quality:
         # Save original quality settings
@@ -323,27 +327,34 @@ class Download:
 
         return quality_old
 
-    def _move_lyrics(self, file_media_dst: str, file_media_src: str):
+    def _move_lyrics(self, file_media_dst: str, path_lyrics: pathlib.Path) -> bool:
+        result: bool
         # Build tmp lyrics filename
-        tmp_lyrics_file_path: str = file_media_src + EXTENSION_LYRICS
         # Check if the file was downloaded
-        if os.path.isfile(tmp_lyrics_file_path):
+        if os.path.isfile(path_lyrics):
             # Move it.
-            shutil.move(tmp_lyrics_file_path, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
+            shutil.move(path_lyrics, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
 
-    def lyrics_write_file(self, file_path: str, lyrics: str) -> str:
-        result: str = file_path
+            result = True
+        else:
+            result = False
+
+        return result
+
+    def lyrics_write_file(self, dir_destination: pathlib.Path, lyrics: str) -> str:
+        result: str = dir_destination / str(uuid4())
 
         try:
-            with open(file_path, "x", encoding="utf-8") as f:
+            with open(result, "x", encoding="utf-8") as f:
                 f.write(lyrics)
         except:
             result = ""
 
         return result
 
-    def metadata_write(self, track: Track, path_file: str):
+    def metadata_write(self, track: Track, path_media: str) -> (bool, pathlib.Path | None):
         result: bool = False
+        path_lyrics: pathlib.Path | None = None
         release_date: str = (
             track.album.available_release_date.strftime("%Y-%m-%d")
             if track.album.available_release_date
@@ -368,11 +379,11 @@ class Download:
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         if lyrics and self.settings.data.lyrics_file:
-            self.lyrics_write_file(path_file + EXTENSION_LYRICS, lyrics)
+            path_lyrics = self.lyrics_write_file(pathlib.Path(path_media).parent, lyrics)
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
-            path_file=path_file,
+            path_file=path_media,
             lyrics=lyrics,
             copy_right=copy_right,
             title=name_builder_title(track),
@@ -392,7 +403,7 @@ class Download:
 
         result = True
 
-        return result
+        return result, path_lyrics
 
     def items(
         self,
@@ -470,12 +481,12 @@ class Download:
 
         return path_file_out
 
-    def _extract_flac(self, path_file: str, isrc: str) -> str:
-        path_file_out = path_file + AudioExtensions.FLAC
+    def _extract_flac(self, path_media_src: str, isrc: str) -> str:
+        path_media_out = path_media_src + AudioExtensions.FLAC
         result, _ = (
-            ffmpeg.input(path_file)
+            ffmpeg.input(path_media_src)
             .output(
-                path_file_out,
+                path_media_out,
                 map=0,
                 movflags="use_metadata_tags",
                 acodec="copy",
@@ -485,7 +496,7 @@ class Download:
             .run()
         )
 
-        return path_file_out
+        return path_media_out
 
     def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> (m3u8.M3U8 | bool, str):
         m3u8_playlist: m3u8.M3U8 | bool = False
