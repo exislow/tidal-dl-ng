@@ -52,6 +52,10 @@ class DialogVersion(QtWidgets.QDialog):
             )
         else:
             self.error_hide()
+
+            if not update_available:
+                self.ui.l_h_version_new.setText("Latest available version:")
+
             self.ui.l_version_new.setText(update_info.version)
             self.ui.l_changelog_details.setText(update_info.release_info)
             self.ui.pb_download.clicked.connect(lambda: webbrowser.open(update_info.url))

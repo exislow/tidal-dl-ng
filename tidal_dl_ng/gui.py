@@ -294,8 +294,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_update_check(self):
         is_available, info = update_available()
 
-        if is_available:
-            self.s_update_show.emit(True, is_available, info)
+        self.s_update_show.emit(True, is_available, info)
 
     def apply_settings(self, settings: Settings):
         l_cb = [
