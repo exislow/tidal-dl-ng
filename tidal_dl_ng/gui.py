@@ -78,7 +78,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
     s_settings_save: QtCore.Signal = QtCore.Signal()
     s_pb_reload_status: QtCore.Signal = QtCore.Signal(bool)
-    s_update_check: QtCore.Signal = QtCore.Signal()
+    s_update_check: QtCore.Signal = QtCore.Signal(bool)
     s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
     s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
@@ -291,10 +291,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_lists)
 
-    def on_update_check(self):
+    def on_update_check(self, on_startup: bool = True):
         is_available, info = update_available()
 
-        self.s_update_show.emit(True, is_available, info)
+        if (on_startup and is_available) or not on_startup:
+            self.s_update_show.emit(True, is_available, info)
 
     def apply_settings(self, settings: Settings):
         l_cb = [
@@ -624,7 +625,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.a_version.triggered.connect(self.on_version)
         self.a_preferences.triggered.connect(self.on_preferences)
         self.a_logout.triggered.connect(self.on_logout)
-        self.a_updates_check.triggered.connect(self.on_update_check)
+        self.a_updates_check.triggered.connect(lambda x: self.on_update_check(False))
 
         # Results
         self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
@@ -967,7 +968,7 @@ def gui_activate(tidal: Tidal | None = None):
     window = MainWindow(tidal=tidal)
     window.show()
     # Check for updates
-    window.s_update_check.emit()
+    window.s_update_check.emit(True)
 
     sys.exit(app.exec())
 

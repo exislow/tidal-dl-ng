@@ -55,10 +55,12 @@ class DialogVersion(QtWidgets.QDialog):
 
             if not update_available:
                 self.ui.l_h_version_new.setText("Latest available version:")
+                self.changelog_hide()
+            else:
+                self.ui.l_changelog_details.setText(update_info.release_info)
+                self.ui.pb_download.clicked.connect(lambda: webbrowser.open(update_info.url))
 
             self.ui.l_version_new.setText(update_info.version)
-            self.ui.l_changelog_details.setText(update_info.release_info)
-            self.ui.pb_download.clicked.connect(lambda: webbrowser.open(update_info.url))
 
     def error_hide(self):
         self.ui.l_error.setHidden(True)
@@ -67,6 +69,9 @@ class DialogVersion(QtWidgets.QDialog):
     def update_info_hide(self):
         self.ui.l_h_version_new.setHidden(True)
         self.ui.l_version_new.setHidden(True)
+        self.changelog_hide()
+
+    def changelog_hide(self):
         self.ui.l_changelog.setHidden(True)
         self.ui.l_changelog_details.setHidden(True)
         self.ui.pb_download.setHidden(True)
