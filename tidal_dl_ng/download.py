@@ -281,7 +281,7 @@ class Download:
                 shutil.move(tmp_path_file, path_media_dst)
 
                 # Move lyrics file
-                if self.settings.data.lyrics_file:
+                if self.settings.data.lyrics_file and not isinstance(media, Video):
                     self._move_lyrics(path_media_dst, tmp_path_lyrics)
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_media_dst}'")
