@@ -101,6 +101,18 @@ def login(ctx: typer.Context) -> bool:
     return result
 
 
+@app.command(name="logout")
+def logout() -> bool:
+    settings = Settings()
+    tidal = Tidal(settings)
+    result = tidal.logout()
+
+    if result:
+        print("You have been successfully logged out.")
+
+    return result
+
+
 @app.command(name="dl")
 def download(
     ctx: typer.Context,
