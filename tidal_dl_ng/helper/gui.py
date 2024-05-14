@@ -5,8 +5,6 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
 from tidalapi.media import Quality
 
-from tidal_dl_ng.helper.gui import HumanProxyModel
-
 
 def get_table_data(
     item: QtWidgets.QTreeWidgetItem, column: int
@@ -23,7 +21,7 @@ def get_table_text(item: QtWidgets.QTreeWidgetItem, column: int) -> str:
 
 
 def get_results_media_item(
-    index: QtCore.QModelIndex, proxy: HumanProxyModel, model: QtGui.QStandardItemModel
+    index: QtCore.QModelIndex, proxy: QtCore.QSortFilterProxyModel, model: QtGui.QStandardItemModel
 ) -> Track | Video | Album | Artist | Playlist | Mix:
     # Switch column to "obj" column and map proxy data to our model.
     item: QtGui.QStandardItem = model.itemFromIndex(proxy.mapToSource(index.siblingAtColumn(1)))
