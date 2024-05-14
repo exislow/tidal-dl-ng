@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.6.2
+## Created by: Qt User Interface Compiler version 6.7.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QStatusBar,
+    QTreeView,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -223,7 +224,7 @@ class Ui_MainWindow:
 
         self.lv_search_result.addLayout(self.lh_search)
 
-        self.tr_results = QTreeWidget(self.w_central)
+        self.tr_results = QTreeView(self.w_central)
         self.tr_results.setObjectName("tr_results")
         self.tr_results.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tr_results.setProperty("showDropIndicator", False)
@@ -232,8 +233,6 @@ class Ui_MainWindow:
         self.tr_results.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tr_results.setIndentation(10)
         self.tr_results.setSortingEnabled(True)
-        self.tr_results.header().setProperty("showSortIndicator", True)
-        self.tr_results.header().setStretchLastSection(False)
 
         self.lv_search_result.addWidget(self.tr_results)
 
@@ -572,22 +571,14 @@ class Ui_MainWindow:
 
         self.pb_reload_user_lists.setText(QCoreApplication.translate("MainWindow", "Reload", None))
         self.pb_download_list.setText(QCoreApplication.translate("MainWindow", "Download List", None))
-        ___qtreewidgetitem4 = self.tr_results.headerItem()
-        ___qtreewidgetitem4.setText(6, QCoreApplication.translate("MainWindow", "Quality", None))
-        ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "Duration", None))
-        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Album", None))
-        ___qtreewidgetitem4.setText(3, QCoreApplication.translate("MainWindow", "Title", None))
-        ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Artist", None))
-        ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
-        ___qtreewidgetitem4.setText(0, QCoreApplication.translate("MainWindow", "#", None))
         self.te_debug.setPlaceholderText(QCoreApplication.translate("MainWindow", "Logs...", None))
         self.l_pm_cover.setText("")
         self.l_h_queue_download.setText(QCoreApplication.translate("MainWindow", "Download Queue", None))
-        ___qtreewidgetitem5 = self.tr_queue_download.headerItem()
-        ___qtreewidgetitem5.setText(4, QCoreApplication.translate("MainWindow", "Quality", None))
-        ___qtreewidgetitem5.setText(3, QCoreApplication.translate("MainWindow", "Type", None))
-        ___qtreewidgetitem5.setText(2, QCoreApplication.translate("MainWindow", "Name", None))
-        ___qtreewidgetitem5.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
+        ___qtreewidgetitem4 = self.tr_queue_download.headerItem()
+        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Quality", None))
+        ___qtreewidgetitem4.setText(3, QCoreApplication.translate("MainWindow", "Type", None))
+        ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Name", None))
+        ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
         self.pb_queue_download_remove.setText(QCoreApplication.translate("MainWindow", "Remove", None))
         self.pb_queue_download_clear_finished.setText(QCoreApplication.translate("MainWindow", "Clear Finished", None))
         self.pb_queue_download_clear_all.setText(QCoreApplication.translate("MainWindow", "Clear All", None))

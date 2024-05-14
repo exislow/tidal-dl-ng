@@ -1,19 +1,21 @@
 import math
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
+from PySide6.QtGui import QStandardItem
 from requests.exceptions import HTTPError
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
+    FilterHeader,
+    HumanProxyModel,
     get_queue_download_media,
     get_queue_download_quality,
     get_results_media_item,
     get_user_list_media_item,
     set_queue_download_media,
-    set_results_media,
     set_user_list_media,
 )
 from tidal_dl_ng.helper.path import get_format_template, resource_path
@@ -64,6 +66,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     tray: QtWidgets.QSystemTrayIcon
     spinner: QtWaitingSpinner
     cover_url_current: str = ""
+    model_tr_results: QtGui.QStandardItemModel = QtGui.QStandardItemModel()
+    proxy_tr_results: HumanProxyModel
     s_spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
     s_spinner_stop: QtCore.Signal = QtCore.Signal()
     pb_item: QtWidgets.QProgressBar
@@ -98,7 +102,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings = Settings()
 
         self._init_threads()
-        self._init_tree_results(self.tr_results)
+        self._init_tree_results_model(self.model_tr_results)
+        self._init_tree_results(self.tr_results, self.model_tr_results)
         self._init_tree_lists(self.tr_lists_user)
         self._init_tree_queue(self.tr_queue_download)
         self._init_info()
@@ -213,7 +218,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cb_search_type.setCurrentIndex(2)
 
-    def _init_tree_results(self, tree: QtWidgets.QTableWidget):
+    def handle_filter_activated(self, tree: QtWidgets.QTreeView):
+        header = tree.header()
+        filters = []
+
+        for i in range(header.count()):
+            text: str = header.filterText(i)
+
+            if text:
+                filters.append((i, text))
+
+        proxy = tree.model()
+        proxy.filters = filters
+
+    def _init_tree_results(self, tree: QtWidgets.QTreeView, model: QtGui.QStandardItemModel) -> None:
+        header = FilterHeader(tree)
+        self.proxy_tr_results = HumanProxyModel(self)
+
+        tree.setHeader(header)
+        tree.setModel(model)
+        self.proxy_tr_results.setSourceModel(model)
+        tree.setModel(self.proxy_tr_results)
+        header.set_filter_boxes(model.columnCount())
+        header.filter_activated.connect(lambda: self.handle_filter_activated(tree))
+        ##
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
         tree.setColumnWidth(2, 150)
@@ -223,6 +251,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         header = tree.header()
 
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+
+    def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
+        model.setColumnCount(7)
+        model.setRowCount(0)
+        model.setHorizontalHeaderLabels(["#", "obj", "Artist", "Title", "Album", "Duration", "Quality"])
 
     def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(1, True)
@@ -357,7 +390,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.queue_download_media(queue_dl_item)
 
     def search_populate_results(self, query: str, type_media: SearchTypes):
-        self.tr_results.clear()
+        self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
 
         results: [ResultItem] = self.search(query, [type_media])
 
@@ -365,20 +398,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def populate_tree_results(self, results: [ResultItem], parent: QtWidgets.QTreeWidgetItem = None):
         if not parent:
-            self.tr_results.clear()
+            self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
 
         # Count how many digits the list length has,
         count_digits: int = int(math.log10(len(results) if results else 1)) + 1
 
         for item in results:
-            child = self.populate_tree_result_child(item=item, index_count_digits=count_digits)
+            child: tuple = self.populate_tree_result_child(item=item, index_count_digits=count_digits)
 
             if parent:
                 parent.addChild(child)
             else:
                 self.s_tr_results_add_top_level_item.emit(child)
 
-    def populate_tree_result_child(self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int):
+    def populate_tree_result_child(
+        self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int
+    ) -> Sequence[QStandardItem]:
         duration: str = ""
 
         # TODO: Duration needs to be calculated later to properly fill with zeros.
@@ -391,26 +426,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         index: str = str(item.position + 1).zfill(index_count_digits)
 
         # Populate child
-        child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
-        child.setText(0, index)
-        set_results_media(child, item.obj)
-        child.setText(2, item.artist)
-        child.setText(3, item.title)
-        child.setText(4, item.album)
-        child.setText(5, duration)
-        child.setText(6, item.quality)
+        child_index: QtGui.QStandardItem = QtGui.QStandardItem(index)
+        # TODO: Move to own method
+        child_obj: QtGui.QStandardItem = QtGui.QStandardItem()
+
+        child_obj.setData(item.obj, QtCore.Qt.ItemDataRole.UserRole)
+        # set_results_media(child, item.obj)
+
+        child_artist: QtGui.QStandardItem = QtGui.QStandardItem(item.artist)
+        child_title: QtGui.QStandardItem = QtGui.QStandardItem(item.title)
+        child_album: QtGui.QStandardItem = QtGui.QStandardItem(item.album)
+        child_duration: QtGui.QStandardItem = QtGui.QStandardItem(duration)
+        child_quality: QtGui.QStandardItem = QtGui.QStandardItem(item.quality)
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
-            child_dummy: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
+            child_dummy: QtGui.QStandardItem = QtGui.QStandardItem()
 
-            child_dummy.setDisabled(True)
-            child.addChild(child_dummy)
+            child_dummy.setEnabled(False)
+            child_index.appendRow(child_dummy)
 
-        return child
+        return child_index, child_obj, child_artist, child_title, child_album, child_duration, child_quality
 
-    def on_tr_results_add_top_level_item(self, widget_item: QtWidgets.QTreeWidgetItem):
-        self.tr_results.addTopLevelItem(widget_item)
+    def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
+        self.model_tr_results.appendRow(item_child)
 
     def on_settings_save(self):
         self.settings.save()
@@ -625,11 +664,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.a_version.triggered.connect(self.on_version)
         self.a_preferences.triggered.connect(self.on_preferences)
         self.a_logout.triggered.connect(self.on_logout)
-        self.a_updates_check.triggered.connect(lambda x: self.on_update_check(False))
+        self.a_updates_check.triggered.connect(lambda: self.on_update_check(False))
 
         # Results
-        self.tr_results.itemExpanded.connect(self.on_tr_results_expanded)
-        self.tr_results.itemClicked.connect(self.on_result_item_clicked)
+        self.tr_results.expanded.connect(self.on_tr_results_expanded)
+        self.tr_results.clicked.connect(self.on_result_item_clicked)
 
         # Download Queue
         self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
@@ -678,8 +717,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.list_items_show_result(media_list)
             self.cover_show(media_list)
 
-    def on_result_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
-        media: Track | Video | Album | Artist = get_results_media_item(item)
+    def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
+        media: Track | Video | Album | Artist = get_results_media_item(
+            index, self.proxy_tr_results, self.model_tr_results
+        )
 
         self.cover_show(media)
 
