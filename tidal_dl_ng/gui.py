@@ -729,11 +729,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cover_show(media)
 
-    def on_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
-        media: Track | Video | Album | Artist = get_results_media_item(item)
-
-        self.cover_show(media)
-
     def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist) -> None:
         cover_url: str
 
