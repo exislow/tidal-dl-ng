@@ -87,7 +87,7 @@ class Download:
         self,
         media: Track | Video,
         path_file: str,
-    ) -> (str, pathlib.Path | None):
+    ) -> str:
         media_name: str = name_builder_item(media)
         urls: [str]
 
@@ -166,13 +166,7 @@ class Download:
         else:
             tmp_path_file_decrypted = path_file
 
-        path_lyrics: pathlib.Path | None = None
-
-        # Write metadata to file.
-        if not isinstance(media, Video):
-            result_write, path_lyrics = self.metadata_write(media, tmp_path_file_decrypted)
-
-        return tmp_path_file_decrypted, path_lyrics
+        return tmp_path_file_decrypted
 
     def item(
         self,
@@ -265,7 +259,7 @@ class Download:
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
                 tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
                 # Download media.
-                tmp_path_file, tmp_path_lyrics = self._download(media=media, path_file=tmp_path_file)
+                tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
                 # Convert video from TS to MP4
                 if isinstance(media, Video) and self.settings.data.video_convert_mp4:
@@ -274,7 +268,13 @@ class Download:
 
                 # Extract FLAC from MP4 container using ffmpeg
                 if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
-                    tmp_path_file = self._extract_flac(tmp_path_file, media.isrc)
+                    tmp_path_file = self._extract_flac(tmp_path_file)
+
+                tmp_path_lyrics: pathlib.Path | None = None
+
+                # Write metadata to file.
+                if not isinstance(media, Video):
+                    result_metadata, tmp_path_lyrics = self.metadata_write(media, tmp_path_file)
 
                 # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_media_dst), exist_ok=True)
@@ -331,7 +331,7 @@ class Download:
         result: bool
         # Build tmp lyrics filename
         # Check if the file was downloaded
-        if os.path.isfile(path_lyrics):
+        if path_lyrics and os.path.isfile(path_lyrics):
             # Move it.
             shutil.move(path_lyrics, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
 
@@ -481,18 +481,11 @@ class Download:
 
         return path_file_out
 
-    def _extract_flac(self, path_media_src: str, isrc: str) -> str:
+    def _extract_flac(self, path_media_src: str) -> str:
         path_media_out = path_media_src + AudioExtensions.FLAC
         result, _ = (
             ffmpeg.input(path_media_src)
-            .output(
-                path_media_out,
-                map=0,
-                movflags="use_metadata_tags",
-                acodec="copy",
-                map_metadata="0:g",
-                metadata=f"isrc={isrc}",
-            )
+            .output(path_media_out, map=0, movflags="use_metadata_tags", acodec="copy", map_metadata="0:g")
             .run()
         )
 
