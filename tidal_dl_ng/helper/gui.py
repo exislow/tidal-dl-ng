@@ -105,8 +105,10 @@ class FilterHeader(QtWidgets.QHeaderView):
 
     def sizeHint(self):
         size = super().sizeHint()
+
         if self._editors:
             height = self._editors[0].sizeHint().height()
+
             size.setHeight(size.height() + height + self._padding)
 
         return size
@@ -114,6 +116,7 @@ class FilterHeader(QtWidgets.QHeaderView):
     def updateGeometries(self):
         if self._editors:
             height = self._editors[0].sizeHint().height()
+
             self.setViewportMargins(0, 0, 0, height + self._padding)
         else:
             self.setViewportMargins(0, 0, 0, 0)
@@ -167,18 +170,25 @@ class HumanProxyModel(QtCore.QSortFilterProxyModel):
 
     @filters.setter
     def filters(self, filters):
-        print("filters() called.")
-
         self._filters = filters
 
         self.invalidateFilter()
 
-    def filterAcceptsRow(self, sourceRow, sourceParent) -> bool:
+    def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
+        model = self.sourceModel()
+        source_index = model.index(source_row, 0, source_parent)
+
+        # Show top level children
+        for child_row in range(model.rowCount(source_index)):
+            if self.filterAcceptsRow(child_row, source_index):
+                return True
+
+        # Filter for actual needle
         for i, text in self.filters:
             if 0 <= i < self.columnCount():
-                ix = self.sourceModel().index(sourceRow, i, sourceParent)
+                ix = self.sourceModel().index(source_row, i, source_parent)
                 data = ix.data()
-                if str(data) in text:
-                    return False
+
+                return bool(text.lower() in str(data).lower())
 
         return True

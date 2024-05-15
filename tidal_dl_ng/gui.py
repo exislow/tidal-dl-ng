@@ -396,7 +396,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.populate_tree_results(results)
 
-    def populate_tree_results(self, results: [ResultItem], parent: QtWidgets.QTreeWidgetItem = None):
+    def populate_tree_results(self, results: [ResultItem], parent: QtGui.QStandardItem = None):
         if not parent:
             self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
 
@@ -407,7 +407,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child: tuple = self.populate_tree_result_child(item=item, index_count_digits=count_digits)
 
             if parent:
-                parent.addChild(child)
+                parent.appendRow(child)
             else:
                 self.s_tr_results_add_top_level_item.emit(child)
 
@@ -751,7 +751,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self,
         media_list: Album | Playlist | Mix | Artist | None = None,
         point: QtCore.QPoint | None = None,
-        parent: QtWidgets.QTreeWidgetItem = None,
+        parent: QtGui.QStandardItem = None,
     ) -> None:
         if point:
             item = self.tr_lists_user.itemAt(point)
@@ -808,7 +808,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             logger_gui.error("Please select a row first.")
         else:
             for item in items:
-                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item, self.proxy_tr_results, self.model_tr_results)
+                media: Track | Album | Playlist | Video | Artist = get_results_media_item(
+                    item, self.proxy_tr_results, self.model_tr_results
+                )
                 queue_dl_item: QueueDownloadItem = self.media_to_queue_download_model(media)
 
                 if queue_dl_item:
@@ -957,15 +959,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_preferences(self) -> None:
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
 
-    def on_tr_results_expanded(self, list_item: QtWidgets.QTreeWidgetItem) -> None:
+    def on_tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
         # If the child is a dummy the list_item has not been expanded before
-        load_children: bool = list_item.child(0).isDisabled()
+        item: QtGui.QStandardItem = self.model_tr_results.itemFromIndex(self.proxy_tr_results.mapToSource(index))
+        load_children: bool = not item.child(0, 0).isEnabled()
 
         if load_children:
-            list_item.removeChild(list_item.child(0))
-            media_list: [Mix | Album | Playlist | Artist] = list_item.data(1, QtCore.Qt.ItemDataRole.UserRole)
+            item.removeRow(0)
+            media_list: [Mix | Album | Playlist | Artist] = get_results_media_item(
+                index, self.proxy_tr_results, self.model_tr_results
+            )
 
-            self.list_items_show_result(media_list=media_list, parent=list_item)
+            self.list_items_show_result(media_list=media_list, parent=item)
 
     def button_reload_status(self, status: bool):
         button_text: str = "Reloading..."
