@@ -177,6 +177,7 @@ class HumanProxyModel(QtCore.QSortFilterProxyModel):
     def filterAcceptsRow(self, source_row: int, source_parent: QtCore.QModelIndex) -> bool:
         model = self.sourceModel()
         source_index = model.index(source_row, 0, source_parent)
+        result: [bool] = []
 
         # Show top level children
         for child_row in range(model.rowCount(source_index)):
@@ -189,6 +190,11 @@ class HumanProxyModel(QtCore.QSortFilterProxyModel):
                 ix = self.sourceModel().index(source_row, i, source_parent)
                 data = ix.data()
 
-                return bool(text.lower() in str(data).lower())
+                # Append results to list to enable an AND operator for filtering.
+                result.append(bool(text.lower() in str(data).lower()))
 
-        return True
+        # If no filter set, just set the result to True.
+        if not result:
+            result.append(True)
+
+        return all(result)
