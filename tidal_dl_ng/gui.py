@@ -218,30 +218,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.cb_search_type.setCurrentIndex(2)
 
-    def handle_filter_activated(self, tree: QtWidgets.QTreeView):
-        header = tree.header()
+    def handle_filter_activated(self):
+        header: FilterHeader = self.tr_results.header()
         filters = []
 
         for i in range(header.count()):
-            text: str = header.filterText(i)
+            text: str = header.filter_text(i)
 
             if text:
                 filters.append((i, text))
 
-        proxy = tree.model()
-        proxy.filters = filters
+        proxy_model: HumanProxyModel = self.tr_results.model()
+        proxy_model.filters = filters
 
     def _init_tree_results(self, tree: QtWidgets.QTreeView, model: QtGui.QStandardItemModel) -> None:
-        header = FilterHeader(tree)
-        self.proxy_tr_results = HumanProxyModel(self)
+        header: FilterHeader = FilterHeader(tree)
+        self.proxy_tr_results: HumanProxyModel = HumanProxyModel(self)
 
         tree.setHeader(header)
         tree.setModel(model)
         self.proxy_tr_results.setSourceModel(model)
         tree.setModel(self.proxy_tr_results)
         header.set_filter_boxes(model.columnCount())
-        header.filter_activated.connect(lambda: self.handle_filter_activated(tree))
-        ##
+        header.filter_activated.connect(self.handle_filter_activated)
+        ## Styling
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
         tree.setColumnWidth(2, 150)
@@ -802,13 +802,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:
-        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_results.selectedItems()
+        items: [HumanProxyModel | None] = self.tr_results.selectionModel().selectedRows()
 
         if len(items) == 0:
             logger_gui.error("Please select a row first.")
         else:
             for item in items:
-                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item)
+                media: Track | Album | Playlist | Video | Artist = get_results_media_item(item, self.proxy_tr_results, self.model_tr_results)
                 queue_dl_item: QueueDownloadItem = self.media_to_queue_download_model(media)
 
                 if queue_dl_item:
