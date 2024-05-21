@@ -20,6 +20,7 @@ class MediaType(StrEnum):
     PLAYLIST: str = "playlist"
     ALBUM: str = "album"
     MIX: str = "mix"
+    ARTIST: str = "artist"
 
 
 class SkipExisting(StrEnum):

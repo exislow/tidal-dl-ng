@@ -58,6 +58,8 @@ def get_tidal_media_type(url_media: str) -> MediaType | bool:
             result = MediaType.PLAYLIST
         elif media_name == "mix":
             result = MediaType.MIX
+        elif media_name == "artist":
+            result = MediaType.ARTIST
 
     return result
 
@@ -148,6 +150,8 @@ def instantiate_media(
         media = session.playlist(id_media)
     elif media_type == MediaType.MIX:
         media = session.mix(id_media)
+    elif media_type == MediaType.ARTIST:
+        media = session.artist(id_media)
     else:
         raise MediaUnknown
 
