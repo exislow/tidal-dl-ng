@@ -96,8 +96,8 @@ jobs:
       matrix:
         #os: ["ubuntu-20.04", "windows-2019", "macos-11", "macos-13"]
         include:
-          - os: "macos-11"
-            TARGET: "macos-11"
+          - os: "macos-12"
+            TARGET: "macos-12"
             OS_ARCH: ${{needs.compute.outputs.ARCH_MACOS_X64}}
             CMD_BUILD: >
               brew install create-dmg &&
