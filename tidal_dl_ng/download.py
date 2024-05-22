@@ -460,6 +460,7 @@ class Download:
                     file_template=file_name_relative,
                     quality_audio=quality_audio,
                     quality_video=quality_video,
+                    download_delay=download_delay
                 )
 
                 # Advance progress bar.
@@ -467,13 +468,6 @@ class Download:
 
                 if not progress_stdout:
                     self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
-
-                # If a file was downloaded and the download delay is enabled, wait until the next download.
-                if download_delay and status_download:
-                    time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
-
-                    self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
-                    time.sleep(time_sleep)
 
     def _video_convert(self, path_file: str) -> str:
         path_file_out = path_file + AudioExtensions.MP4
