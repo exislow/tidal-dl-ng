@@ -92,7 +92,9 @@ def search_results_all(session: Session, needle: str, types_media: SearchTypes =
     return result
 
 
-def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool = True) -> [Track | Video | Album]:
+def items_results_all(
+    media_list: [Mix | Playlist | Album | Artist], videos_include: bool = True
+) -> [Track | Video | Album]:
     result: [Track | Video | Album] = []
 
     if isinstance(media_list, Mix):
@@ -107,22 +109,41 @@ def items_results_all(media_list: [Mix | Playlist | Album], videos_include: bool
                 func_get_items_media.append(media_list.tracks)
         else:
             func_get_items_media.append(media_list.get_albums)
-            func_get_items_media.append(media_list.get_albums_ep_singles)
+            func_get_items_media.append(media_list.get_ep_singles)
 
-        for func_media in func_get_items_media:
-            limit: int = 100
-            offset: int = 0
-            done: bool = False
+        result = paginate_media(func_get_items_media)
 
-            while not done:
-                tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
+    return result
 
-                if bool(tmp_result):
-                    result += tmp_result
-                    # Get the next page in the next iteration.
-                    offset += limit
-                else:
-                    done = True
+
+def all_artist_album_ids(media_artist: Artist) -> [int | None]:
+    result: [int] = []
+    func_get_items_media: [Callable] = [media_artist.get_albums, media_artist.get_ep_singles]
+    albums: [Album] = paginate_media(func_get_items_media)
+
+    for album in albums:
+        result.append(album.id)
+
+    return result
+
+
+def paginate_media(func_get_items_media) -> [Track | Video | Album]:
+    result: [Track | Video | Album] = []
+
+    for func_media in func_get_items_media:
+        limit: int = 100
+        offset: int = 0
+        done: bool = False
+
+        while not done:
+            tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
+
+            if bool(tmp_result):
+                result += tmp_result
+                # Get the next page in the next iteration.
+                offset += limit
+            else:
+                done = True
 
     return result
 
@@ -139,7 +160,7 @@ def instantiate_media(
     session: Session,
     media_type: type[MediaType.TRACK, MediaType.VIDEO, MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX],
     id_media: str,
-) -> Track | Video | Album | Playlist | Mix:
+) -> Track | Video | Album | Playlist | Mix | Artist:
     if media_type == MediaType.TRACK:
         media = session.track(id_media, with_album=True)
     elif media_type == MediaType.VIDEO:

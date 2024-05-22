@@ -13,7 +13,12 @@ from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.helper.path import get_format_template, path_file_settings
-from tidal_dl_ng.helper.tidal import get_tidal_media_id, get_tidal_media_type
+from tidal_dl_ng.helper.tidal import (
+    all_artist_album_ids,
+    get_tidal_media_id,
+    get_tidal_media_type,
+    instantiate_media,
+)
 from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
@@ -192,14 +197,24 @@ def download(
                 dl.item(
                     media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
                 )
-            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX]:
-                dl.items(
-                    media_id=item_id,
-                    media_type=media_type,
-                    file_template=file_template,
-                    video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
-                    download_delay=settings.data.download_delay,
-                )
+            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
+                item_ids: [int] = []
+
+                if media_type == MediaType.ARTIST:
+                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+                    media_type = MediaType.ALBUM
+                    item_ids = item_ids + all_artist_album_ids(media)
+                else:
+                    item_ids.append(item_id)
+
+                for item_id in item_ids:
+                    dl.items(
+                        media_id=item_id,
+                        media_type=media_type,
+                        file_template=file_template,
+                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
+                        download_delay=settings.data.download_delay,
+                    )
 
     # Stop Progress display.
     progress.stop()

@@ -165,7 +165,7 @@ def get_format_template(
 
     if isinstance(media, Track) or media == MediaType.TRACK:
         result = settings.data.format_track
-    elif isinstance(media, Album) or media == MediaType.ALBUM:
+    elif isinstance(media, Album) or media == MediaType.ALBUM or media == MediaType.ARTIST:
         result = settings.data.format_album
     elif isinstance(media, Playlist | UserPlaylist) or media == MediaType.PLAYLIST:
         result = settings.data.format_playlist
