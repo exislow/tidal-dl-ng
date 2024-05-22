@@ -589,18 +589,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(media, "available") and not media.available:
             return False
 
+        # Set "Explicit" tag
         if isinstance(media, Track | Video | Album):
             explicit = " 🅴" if media.explicit else ""
 
+        # Build name and set quality
         if isinstance(media, Track | Video):
             name = f"{name_builder_artist(media)} - {name_builder_title(media)}{explicit}"
         elif isinstance(media, Playlist | Artist):
             name = media.name
+            quality = self.settings.data.quality_audio
         elif isinstance(media, Album):
             name = f"{name_builder_artist(media)} - {media.name}{explicit}"
         elif isinstance(media, Mix):
             name = media.title
+            quality = self.settings.data.quality_audio
 
+        # Determine actual quality.
         if isinstance(media, Track | Album):
             quality_highest: str = quality_audio_highest(media)
 
