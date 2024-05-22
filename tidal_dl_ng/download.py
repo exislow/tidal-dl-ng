@@ -460,7 +460,7 @@ class Download:
                     file_template=file_name_relative,
                     quality_audio=quality_audio,
                     quality_video=quality_video,
-                    download_delay=download_delay
+                    download_delay=download_delay,
                 )
 
                 # Advance progress bar.

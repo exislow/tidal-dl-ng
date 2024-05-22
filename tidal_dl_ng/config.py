@@ -34,9 +34,11 @@ class BaseConfig:
             f.write(data_json)
 
     def set_option(self, key: str, value: Any) -> None:
-        tmp_data: Any = getattr(self.data, key)
+        value_old: Any = getattr(self.data, key)
 
-        if isinstance(tmp_data, int) and not isinstance(value, int):
+        if type(value_old) == bool:  # noqa: E721
+            value = True if value.lower() in ("true", "1", "yes", "y") else False  # noqa: SIM210
+        elif type(value_old) == int and type(value) != int:  # noqa: E721
             value = int(value)
 
         setattr(self.data, key, value)
