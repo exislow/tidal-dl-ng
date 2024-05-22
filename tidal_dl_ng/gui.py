@@ -279,10 +279,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
+        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Favorites, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
+        twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Mixes, QtCore.Qt.MatchExactly, 0
         )[0]
 
@@ -292,16 +292,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 twi.removeChild(twi.child(i))
 
         for item in user_lists:
-            if isinstance(item, UserPlaylist):
+            if isinstance(item, (UserPlaylist, Playlist)):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
                 name: str = item.name
-                info: str = f"({item.num_tracks + item.num_videos} Tracks)"
-            elif isinstance(item, Playlist):
-                twi_child = QtWidgets.QTreeWidgetItem(twi_mixes)
-                name: str = item.name
-                info: str = f"({item.num_tracks + item.num_videos} Tracks) {item.description}"
+                description: str = f" {item.description}" if item.description else ""
+                info: str = f"({item.num_tracks + item.num_videos} Tracks){description}"
             elif isinstance(item, Mix):
-                twi_child = QtWidgets.QTreeWidgetItem(twi_favorites)
+                twi_child = QtWidgets.QTreeWidgetItem(twi_mixes)
                 name: str = item.title
                 info: str = item.sub_title
 
