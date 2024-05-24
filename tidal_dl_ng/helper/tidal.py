@@ -5,8 +5,7 @@ from tidalapi.artist import Artist, Role
 from tidalapi.media import MediaMetadataTags, Quality
 from tidalapi.session import SearchTypes
 
-from tidal_dl_ng.constants import FAVORITES
-from tidal_dl_ng.constants import MediaType
+from tidal_dl_ng.constants import FAVORITES, MediaType
 from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 

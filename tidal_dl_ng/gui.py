@@ -6,7 +6,6 @@ from collections.abc import Callable, Sequence
 from PySide6.QtGui import QStandardItem
 from requests.exceptions import HTTPError
 
-from helper.tidal import favorite_function_factory
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
@@ -21,6 +20,7 @@ from tidal_dl_ng.helper.gui import (
 )
 from tidal_dl_ng.helper.path import get_format_template, resource_path
 from tidal_dl_ng.helper.tidal import (
+    favorite_function_factory,
     get_tidal_media_id,
     get_tidal_media_type,
     instantiate_media,
