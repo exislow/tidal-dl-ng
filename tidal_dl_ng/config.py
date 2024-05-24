@@ -120,6 +120,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         if self.session.audio_quality != tidalapi.media.Quality.hi_res_lossless:
             do_pkce = False
 
+        self.is_pkce = do_pkce
+
         if self.token_from_storage:
             try:
                 result = self.session.load_oauth_session(
@@ -129,7 +131,6 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                     self.data.expiry_time,
                     is_pkce=do_pkce,
                 )
-                self.is_pkce = do_pkce
             except HTTPError:
                 result = False
 
