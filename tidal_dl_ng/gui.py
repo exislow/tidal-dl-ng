@@ -247,9 +247,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnWidth(2, 150)
         tree.setColumnWidth(3, 150)
         tree.setColumnWidth(4, 150)
-
-        header = tree.header()
-
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:

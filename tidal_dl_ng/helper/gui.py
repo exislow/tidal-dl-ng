@@ -81,8 +81,9 @@ class FilterHeader(QtWidgets.QHeaderView):
         super().__init__(QtCore.Qt.Horizontal, parent)
         self._editors = []
         self._padding = 4
+        self.setCascadingSectionResizes(True)
+        self.setSectionResizeMode(QtWidgets.QHeaderView.Interactive)
         self.setStretchLastSection(True)
-        self.setSectionResizeMode(QtWidgets.QHeaderView.Stretch)
         self.setDefaultAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         self.setSortIndicatorShown(False)
         self.setSectionsMovable(True)
