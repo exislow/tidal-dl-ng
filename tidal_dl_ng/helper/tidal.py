@@ -127,7 +127,7 @@ def all_artist_album_ids(media_artist: Artist) -> [int | None]:
     return result
 
 
-def paginate_media(func_get_items_media) -> [Track | Video | Album]:
+def paginate_media(func_get_items_media: [Callable]) -> [Track | Video | Album]:
     result: [Track | Video | Album] = []
 
     for func_media in func_get_items_media:

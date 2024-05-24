@@ -47,7 +47,7 @@ from tidalapi.artist import Artist
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import Settings, Tidal
-from tidal_dl_ng.constants import QualityVideo, QueueDownloadStatus, TidalLists
+from tidal_dl_ng.constants import FAVORITES, QualityVideo, QueueDownloadStatus, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, QueueDownloadItem, ResultItem, StatusbarMessage
@@ -279,20 +279,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
         )[0]
-        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Favorites, QtCore.Qt.MatchExactly, 0
-        )[0]
         twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Mixes, QtCore.Qt.MatchExactly, 0
         )[0]
+        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
+            TidalLists.Favorites, QtCore.Qt.MatchExactly, 0
+        )[0]
 
         # Remove all children if present
-        for twi in [twi_playlists, twi_mixes, twi_favorites]:
+        for twi in [twi_playlists, twi_mixes]:
             for i in reversed(range(twi.childCount())):
                 twi.removeChild(twi.child(i))
 
+        # Populate dynamic user lists
         for item in user_lists:
-            if isinstance(item, (UserPlaylist, Playlist)):
+            if isinstance(item, UserPlaylist | Playlist):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
                 name: str = item.name
                 description: str = f" {item.description}" if item.description else ""
@@ -304,6 +305,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             twi_child.setText(0, name)
             set_user_list_media(twi_child, item)
+            twi_child.setText(2, info)
+
+        # Populate static favorites
+        for key, favorite in FAVORITES.items():
+            twi_child = QtWidgets.QTreeWidgetItem(twi_favorites)
+            name: str = favorite["name"]
+            info: str = ""
+
+            twi_child.setText(0, name)
+            set_user_list_media(twi_child, key)
             twi_child.setText(2, info)
 
         # Stop load spinner
@@ -712,12 +723,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tidal.settings_apply()
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem):
-        media_list: Album | Playlist = get_user_list_media_item(item)
+        media_list: Album | Playlist | str = get_user_list_media_item(item)
 
         # Only if clicked item is not a top level item.
         if media_list:
-            self.list_items_show_result(media_list)
-            self.cover_show(media_list)
+            if isinstance(media_list, str) and media_list.startswith("fav_"):
+                function_name: str = FAVORITES[media_list]["function_name"]
+                function_list = getattr(self.tidal.session.user.favorites, function_name)
+
+                self.list_items_show_result(favorite_function=function_list)
+            else:
+                self.list_items_show_result(media_list)
+                self.cover_show(media_list)
 
     def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
         media: Track | Video | Album | Artist = get_results_media_item(
@@ -754,13 +771,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media_list: Album | Playlist | Mix | Artist | None = None,
         point: QtCore.QPoint | None = None,
         parent: QtGui.QStandardItem = None,
+        favorite_function: Callable = None,
     ) -> None:
         if point:
             item = self.tr_lists_user.itemAt(point)
             media_list = get_user_list_media_item(item)
 
         # Get all results
-        media_items: [Track | Video | Album] = items_results_all(media_list)
+        if favorite_function:
+            media_items: [Track | Video | Album] = favorite_function()
+        else:
+            media_items: [Track | Video | Album] = items_results_all(media_list)
+
         result: [ResultItem] = self.search_result_to_model(media_items)
 
         self.populate_tree_results(result, parent=parent)

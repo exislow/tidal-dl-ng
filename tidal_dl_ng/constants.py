@@ -50,3 +50,12 @@ class QueueDownloadStatus(StrEnum):
     Finished: str = "✅"
     Failed: str = "❌"
     Skipped: str = "↪️"
+
+
+FAVORITES: {} = {
+    "fav_videos": {"name": "Videos", "function_name": "videos"},
+    "fav_tracks": {"name": "Tracks", "function_name": "tracks"},
+    "fav_mixes": {"name": "Mixes & Radio", "function_name": "mixes"},
+    "fav_artists": {"name": "Artists", "function_name": "artists"},
+    "fav_albums": {"name": "Albums", "function_name": "albums"},
+}
