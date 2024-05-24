@@ -6,6 +6,7 @@ from collections.abc import Callable, Sequence
 from PySide6.QtGui import QStandardItem
 from requests.exceptions import HTTPError
 
+from helper.tidal import favorite_function_factory
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
@@ -725,8 +726,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Only if clicked item is not a top level item.
         if media_list:
             if isinstance(media_list, str) and media_list.startswith("fav_"):
-                function_name: str = FAVORITES[media_list]["function_name"]
-                function_list = getattr(self.tidal.session.user.favorites, function_name)
+                function_list = favorite_function_factory(self.tidal, media_list)
 
                 self.list_items_show_result(favorite_function=function_list)
             else:
@@ -775,7 +775,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             media_list = get_user_list_media_item(item)
 
         # Get all results
-        if favorite_function:
+        if favorite_function or isinstance(media_list, str):
+            if isinstance(media_list, str):
+                favorite_function = favorite_function_factory(self.tidal, media_list)
+
             media_items: [Track | Video | Album] = favorite_function()
         else:
             media_items: [Track | Video | Album] = items_results_all(media_list)

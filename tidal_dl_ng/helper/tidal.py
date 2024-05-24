@@ -5,6 +5,7 @@ from tidalapi.artist import Artist, Role
 from tidalapi.media import MediaMetadataTags, Quality
 from tidalapi.session import SearchTypes
 
+from tidal_dl_ng.constants import FAVORITES
 from tidal_dl_ng.constants import MediaType
 from tidal_dl_ng.helper.exceptions import MediaUnknown
 
@@ -192,3 +193,10 @@ def quality_audio_highest(media: Track | Album) -> Quality:
         quality = media.audio_quality
 
     return quality
+
+
+def favorite_function_factory(tidal, favorite_item: str):
+    function_name: str = FAVORITES[favorite_item]["function_name"]
+    function_list: Callable = getattr(tidal.session.user.favorites, function_name)
+
+    return function_list
