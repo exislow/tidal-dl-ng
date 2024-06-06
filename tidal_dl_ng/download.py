@@ -471,7 +471,11 @@ class Download:
 
     def _video_convert(self, path_file: str) -> str:
         path_file_out = path_file + AudioExtensions.MP4
-        result, _ = ffmpeg.input(path_file).output(path_file_out, map=0, c="copy", loglevel="quiet").run()
+        result, _ = (
+            ffmpeg.input(path_file)
+            .output(path_file_out, map=0, c="copy", loglevel="quiet")
+            .run(cmd=self.settings.data.path_binary_ffmpeg)
+        )
 
         return path_file_out
 
@@ -482,7 +486,7 @@ class Download:
             .output(
                 path_media_out, map=0, movflags="use_metadata_tags", acodec="copy", map_metadata="0:g", loglevel="quiet"
             )
-            .run()
+            .run(cmd=self.settings.data.path_binary_ffmpeg)
         )
 
         return path_media_out
