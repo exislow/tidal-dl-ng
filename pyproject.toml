@@ -26,15 +26,15 @@ tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"
-requests = "2.31.0"
+requests = "2.32.3"
 mutagen = "1.47.0"
 pycryptodome = "3.20.0"
 tidalapi = "0.7.6"
-dataclasses-json = "^0.6.4"
+dataclasses-json = "^0.6.6"
 pathvalidate = "^3.2.0"
-m3u8 = "^4.0.0"
+m3u8 = "^5.0.0"
 coloredlogs = "^15.0.1"
-pyside6 = {version = "^6.6.3.1", optional = true}
+pyside6 = {version = "^6.7.0", optional = true}
 pyqtdarktheme = {version = "^2.1.0", optional = true}
 mpegdash = "^0.4.0"
 rich = "^13.7.1"
@@ -49,22 +49,22 @@ gui = ["pyside6", "pyqtdarktheme"]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.1.1"
-deptry = "^0.15.0"
-mypy = "^1.8.0"
+pytest = "^8.2.2"
+deptry = "^0.16.1"
+mypy = "^1.10.0"
 pre-commit = "^3.6.0"
 tox = "^4.12.0"
-pyupgrade = "^3.15.1"
-bandit = "^1.7.6"
+pyupgrade = "^3.7.1"
+bandit = "^1.7.8"
 darglint = "^1.8.1"
 isort = { extras = ["colors"], version = "^5.13.2" }
 mypy-extensions = "^1.0.0"
 pydocstyle = "^6.3.0"
-pylint = "^3.1.0"
-pyinstaller = "^6.5.0"
-pillow = "^10.2.0"
+pylint = "^3.2.3"
+pyinstaller = "^6.7.0"
+pillow = "^10.3.0"
 pytest-cov = "^5.0.0"
-black = "^24.2.0"
+black = "^24.4.2"
 
 [tool.poetry.group.docs]
 optional = true
