@@ -106,15 +106,15 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
-          #          - os: "macos-13-xlarge"
-          #            TARGET: "macos-13-xlarge M1"
-          #            CMD_BUILD: >
-          #              brew install create-dmg &&
-          #              source $VENV &&
-          #              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
-          #              cd dist &&
-          #              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
-          #              cd ..
+          - os: "macos-14"
+            TARGET: "macos-14 M1"
+            CMD_BUILD: >
+              brew install create-dmg &&
+              source $VENV &&
+              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
+              cd ..
           - os: "ubuntu-20.04"
             TARGET: "ubuntu-20.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
