@@ -108,10 +108,11 @@ jobs:
               cd ..
           - os: "macos-14"
             TARGET: "macos-14 M1"
+            OS_ARCH: ${{needs.compute.outputs.ARCH_MACOS_ARM64}}
             CMD_BUILD: >
               brew install create-dmg &&
               source $VENV &&
-              poetry run make gui-macos APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-macos-dmg APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
