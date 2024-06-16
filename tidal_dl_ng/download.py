@@ -125,7 +125,7 @@ class Download:
 
                 # Get file size and compute progress steps
                 total_size_in_bytes: int = int(r.headers.get("content-length", 0))
-                block_size: int | None = 4096
+                block_size: int | None = 1048576
                 progress_total: float = total_size_in_bytes / block_size
             else:
                 raise ValueError
