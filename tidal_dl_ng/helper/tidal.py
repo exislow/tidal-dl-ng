@@ -4,6 +4,7 @@ from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.artist import Artist, Role
 from tidalapi.media import MediaMetadataTags, Quality
 from tidalapi.session import SearchTypes
+from tidalapi.user import LoggedInUser
 
 from tidal_dl_ng.constants import FAVORITES, MediaType
 from tidal_dl_ng.helper.exceptions import MediaUnknown
@@ -111,7 +112,7 @@ def items_results_all(
             func_get_items_media.append(media_list.get_albums)
             func_get_items_media.append(media_list.get_ep_singles)
 
-        result = paginate_media(func_get_items_media)
+        result = paginate_results(func_get_items_media)
 
     return result
 
@@ -119,7 +120,7 @@ def items_results_all(
 def all_artist_album_ids(media_artist: Artist) -> [int | None]:
     result: [int] = []
     func_get_items_media: [Callable] = [media_artist.get_albums, media_artist.get_ep_singles]
-    albums: [Album] = paginate_media(func_get_items_media)
+    albums: [Album] = paginate_results(func_get_items_media)
 
     for album in albums:
         result.append(album.id)
@@ -127,7 +128,7 @@ def all_artist_album_ids(media_artist: Artist) -> [int | None]:
     return result
 
 
-def paginate_media(func_get_items_media: [Callable]) -> [Track | Video | Album]:
+def paginate_results(func_get_items_media: [Callable]) -> [Track | Video | Album | Playlist | UserPlaylist]:
     result: [Track | Video | Album] = []
 
     for func_media in func_get_items_media:
@@ -136,7 +137,10 @@ def paginate_media(func_get_items_media: [Callable]) -> [Track | Video | Album]:
         done: bool = False
 
         while not done:
-            tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
+            if func_media.__func__ == LoggedInUser.playlist_and_favorite_playlists:
+                tmp_result: [Playlist | UserPlaylist] = func_media(offset=offset)
+            else:
+                tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
 
             if bool(tmp_result):
                 result += tmp_result
@@ -149,7 +153,7 @@ def paginate_media(func_get_items_media: [Callable]) -> [Track | Video | Album]:
 
 
 def user_media_lists(session: Session) -> [Playlist | UserPlaylist | Mix]:
-    user_playlists: [Playlist | UserPlaylist] = session.user.playlist_and_favorite_playlists()
+    user_playlists: [Playlist | UserPlaylist] = paginate_results([session.user.playlist_and_favorite_playlists])
     user_mixes: [Mix] = session.mixes().categories[0].items
     result: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
 
