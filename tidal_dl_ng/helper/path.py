@@ -105,6 +105,8 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
             case "album_id":
                 if isinstance(media, Album):
                     result = str(media.id)
+                elif isinstance(media, Track):
+                    result = str(media.album.id)
             case "track_duration_seconds":
                 if isinstance(media, Track | Video):
                     result = str(media.duration)
