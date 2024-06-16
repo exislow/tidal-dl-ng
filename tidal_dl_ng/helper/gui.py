@@ -192,7 +192,7 @@ class HumanProxyModel(QtCore.QSortFilterProxyModel):
                 data = ix.data()
 
                 # Append results to list to enable an AND operator for filtering.
-                result.append(bool(re.search(rf"{text}", data, re.MULTILINE | re.IGNORECASE)))
+                result.append(bool(re.search(rf"{text}", data, re.MULTILINE | re.IGNORECASE)) if data else False)
 
         # If no filter set, just set the result to True.
         if not result:
