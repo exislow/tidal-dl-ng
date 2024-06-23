@@ -142,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                             self.tidal.login_finalize()
 
                             result = True
-                            logger_gui.info("Login not successful. Have fun!")
+                            logger_gui.info("Login successful. Have fun!")
                         except (HTTPError, Exception):
                             hint = "Something was wrong with your redirect url. Please try again!"
                             logger_gui.warning("Login not successful. Try again...")
