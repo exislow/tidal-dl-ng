@@ -82,7 +82,7 @@ class Download:
 
                 self.fn_logger.error(
                     "FFmpeg is not set. Videos can be downloaded but will not be processed. FLAC cannot be extracted from MP4 containers. "
-                    "Make sure FFmpeg is installed and the path to the binary is configured (`path_binary_ffmpeg`)."
+                    "Make sure FFmpeg is installed. The path to the binary can be specified (`path_binary_ffmpeg`)."
                 )
 
     def _download(
