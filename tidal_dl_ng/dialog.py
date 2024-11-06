@@ -1,4 +1,5 @@
 import os.path
+import shutil
 import webbrowser
 from enum import Enum, StrEnum
 from pathlib import Path
@@ -182,10 +183,15 @@ class DialogPreferences(QtWidgets.QDialog):
         self,
         obj_line_edit: QtWidgets.QLineEdit,
         file_mode: QtWidgets.QFileDialog | QtWidgets.QFileDialog.FileMode = QtWidgets.QFileDialog.Directory,
+        path_default: str = None,
     ):
         # If a path is set, use it otherwise the users home directory.
-        settings_path: str = os.path.expanduser(obj_line_edit.text()) if obj_line_edit.text() else ""
-        dir_current: str = settings_path if settings_path and os.path.exists(settings_path) else str(Path.home())
+        path_settings: str = os.path.expanduser(obj_line_edit.text()) if obj_line_edit.text() else ""
+        # Check if obj_line_edit is empty but path_default can be usd instead
+        path_settings = (
+            path_settings if path_settings else os.path.expanduser(path_default) if path_default else path_settings
+        )
+        dir_current: str = path_settings if path_settings and os.path.exists(path_settings) else str(Path.home())
         dialog: QtWidgets.QFileDialog = QtWidgets.QFileDialog()
 
         # Set to directory mode only but show files.
@@ -222,7 +228,9 @@ class DialogPreferences(QtWidgets.QDialog):
         self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_chose_file(self.ui.le_download_base_path))
         self.ui.pb_path_binary_ffmpeg.clicked.connect(
             lambda x: self.dialog_chose_file(
-                self.ui.le_path_binary_ffmpeg, file_mode=QtWidgets.QFileDialog.FileMode.ExistingFiles
+                self.ui.le_path_binary_ffmpeg,
+                file_mode=QtWidgets.QFileDialog.FileMode.ExistingFiles,
+                path_default=shutil.which("ffmpeg"),
             )
         )
 
