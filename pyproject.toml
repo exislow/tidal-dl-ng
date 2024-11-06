@@ -25,46 +25,46 @@ tdn = "tidal_dl_ng.cli:app"
 tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-requests = "2.32.3"
-mutagen = "1.47.0"
-pycryptodome = "3.20.0"
-tidalapi = "0.7.6"
-dataclasses-json = "^0.6.6"
-pathvalidate = "^3.2.0"
-m3u8 = "^5.0.0"
+python = ">=3.10,<3.13"
+requests = "~2.32.3"
+mutagen = "^1.47.0"
+pycryptodome = "^3.21.0"
+tidalapi = "~0.7.6"
+dataclasses-json = "^0.6.7"
+pathvalidate = "^3.2.1"
+m3u8 = "^6.0.0"
 coloredlogs = "^15.0.1"
-pyside6 = {version = "^6.7.0", optional = true}
-pyqtdarktheme = {version = "^2.1.0", optional = true}
+pyside6 = {version = "^6.8.0.2", optional = true}
+pyqtdarktheme-fork = {version = "^2.3.2", optional = true}
 mpegdash = "^0.4.0"
-rich = "^13.7.1"
+rich = "^13.9.4"
 toml = "^0.10.2"
-typer = "^0.12.3"
+typer = "^0.12.5"
 ffmpeg-python = "^0.2.0"
 
 [tool.poetry.extras]
-gui = ["pyside6", "pyqtdarktheme"]
+gui = ["pyside6", "pyqtdarktheme-fork"]
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.2.2"
-deptry = "^0.16.1"
-mypy = "^1.10.0"
-pre-commit = "^3.6.0"
-tox = "^4.12.0"
-pyupgrade = "^3.7.1"
-bandit = "^1.7.8"
+pytest = "^8.3.3"
+deptry = "^0.20.0"
+mypy = "^1.13.0"
+pre-commit = "^4.0.1"
+tox = "^4.23.2"
+pyupgrade = "^3.19.0"
+bandit = "^1.7.10"
 darglint = "^1.8.1"
 isort = { extras = ["colors"], version = "^5.13.2" }
 mypy-extensions = "^1.0.0"
 pydocstyle = "^6.3.0"
-pylint = "^3.2.3"
-pyinstaller = "^6.7.0"
-pillow = "^10.3.0"
-pytest-cov = "^5.0.0"
-black = "^24.4.2"
+pylint = "^3.3.1"
+pyinstaller = "^6.11.0"
+pillow = "^11.0.0"
+pytest-cov = "^6.0.0"
+black = "^24.10.0"
 
 [tool.poetry.group.docs]
 optional = true
