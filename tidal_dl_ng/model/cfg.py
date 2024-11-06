@@ -36,7 +36,6 @@ class Settings:
     path_binary_ffmpeg: str = ""
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
     extract_flac: bool = True
-    downgrade_on_hi_res: bool = False
 
 
 @dataclass_json
@@ -59,7 +58,7 @@ class HelpSettings:
     quality_audio: str = (
         'Desired audio download quality: "LOW" (96kbps), "HIGH" (320kbps), '
         '"LOSSLESS" (16 Bit, 44,1 kHz), '
-        '"HI_RES" (MQA 24 Bit, 96 kHz), "HI_RES_LOSSLESS" (up to 24 Bit, 192 kHz)'
+        '"HI_RES_LOSSLESS" (up to 24 Bit, 192 kHz)'
     )
     quality_video: str = 'Desired video download quality: "360", "480", "720", "1080"'
     # TODO: Describe possible variables.
@@ -80,9 +79,6 @@ class HelpSettings:
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
     )
     extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
-    downgrade_on_hi_res: bool = (
-        "Never download HI_RES (MQA) quality. Downgrade to the next best available quality instead."
-    )
 
 
 @dataclass_json

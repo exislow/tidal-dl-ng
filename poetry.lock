@@ -675,17 +675,14 @@ files = [
 
 [[package]]
 name = "isodate"
-version = "0.6.1"
+version = "0.7.2"
 description = "An ISO 8601 date/time/duration parser and formatter"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "isodate-0.6.1-py2.py3-none-any.whl", hash = "sha256:0751eece944162659049d35f4f549ed815792b38793f07cf73381c1c87cbed96"},
-    {file = "isodate-0.6.1.tar.gz", hash = "sha256:48c5881de7e8b0a0d648cb024c8062dc84e7b840ed81e864c7614fd3c127bde9"},
+    {file = "isodate-0.7.2-py3-none-any.whl", hash = "sha256:28009937d8031054830160fce6d409ed342816b543597cece116d966c6d99e15"},
+    {file = "isodate-0.7.2.tar.gz", hash = "sha256:4cd1aa0f43ca76f4a6c6c0292a85f40b35ec2e43e315b59f06e6d32171a953e6"},
 ]
-
-[package.dependencies]
-six = "*"
 
 [[package]]
 name = "isort"
@@ -2023,22 +2020,22 @@ pbr = ">=2.0.0"
 
 [[package]]
 name = "tidalapi"
-version = "0.7.6"
+version = "0.8.0"
 description = "Unofficial API for TIDAL music streaming service."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "tidalapi-0.7.6-py3-none-any.whl", hash = "sha256:ac9afe91296d2db71381e70470a710c052ce45b5014c4735bd1908ca3938f233"},
-    {file = "tidalapi-0.7.6.tar.gz", hash = "sha256:5fa537e13d6c3383fe245a4e7dc23b0a650b7066784825f03f67c51ca8b57161"},
+    {file = "tidalapi-0.8.0-py3-none-any.whl", hash = "sha256:114b8cf127bb9d6f02796b446f9202571989fbd5c3c62b69b58c43d9ada77e38"},
+    {file = "tidalapi-0.8.0.tar.gz", hash = "sha256:da0fca3cb790db6475526d724d868d079554203eb9b0636af7ff60f7e023a690"},
 ]
 
 [package.dependencies]
-isodate = ">=0.6.1,<0.7.0"
+isodate = ">=0.7.2,<0.8.0"
 mpegdash = ">=0.4.0,<0.5.0"
 python-dateutil = ">=2.8.2,<3.0.0"
 ratelimit = ">=2.2.1,<3.0.0"
-requests = ">=2.28.0,<3.0.0"
-typing-extensions = ">=4.10.0,<5.0.0"
+requests = ">=2.32.3,<3.0.0"
+typing-extensions = ">=4.12.2,<5.0.0"
 
 [[package]]
 name = "tokenize-rt"
@@ -2239,4 +2236,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "15808a09d378226205d3abaa3aa116ba8579e092e875ef2855c87912c36e5918"
+content-hash = "92af866c0916091be26c50790b79c210f70a939fc8c89c9e44857d30b76bc7bd"

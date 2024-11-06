@@ -37,7 +37,8 @@ def decrypt_security_token(security_token: str) -> (str, str):
 
 def decrypt_file(path_file_encrypted: str, path_file_destination: str, key: str, nonce: str) -> None:
     """
-    Decrypts an encrypted MQA file given the file, key and nonce
+    Decrypts an encrypted MQA file given the file, key and nonce.
+    TODO: Is it really only necessary for MQA of for all other formats, too?
     """
 
     # Initialize counter and file decryptor

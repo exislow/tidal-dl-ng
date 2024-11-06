@@ -211,10 +211,6 @@ class Download:
         file_extension: str
 
         if isinstance(media, Track):
-            # If hi_res is forbidden in settings and highest track quality is hi_res, downgrade to high_lossless.
-            if self.settings.data.downgrade_on_hi_res and media.get_stream().audio_quality == Quality.hi_res:
-                quality_audio = Quality.high_lossless
-
             # If a quality is explicitly set, change it.
             if quality_audio:
                 quality_audio_old: Quality = self.adjust_quality_audio(quality_audio)

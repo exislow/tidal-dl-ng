@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'dialog_settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.0
+## Created by: Qt User Interface Compiler version 6.8.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -26,7 +26,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 682)
+        DialogSettings.resize(640, 705)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -131,19 +131,6 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.lh_flag_3)
 
-        self.horizontalLayout = QHBoxLayout()
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.lv_flag_downgrade_on_hi_res = QVBoxLayout()
-        self.lv_flag_downgrade_on_hi_res.setObjectName("lv_flag_downgrade_on_hi_res")
-        self.cb_downgrade_on_hi_res = QCheckBox(self.gb_flags)
-        self.cb_downgrade_on_hi_res.setObjectName("cb_downgrade_on_hi_res")
-
-        self.lv_flag_downgrade_on_hi_res.addWidget(self.cb_downgrade_on_hi_res)
-
-        self.horizontalLayout.addLayout(self.lv_flag_downgrade_on_hi_res)
-
-        self.lv_flags.addLayout(self.horizontalLayout)
-
         self.lv_main.addWidget(self.gb_flags)
 
         self.gb_choices = QGroupBox(DialogSettings)
@@ -235,7 +222,7 @@ class Ui_DialogSettings:
 
         self.lh_choices_cover_dimension = QHBoxLayout()
         self.lh_choices_cover_dimension.setObjectName("lh_choices_cover_dimension")
-        self.lh_choices_cover_dimension.setSizeConstraint(QLayout.SetDefaultConstraint)
+        self.lh_choices_cover_dimension.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
         self.l_icon_metadata_cover_dimension = QLabel(self.gb_choices)
         self.l_icon_metadata_cover_dimension.setObjectName("l_icon_metadata_cover_dimension")
         sizePolicy4.setHeightForWidth(self.l_icon_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
@@ -494,8 +481,8 @@ class Ui_DialogSettings:
 
         self.bb_dialog = QDialogButtonBox(DialogSettings)
         self.bb_dialog.setObjectName("bb_dialog")
-        self.bb_dialog.setOrientation(Qt.Horizontal)
-        self.bb_dialog.setStandardButtons(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        self.bb_dialog.setOrientation(Qt.Orientation.Horizontal)
+        self.bb_dialog.setStandardButtons(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
 
         self.lv_main.addWidget(self.bb_dialog)
 
@@ -521,7 +508,6 @@ class Ui_DialogSettings:
         self.cb_lyrics_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_delay.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
-        self.cb_downgrade_on_hi_res.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
