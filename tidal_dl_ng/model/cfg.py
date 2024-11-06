@@ -70,9 +70,9 @@ class HelpSettings:
     format_video: str = "Where to download videos and how to name the items."
     video_convert_mp4: str = (
         "Videos are downloaded as MPEG Transport Stream (TS) files. With this option each video "
-        "will be converted to MP4. FFmpeg must be installed and the binary path must be configured."
+        "will be converted to MP4. FFmpeg must be installed."
     )
-    path_binary_ffmpeg: str = "If you like to convert videos, this must point to your installed ffmpeg binary."
+    path_binary_ffmpeg: str = "Path to FFmpeg binary. Only necesarry if FFmpeg not present in path."
     metadata_cover_dimension: str = (
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
     )

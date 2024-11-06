@@ -75,13 +75,15 @@ class Download:
         if not self.settings.data.path_binary_ffmpeg and (
             self.settings.data.video_convert_mp4 or self.settings.data.extract_flac
         ):
-            self.settings.data.video_convert_mp4 = False
-            self.settings.data.extract_flac = False
+            self.settings.data.path_binary_ffmpeg = shutil.which("ffmpeg")
+            if not self.settings.data.path_binary_ffmpeg:
+                self.settings.data.video_convert_mp4 = False
+                self.settings.data.extract_flac = False
 
-            self.fn_logger.error(
-                "FFmpeg is not set. Videos can be downloaded but will not be processed. FLAC cannot be extracted from MP4 containers. "
-                "Make sure FFmpeg is installed and the path to the binary is configured (`path_binary_ffmpeg`)."
-            )
+                self.fn_logger.error(
+                    "FFmpeg is not set. Videos can be downloaded but will not be processed. FLAC cannot be extracted from MP4 containers. "
+                    "Make sure FFmpeg is installed. The path to the binary can be specified (`path_binary_ffmpeg`)."
+                )
 
     def _download(
         self,
