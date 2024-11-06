@@ -72,7 +72,10 @@ class HelpSettings:
         "Videos are downloaded as MPEG Transport Stream (TS) files. With this option each video "
         "will be converted to MP4. FFmpeg must be installed."
     )
-    path_binary_ffmpeg: str = "Path to FFmpeg binary. Only necesarry if FFmpeg not present in path."
+    path_binary_ffmpeg: str = (
+        "Path to FFmpeg binary file (executable). Only necessary if FFmpeg not set in $PATH. Mandatory for Windows: "
+        "The directory of `ffmpeg.exe`must be set in %PATH%."
+    )
     metadata_cover_dimension: str = (
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
     )
