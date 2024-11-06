@@ -25,7 +25,7 @@ tdn = "tidal_dl_ng.cli:app"
 tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 pycryptodome = "^3.21.0"
@@ -35,7 +35,7 @@ pathvalidate = "^3.2.1"
 m3u8 = "^6.0.0"
 coloredlogs = "^15.0.1"
 pyside6 = {version = "^6.8.0.2", optional = true}
-pyqtdarktheme = {version = "^2.1.0", optional = true}
+pyqtdarktheme-fork = {version = "^2.3.2", optional = true}
 mpegdash = "^0.4.0"
 rich = "^13.9.4"
 toml = "^0.10.2"
@@ -43,7 +43,7 @@ typer = "^0.12.5"
 ffmpeg-python = "^0.2.0"
 
 [tool.poetry.extras]
-gui = ["pyside6", "pyqtdarktheme"]
+gui = ["pyside6", "pyqtdarktheme-fork"]
 
 [tool.poetry.group.dev]
 optional = true

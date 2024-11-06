@@ -1504,7 +1504,8 @@ astroid = ">=3.3.4,<=3.4.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
 dill = [
     {version = ">=0.2", markers = "python_version < \"3.11\""},
-    {version = ">=0.3.6", markers = "python_version >= \"3.11\""},
+    {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
+    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
 ]
 isort = ">=4.2.5,<5.13.0 || >5.13.0,<6"
 mccabe = ">=0.6,<0.8"
@@ -1554,14 +1555,14 @@ docs = ["furo (>=2024.8.6)", "sphinx-autodoc-typehints (>=2.4.1)"]
 testing = ["covdefaults (>=2.3)", "pytest (>=8.3.3)", "pytest-cov (>=5)", "pytest-mock (>=3.14)", "setuptools (>=75.1)"]
 
 [[package]]
-name = "pyqtdarktheme"
-version = "2.1.0"
+name = "pyqtdarktheme-fork"
+version = "2.3.2"
 description = "Flat dark theme for PySide and PyQt."
 optional = true
-python-versions = ">=3.7,<3.12"
+python-versions = ">=3.8,<3.13"
 files = [
-    {file = "pyqtdarktheme-2.1.0-py3-none-any.whl", hash = "sha256:8739d99502230fbaca42551ea033c9ae31c81c4ebfec2f1ffde38f32a18bea7a"},
-    {file = "pyqtdarktheme-2.1.0.tar.gz", hash = "sha256:5f8274ddfa3a5481ed9743cdb0f9debfeb7ff695b3a0d202a8104361d17dadb8"},
+    {file = "pyqtdarktheme_fork-2.3.2-py3-none-any.whl", hash = "sha256:d96ee64f0884678fad9b6bc352d5e37d84ca786fa60ed32ffaa7e6c6bc67e964"},
+    {file = "pyqtdarktheme_fork-2.3.2.tar.gz", hash = "sha256:3ea94fed5df262d960378409357c63032639f749794d766f41a45ad8558b2523"},
 ]
 
 [package.dependencies]
@@ -2233,9 +2234,9 @@ files = [
 watchmedo = ["PyYAML (>=3.10)"]
 
 [extras]
-gui = ["pyqtdarktheme", "pyside6"]
+gui = ["pyqtdarktheme-fork", "pyside6"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.10,<3.12"
-content-hash = "1772141bb9d347e3adf672b9d8cad1d95617381e011eaf055ca7515b39b4ea0c"
+python-versions = ">=3.10,<3.13"
+content-hash = "15808a09d378226205d3abaa3aa116ba8579e092e875ef2855c87912c36e5918"
