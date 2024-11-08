@@ -158,7 +158,7 @@ class Download:
                                 self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
         except HTTPError as e:
             # TODO: Handle Exception...
-            self.fn_logger(e)
+            self.fn_logger.error(e)
 
         if isinstance(media, Track) and stream_manifest.is_encrypted:
             key, nonce = decrypt_security_token(stream_manifest.encryption_key)
