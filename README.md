@@ -36,7 +36,7 @@ If you like this projects and want to support it, you can buy me a coffee :-)
 
 ## 💻 Installation / Upgrade
 
-**Requirements**: Python 3.11 (other versions might work but are not tested!)
+**Requirements**: Python 3.11 or 3.12 (other versions might work but are not tested!)
 
 ```bash
 pip install --upgrade tidal-dl-ng

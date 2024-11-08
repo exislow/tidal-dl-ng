@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>682</height>
+    <height>705</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -184,21 +184,6 @@
           </item>
          </layout>
         </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <layout class="QVBoxLayout" name="lv_flag_downgrade_on_hi_res">
-            <item>
-             <widget class="QCheckBox" name="cb_downgrade_on_hi_res">
-              <property name="text">
-               <string>CheckBox</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
        </layout>
       </widget>
      </item>
@@ -316,7 +301,7 @@
         <item>
          <layout class="QHBoxLayout" name="lh_choices_cover_dimension" stretch="0,0,50">
           <property name="sizeConstraint">
-           <enum>QLayout::SetDefaultConstraint</enum>
+           <enum>QLayout::SizeConstraint::SetDefaultConstraint</enum>
           </property>
           <item>
            <widget class="QLabel" name="l_icon_metadata_cover_dimension">
@@ -679,10 +664,10 @@
      <item>
       <widget class="QDialogButtonBox" name="bb_dialog">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
        </property>
       </widget>
      </item>

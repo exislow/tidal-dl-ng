@@ -618,7 +618,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if (
                 self.settings.data.quality_audio == quality_highest
                 or self.settings.data.quality_audio == Quality.hi_res_lossless
-                or (self.settings.data.quality_audio == Quality.hi_res and quality_highest == Quality.hi_res)
             ):
                 quality = quality_highest
             else:

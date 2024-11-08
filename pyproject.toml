@@ -29,7 +29,6 @@ python = ">=3.10,<3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 pycryptodome = "^3.21.0"
-tidalapi = "~0.7.6"
 dataclasses-json = "^0.6.7"
 pathvalidate = "^3.2.1"
 m3u8 = "^6.0.0"
@@ -41,6 +40,7 @@ rich = "^13.9.4"
 toml = "^0.10.2"
 typer = "^0.12.5"
 ffmpeg-python = "^0.2.0"
+tidalapi = "^0.8.0"
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme-fork"]

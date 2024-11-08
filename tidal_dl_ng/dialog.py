@@ -171,7 +171,6 @@ class DialogPreferences(QtWidgets.QDialog):
             "download_delay",
             "video_convert_mp4",
             "extract_flac",
-            "downgrade_on_hi_res",
         ]
 
     def gui_populate(self):
