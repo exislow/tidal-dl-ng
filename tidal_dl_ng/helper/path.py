@@ -26,7 +26,7 @@ def path_home() -> str:
 
 
 def path_config_base() -> str:
-    path_config: str = ".config"
+    path_config: str = os.environ.get("XDG_CONFIG_HOME", ".config")
     path_base: str = os.path.join(path_home(), path_config, __name_display__)
 
     return path_base
