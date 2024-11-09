@@ -26,7 +26,10 @@ def path_home() -> str:
 
 
 def path_config_base() -> str:
-    path_config: str = ".config"
+    # https://wiki.archlinux.org/title/XDG_Base_Directory
+    # X11 workaround: If user specified config path is set, do not point to "~/.config"
+    path_user_custom: str = os.environ.get("XDG_CONFIG_HOME", "")
+    path_config: str = ".config" if not path_user_custom else ""
     path_base: str = os.path.join(path_home(), path_config, __name_display__)
 
     return path_base
