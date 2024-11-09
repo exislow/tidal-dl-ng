@@ -15,7 +15,7 @@ from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions
 
-from tidal_dl_ng.config import Settings, Tidal
+from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
@@ -307,13 +307,6 @@ class Download:
         # Save original quality settings
         quality_old: Quality = self.session.audio_quality
         self.session.audio_quality = quality
-        tidal: Tidal = Tidal()
-
-        # If track is not requested as hires_lossless do not use PKCE, because BTS downloads are faster than MPD.
-        if quality == Quality.hi_res_lossless and not tidal.is_pkce:
-            tidal.login_token(do_pkce=True)
-        elif quality != Quality.hi_res_lossless and tidal.is_pkce:
-            tidal.login_token(do_pkce=False)
 
         return quality_old
 
