@@ -98,7 +98,6 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         # self.session.config.client_secret = "vcmeGW1OuZ0fWYMCSZ6vNvSLJlT3XEpW0ambgYt5ZuI="
         self.file_path = path_file_token()
         self.token_from_storage = self.read(self.file_path)
-        self.login_token()
 
         if settings:
             self.settings = settings
