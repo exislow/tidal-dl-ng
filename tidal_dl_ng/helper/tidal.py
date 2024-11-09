@@ -136,11 +136,11 @@ def paginate_results(func_get_items_media: [Callable]) -> [Track | Video | Album
         offset: int = 0
         done: bool = False
 
+        if func_media.__func__ == LoggedInUser.playlist_and_favorite_playlists:
+            limit: int = 50
+
         while not done:
-            if func_media.__func__ == LoggedInUser.playlist_and_favorite_playlists:
-                tmp_result: [Playlist | UserPlaylist] = func_media(offset=offset)
-            else:
-                tmp_result: [Track | Video | Album] = func_media(limit=limit, offset=offset)
+            tmp_result: [Track | Video | Album | Playlist | UserPlaylist] = func_media(limit=limit, offset=offset)
 
             if bool(tmp_result):
                 result += tmp_result
