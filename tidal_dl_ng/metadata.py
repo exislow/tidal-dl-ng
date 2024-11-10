@@ -102,19 +102,19 @@ class Metadata:
         return True
 
     def set_flac(self):
-        self.m.tags["title"] = self.title
-        self.m.tags["album"] = self.album
-        self.m.tags["albumartist"] = self.albumartist
-        self.m.tags["artist"] = self.artists
-        self.m.tags["copyright"] = self.copy_right
-        self.m.tags["tracknumber"] = str(self.tracknumber)
-        self.m.tags["tracktotal"] = str(self.totaltrack)
-        self.m.tags["discnumber"] = str(self.discnumber)
-        self.m.tags["disctotal"] = str(self.totaldisc)
-        self.m.tags["date"] = self.date
-        self.m.tags["composer"] = ", ".join(self.composer) if self.composer else ""
-        self.m.tags["isrc"] = self.isrc
-        self.m.tags["lyrics"] = self.lyrics
+        self.m.tags["TITLE"] = self.title
+        self.m.tags["ALBUM"] = self.album
+        self.m.tags["ALBUMARTIST"] = self.albumartist
+        self.m.tags["ARTIST"] = self.artists
+        self.m.tags["COPYRIGHT"] = self.copy_right
+        self.m.tags["TRACKNUMBER"] = str(self.tracknumber)
+        self.m.tags["TRACKTOTAL"] = str(self.totaltrack)
+        self.m.tags["DISCNUMBER"] = str(self.discnumber)
+        self.m.tags["DISCTOTAL"] = str(self.totaldisc)
+        self.m.tags["DATE"] = self.date
+        self.m.tags["COMPOSER"] = ", ".join(self.composer) if self.composer else ""
+        self.m.tags["ISRC"] = self.isrc
+        self.m.tags["LYRICS"] = self.lyrics
 
     def set_mp3(self):
         self.m.tags.add(TIT2(encoding=3, text=self.title))
