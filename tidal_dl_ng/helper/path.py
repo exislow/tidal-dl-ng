@@ -77,7 +77,8 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
                     elif hasattr(media, "artist"):
                         result = media.artist.name
             case "album_artist":
-                result = name_builder_album_artist(media)
+                if isinstance(media, Album):
+                    result = name_builder_album_artist(media)
             case "track_title":
                 if isinstance(media, Track | Video):
                     result = name_builder_title(media)
