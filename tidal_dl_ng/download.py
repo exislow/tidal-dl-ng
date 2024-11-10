@@ -111,54 +111,64 @@ class Download:
             # Send signal to GUI with media name
             self.progress_gui.item_name.emit(media_name[:30])
 
-        try:
-            # Compute total iterations for progress
-            urls_count: int = len(urls)
+        # Compute total iterations for progress
+        urls_count: int = len(urls)
 
-            if urls_count > 1:
-                progress_total: int = urls_count
-                block_size: int | None = None
-            elif urls_count == 1:
-                # Compute progress iterations based on the file size.
-                r = requests.get(urls[0], stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+        if urls_count > 1:
+            progress_total: int = urls_count
+            block_size: int | None = None
+        elif urls_count == 1:
+            # Will be computed later.
+            progress_total: float = None
+        else:
+            raise ValueError
 
-                r.raise_for_status()
+        # Create progress Task
+        p_task: TaskID = self.progress.add_task(
+            f"[blue]Item '{media_name[:30]}'",
+            total=progress_total,
+            visible=progress_stdout,
+        )
 
-                # Get file size and compute progress steps
-                total_size_in_bytes: int = int(r.headers.get("content-length", 0))
-                block_size: int | None = 1048576
-                progress_total: float = total_size_in_bytes / block_size
-            else:
-                raise ValueError
-
-            # Create progress Task
-            p_task: TaskID = self.progress.add_task(
-                f"[blue]Item '{media_name[:30]}'",
-                total=progress_total,
-                visible=progress_stdout,
-            )
-
-            # Write content to file until progress is finished.
-            while not self.progress.tasks[p_task].finished:
-                with open(path_file, "wb") as f:
-                    for url in urls:
+        # Write content to file until progress is finished.
+        while not self.progress.tasks[p_task].finished:
+            with open(path_file, "wb") as f:
+                for url in urls:
+                    try:
                         # Create the request object with stream=True, so the content won't be loaded into memory at once.
                         r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
                         r.raise_for_status()
+
+                        # Compute progress iterations based on the file size and update task details.
+                        if not progress_total:
+                            # Get file size and compute progress steps
+                            total_size_in_bytes: int = int(r.headers.get("content-length", 0))
+                            block_size: int | None = 1048576
+                            progress_total: float = total_size_in_bytes / block_size
+
+                            self.progress.update(p_task, total=progress_total)
 
                         # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
                         for data in r.iter_content(chunk_size=block_size):
                             f.write(data)
                             # Advance progress bar.
                             self.progress.advance(p_task)
-
-                            # To send the progress to the GUI, we need to emit the percentage.
-                            if not progress_stdout:
-                                self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
-        except HTTPError as e:
-            # TODO: Handle Exception...
-            self.fn_logger.error(e)
+                    except HTTPError as e:
+                        if url is urls[-1]:
+                            # It happens, if a track is very short (< 8 seconds or so), that the last URL in `urls` is
+                            # invalid (HTTP Error 500) and not necessary. File won't be corrupt.
+                            # Thus, advance progress bar to avoid infinity loops.
+                            self.progress.advance(p_task)
+                        else:
+                            # Finish downloading early and report error.
+                            # TODO: The track should somehow be marked as corrupt.
+                            self.progress.update(p_task, completed=progress_total)
+                            self.fn_logger.error(e)
+                    finally:
+                        # To send the progress to the GUI, we need to emit the percentage.
+                        if not progress_stdout:
+                            self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
 
         if isinstance(media, Track) and stream_manifest.is_encrypted:
             key, nonce = decrypt_security_token(stream_manifest.encryption_key)
