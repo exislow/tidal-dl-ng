@@ -155,6 +155,14 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
             case "track_volume_num":
                 if isinstance(media, Track | Video):
                     result = str(media.volume_num)
+            case "track_volume_num_optional":
+                if isinstance(media, Track | Video):
+                    num_volumes: int = media.album.num_volumes if hasattr(media, "album") else 1
+                    result = "" if media.volume_num is num_volumes else str(media.volume_num)
+            case "track_volume_num_optional_CD":
+                if isinstance(media, Track | Video):
+                    num_volumes: int = media.album.num_volumes if hasattr(media, "album") else 1
+                    result = "" if media.volume_num is num_volumes else f"CD{media.volume_num!s}"
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
