@@ -125,8 +125,16 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                     self.data.expiry_time,
                     is_pkce=do_pkce,
                 )
-            except HTTPError:
+            except (HTTPError, JSONDecodeError):
                 result = False
+                # Remove token file. Probably corrupt or invalid.
+                if os.path.exists(self.file_path):
+                    os.remove(self.file_path)
+
+                print(
+                    "Either there is something wrong with your credentials / account or some server problems on TIDALs "
+                    "side. Anyway... Try to login again by re-starting this app."
+                )
 
         return result
 
