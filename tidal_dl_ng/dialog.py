@@ -171,6 +171,8 @@ class DialogPreferences(QtWidgets.QDialog):
             "download_delay",
             "video_convert_mp4",
             "extract_flac",
+            "metadata_cover_embed",
+            "cover_album_file",
         ]
 
     def gui_populate(self):
