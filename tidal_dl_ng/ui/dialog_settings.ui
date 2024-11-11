@@ -108,7 +108,7 @@
         <item>
          <layout class="QHBoxLayout" name="lh_flags_2">
           <item>
-           <layout class="QHBoxLayout" name="lh_flag_lyrics_embed">
+           <layout class="QVBoxLayout" name="lv_flag_lyrics_embed">
             <item>
              <widget class="QCheckBox" name="cb_lyrics_embed">
               <property name="sizePolicy">
@@ -128,7 +128,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="lh_flag_lyrics_file">
+           <layout class="QVBoxLayout" name="lv_flag_lyrics_file">
             <item>
              <widget class="QCheckBox" name="cb_lyrics_file">
               <property name="sizePolicy">
@@ -175,6 +175,32 @@
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="lh_flags_4">
+          <item>
+           <layout class="QVBoxLayout" name="lv_flag_metadata_cover_embed">
+            <item>
+             <widget class="QCheckBox" name="cb_metadata_cover_embed">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="lv_flag_cover_album_file">
+            <item>
+             <widget class="QCheckBox" name="cb_cover_album_file">
               <property name="text">
                <string>CheckBox</string>
               </property>

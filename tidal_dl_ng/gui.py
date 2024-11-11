@@ -31,7 +31,6 @@ from tidal_dl_ng.helper.tidal import (
     search_results_all,
     user_media_lists,
 )
-from tidal_dl_ng.metadata import Metadata
 
 try:
     import qdarktheme
@@ -249,11 +248,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnWidth(3, 150)
         tree.setColumnWidth(4, 150)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        # Connect the contextmenu
+        tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
-        model.setColumnCount(7)
+        labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date Added"]
+
+        model.setColumnCount(len(labels_column))
         model.setRowCount(0)
-        model.setHorizontalHeaderLabels(["#", "obj", "Artist", "Title", "Album", "Duration", "Quality"])
+        model.setHorizontalHeaderLabels(labels_column)
 
     def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(1, True)
@@ -359,7 +363,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner.stop()
         self.spinner = None
 
-    def menu_context_tree_lists(self, point):
+    def menu_context_tree_lists(self, point: QtCore.QPoint):
         # Infos about the node selected.
         index = self.tr_lists_user.indexAt(point)
 
@@ -370,12 +374,46 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # We build the menu.
         menu = QtWidgets.QMenu()
         menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction("Copy Share URL", lambda: self.thread_copy_url_share(self.tr_lists_user, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
-    def thread_download_list_media(self, point):
+    def menu_context_tree_results(self, point: QtCore.QPoint):
+        # Infos about the node selected.
+        index = self.tr_results.indexAt(point)
+
+        # Do not open menu if something went wrong or a parent node is clicked.
+        if not index.isValid():
+            return
+
+        # We build the menu.
+        menu = QtWidgets.QMenu()
+        menu.addAction("Copy Share URL", lambda: self.thread_copy_url_share(self.tr_results, point))
+
+        menu.exec(self.tr_results.mapToGlobal(point))
+
+    def thread_download_list_media(self, point: QtCore.QPoint):
         self.thread_it(self.on_download_list_media, point)
-        self.thread_it(self.list_items_show_result, point=point)
+
+    def thread_copy_url_share(self, tree_target: QtWidgets.QTreeWidget, point: QtCore.QPoint):
+        self.thread_it(self.on_copy_url_share, tree_target, point)
+
+    def on_copy_url_share(self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None):
+        if isinstance(tree_target, QtWidgets.QTreeWidget):
+
+            item: QtWidgets.QTreeWidgetItem = tree_target.itemAt(point)
+            media: Album | Artist | Mix | Playlist = get_user_list_media_item(item)
+        else:
+            index: QtCore.QModelIndex = tree_target.indexAt(point)
+            media: Track | Video | Album | Artist | Mix | Playlist = get_results_media_item(
+                index, self.proxy_tr_results, self.model_tr_results
+            )
+
+        clipboard = QtWidgets.QApplication.clipboard()
+        url_share = media.share_url if hasattr(media, "share_url") else "No share URL available."
+
+        clipboard.clear()
+        clipboard.setText(url_share)
 
     def on_download_list_media(self, point: QtCore.QPoint = None):
         items: [QtWidgets.QTreeWidgetItem]
@@ -444,6 +482,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child_album: QtGui.QStandardItem = QtGui.QStandardItem(item.album)
         child_duration: QtGui.QStandardItem = QtGui.QStandardItem(duration)
         child_quality: QtGui.QStandardItem = QtGui.QStandardItem(item.quality)
+        child_date_added: QtGui.QStandardItem = QtGui.QStandardItem(item.date_user_added)
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
@@ -452,7 +491,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child_dummy.setEnabled(False)
             child_index.appendRow(child_dummy)
 
-        return child_index, child_obj, child_artist, child_title, child_album, child_duration, child_quality
+        return (
+            child_index,
+            child_obj,
+            child_artist,
+            child_title,
+            child_album,
+            child_duration,
+            child_quality,
+            child_date_added,
+        )
 
     def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
         self.model_tr_results.appendRow(item_child)
@@ -501,6 +549,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(item, Track | Video | Album):
                 explicit = " 🅴" if item.explicit else ""
 
+            date_user_added: str = item.user_date_added.strftime("%Y-%m-%d_%H:%M") if item.user_date_added else ""
+
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
                     position=idx,
@@ -511,6 +561,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -524,6 +575,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=item.video_quality,
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -537,6 +589,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -550,6 +603,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -564,6 +618,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -577,6 +632,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -757,7 +813,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if cover_url and self.cover_url_current != cover_url:
             self.cover_url_current = cover_url
-            data_cover: bytes = Metadata.cover_data(cover_url)
+            data_cover: bytes = Download.cover_data(cover_url)
             pixmap: QtGui.QPixmap = QtGui.QPixmap()
             pixmap.loadFromData(data_cover)
             self.l_pm_cover.setPixmap(pixmap)

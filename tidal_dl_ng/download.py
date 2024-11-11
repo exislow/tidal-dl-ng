@@ -10,6 +10,7 @@ from uuid import uuid4
 import ffmpeg
 import m3u8
 import requests
+from constants import COVER_NAME
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
@@ -189,6 +190,7 @@ class Download:
         download_delay: bool = False,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
+        is_parent_album: bool = False,
     ) -> (bool, str):
         try:
             if media_id and media_type:
@@ -278,10 +280,13 @@ class Download:
                     tmp_path_file = self._extract_flac(tmp_path_file)
 
                 tmp_path_lyrics: pathlib.Path | None = None
+                tmp_path_cover: pathlib.Path | None = None
 
                 # Write metadata to file.
                 if not isinstance(media, Video):
-                    result_metadata, tmp_path_lyrics = self.metadata_write(media, tmp_path_file)
+                    result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
+                        media, tmp_path_file, is_parent_album
+                    )
 
                 # Move final file to the configured destination directory.
                 os.makedirs(os.path.dirname(path_media_dst), exist_ok=True)
@@ -289,7 +294,11 @@ class Download:
 
                 # Move lyrics file
                 if self.settings.data.lyrics_file and not isinstance(media, Video):
-                    self._move_lyrics(path_media_dst, tmp_path_lyrics)
+                    self._move_lyrics(tmp_path_lyrics, path_media_dst)
+
+                # Move cover file
+                if self.settings.data.cover_album_file:
+                    self._move_cover(tmp_path_cover, path_media_dst)
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_media_dst}'")
 
@@ -327,13 +336,13 @@ class Download:
 
         return quality_old
 
-    def _move_lyrics(self, file_media_dst: str, path_lyrics: pathlib.Path) -> bool:
+    def _move_file(self, path_file_source: pathlib.Path, path_file_destination: str | pathlib.Path) -> bool:
         result: bool
-        # Build tmp lyrics filename
+
         # Check if the file was downloaded
-        if path_lyrics and os.path.isfile(path_lyrics):
+        if path_file_source and os.path.isfile(path_file_source):
             # Move it.
-            shutil.move(path_lyrics, os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS)
+            shutil.move(path_file_source, path_file_destination)
 
             result = True
         else:
@@ -341,20 +350,64 @@ class Download:
 
         return result
 
-    def lyrics_write_file(self, dir_destination: pathlib.Path, lyrics: str) -> str:
+    def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: str) -> bool:
+        # Build tmp lyrics filename
+        path_file_lyrics: str = os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS
+        result: bool = self._move_file(path_lyrics, path_file_lyrics)
+
+        return result
+
+    def _move_cover(self, path_cover: pathlib.Path, file_media_dst: str) -> bool:
+        # Build tmp lyrics filename
+        path_file_cover: pathlib.Path = pathlib.Path(file_media_dst).parent.absolute() / COVER_NAME
+        result: bool = self._move_file(path_cover, path_file_cover)
+
+        return result
+
+    def lyrics_to_file(self, dir_destination: pathlib.Path, lyrics: str) -> str:
+        return self.write_to_tmp_file(dir_destination, mode="x", content=lyrics)
+
+    def cover_to_file(self, dir_destination: pathlib.Path, image: bytes) -> str:
+        return self.write_to_tmp_file(dir_destination, mode="xb", content=image)
+
+    def write_to_tmp_file(self, dir_destination: pathlib.Path, mode: str, content: str | bytes) -> str:
         result: str = dir_destination / str(uuid4())
+        encoding: str | None = "utf-8" if isinstance(content, str) else None
 
         try:
-            with open(result, "x", encoding="utf-8") as f:
-                f.write(lyrics)
+            with open(result, mode=mode, encoding=encoding) as f:
+                f.write(content)
         except:
             result = ""
 
         return result
 
-    def metadata_write(self, track: Track, path_media: str) -> (bool, pathlib.Path | None):
+    @staticmethod
+    def cover_data(url: str = None, path_file: str = None) -> str | bytes:
+        result: str | bytes = ""
+
+        if url:
+            try:
+                result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
+            except Exception as e:
+                # TODO: Implement propper logging.
+                print(e)
+        elif path_file:
+            try:
+                with open(path_file, "rb") as f:
+                    result = f.read()
+            except OSError as e:
+                # TODO: Implement propper logging.
+                print(e)
+
+        return result
+
+    def metadata_write(
+        self, track: Track, path_media: str, is_parent_album: str
+    ) -> (bool, pathlib.Path | None, pathlib.Path | None):
         result: bool = False
         path_lyrics: pathlib.Path | None = None
+        path_cover: pathlib.Path | None = None
         release_date: str = (
             track.album.available_release_date.strftime("%Y-%m-%d")
             if track.album.available_release_date
@@ -363,6 +416,7 @@ class Download:
         copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
+        cover_data: bytes = None
 
         if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
             # Try to retrieve lyrics.
@@ -379,7 +433,14 @@ class Download:
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         if lyrics and self.settings.data.lyrics_file:
-            path_lyrics = self.lyrics_write_file(pathlib.Path(path_media).parent, lyrics)
+            path_lyrics = self.lyrics_to_file(pathlib.Path(path_media).parent, lyrics)
+
+        if self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album):
+            url_cover = track.album.image(int(self.settings.data.metadata_cover_dimension))
+            cover_data = self.cover_data(url=url_cover)
+
+        if cover_data and self.settings.data.cover_album_file and is_parent_album:
+            path_cover = self.cover_to_file(pathlib.Path(path_media).parent, cover_data)
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
@@ -396,14 +457,14 @@ class Download:
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
-            url_cover=track.album.image(int(self.settings.data.metadata_cover_dimension)),
+            cover_data=cover_data if self.settings.data.metadata_cover_embed else None,
         )
 
         m.save()
 
         result = True
 
-        return result, path_lyrics
+        return result, path_lyrics, path_cover
 
     def items(
         self,
@@ -451,16 +512,19 @@ class Download:
             f"[green]List '{list_media_name}'", total=len(items), visible=progress_stdout
         )
 
+        is_album: bool = isinstance(media, Album)
+
         # Iterate through list items
         while not self.progress.finished:
-            for media in items:
+            for item_media in items:
                 # Download the item.
                 status_download, result_path_file = self.item(
-                    media=media,
+                    media=item_media,
                     file_template=file_name_relative,
                     quality_audio=quality_audio,
                     quality_video=quality_video,
                     download_delay=download_delay,
+                    is_parent_album=is_album,
                 )
 
                 # Advance progress bar.

@@ -5,6 +5,7 @@ REQUESTS_TIMEOUT_SEC: int = 45
 EXTENSION_LYRICS: str = ".lrc"
 UNIQUIFY_THRESHOLD: int = 99
 FILENAME_SANITIZE_PLACEHOLDER: str = "_"
+COVER_NAME: str = "cover.jpg"
 
 
 class QualityVideo(StrEnum):

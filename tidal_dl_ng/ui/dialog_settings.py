@@ -78,8 +78,8 @@ class Ui_DialogSettings:
 
         self.lh_flags_2 = QHBoxLayout()
         self.lh_flags_2.setObjectName("lh_flags_2")
-        self.lh_flag_lyrics_embed = QHBoxLayout()
-        self.lh_flag_lyrics_embed.setObjectName("lh_flag_lyrics_embed")
+        self.lv_flag_lyrics_embed = QVBoxLayout()
+        self.lv_flag_lyrics_embed.setObjectName("lv_flag_lyrics_embed")
         self.cb_lyrics_embed = QCheckBox(self.gb_flags)
         self.cb_lyrics_embed.setObjectName("cb_lyrics_embed")
         sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -88,20 +88,20 @@ class Ui_DialogSettings:
         sizePolicy2.setHeightForWidth(self.cb_lyrics_embed.sizePolicy().hasHeightForWidth())
         self.cb_lyrics_embed.setSizePolicy(sizePolicy2)
 
-        self.lh_flag_lyrics_embed.addWidget(self.cb_lyrics_embed)
+        self.lv_flag_lyrics_embed.addWidget(self.cb_lyrics_embed)
 
-        self.lh_flags_2.addLayout(self.lh_flag_lyrics_embed)
+        self.lh_flags_2.addLayout(self.lv_flag_lyrics_embed)
 
-        self.lh_flag_lyrics_file = QHBoxLayout()
-        self.lh_flag_lyrics_file.setObjectName("lh_flag_lyrics_file")
+        self.lv_flag_lyrics_file = QVBoxLayout()
+        self.lv_flag_lyrics_file.setObjectName("lv_flag_lyrics_file")
         self.cb_lyrics_file = QCheckBox(self.gb_flags)
         self.cb_lyrics_file.setObjectName("cb_lyrics_file")
         sizePolicy1.setHeightForWidth(self.cb_lyrics_file.sizePolicy().hasHeightForWidth())
         self.cb_lyrics_file.setSizePolicy(sizePolicy1)
 
-        self.lh_flag_lyrics_file.addWidget(self.cb_lyrics_file)
+        self.lv_flag_lyrics_file.addWidget(self.cb_lyrics_file)
 
-        self.lh_flags_2.addLayout(self.lh_flag_lyrics_file)
+        self.lh_flags_2.addLayout(self.lv_flag_lyrics_file)
 
         self.lv_flags.addLayout(self.lh_flags_2)
 
@@ -130,6 +130,28 @@ class Ui_DialogSettings:
         self.lh_flag_3.addLayout(self.lv_flag_extract_flac)
 
         self.lv_flags.addLayout(self.lh_flag_3)
+
+        self.lh_flags_4 = QHBoxLayout()
+        self.lh_flags_4.setObjectName("lh_flags_4")
+        self.lv_flag_metadata_cover_embed = QVBoxLayout()
+        self.lv_flag_metadata_cover_embed.setObjectName("lv_flag_metadata_cover_embed")
+        self.cb_metadata_cover_embed = QCheckBox(self.gb_flags)
+        self.cb_metadata_cover_embed.setObjectName("cb_metadata_cover_embed")
+
+        self.lv_flag_metadata_cover_embed.addWidget(self.cb_metadata_cover_embed)
+
+        self.lh_flags_4.addLayout(self.lv_flag_metadata_cover_embed)
+
+        self.lv_flag_cover_album_file = QVBoxLayout()
+        self.lv_flag_cover_album_file.setObjectName("lv_flag_cover_album_file")
+        self.cb_cover_album_file = QCheckBox(self.gb_flags)
+        self.cb_cover_album_file.setObjectName("cb_cover_album_file")
+
+        self.lv_flag_cover_album_file.addWidget(self.cb_cover_album_file)
+
+        self.lh_flags_4.addLayout(self.lv_flag_cover_album_file)
+
+        self.lv_flags.addLayout(self.lh_flags_4)
 
         self.lv_main.addWidget(self.gb_flags)
 
@@ -508,6 +530,8 @@ class Ui_DialogSettings:
         self.cb_lyrics_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_delay.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_metadata_cover_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_cover_album_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

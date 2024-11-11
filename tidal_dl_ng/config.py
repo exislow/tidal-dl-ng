@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from collections.abc import Callable
@@ -31,7 +32,9 @@ class BaseConfig:
         os.makedirs(self.path_base, exist_ok=True)
 
         with open(self.file_path, encoding="utf-8", mode="w") as f:
-            f.write(data_json)
+            # Save it in a pretty format
+            obj_json_config = json.loads(data_json)
+            json.dump(obj_json_config, f, indent=4)
 
     def set_option(self, key: str, value: Any) -> None:
         value_old: Any = getattr(self.data, key)

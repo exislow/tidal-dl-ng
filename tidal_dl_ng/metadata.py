@@ -1,9 +1,6 @@
 import mutagen
-import requests
 from mutagen import flac, id3, mp4
 from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, USLT
-
-from tidal_dl_ng.constants import REQUESTS_TIMEOUT_SEC
 
 
 class Metadata:
@@ -22,7 +19,7 @@ class Metadata:
     isrc: str
     lyrics: str
     path_cover: str
-    url_cover: str
+    cover_data: bytes
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -41,8 +38,7 @@ class Metadata:
         albumartist: str = "",
         date: str = "",
         lyrics: str = "",
-        path_cover: str = "",
-        url_cover: str = "",
+        cover_data: bytes = None,
     ):
         self.path_file = path_file
         self.title = title
@@ -58,27 +54,25 @@ class Metadata:
         self.composer = composer
         self.isrc = isrc
         self.lyrics = lyrics
-        self.path_cover = path_cover
-        self.url_cover = url_cover
+        self.cover_data = cover_data
         self.m: mutagen.mp4.MP4 | mutagen.flac.FLAC | mutagen.mp3.MP3 = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
         result: bool = False
-        data_cover: str | bytes = self.cover_data(url=self.url_cover, path_file=self.path_cover)
 
-        if data_cover:
+        if self.cover_data:
             if isinstance(self.m, mutagen.flac.FLAC):
                 flac_cover = flac.Picture()
                 flac_cover.type = id3.PictureType.COVER_FRONT
-                flac_cover.data = data_cover
+                flac_cover.data = self.cover_data
                 flac_cover.mime = "image/jpeg"
 
                 self.m.clear_pictures()
                 self.m.add_picture(flac_cover)
             elif isinstance(self.m, mutagen.mp3.MP3):
-                self.m.tags.add(APIC(encoding=3, data=data_cover))
+                self.m.tags.add(APIC(encoding=3, data=self.cover_data))
             elif isinstance(self.m, mutagen.mp4.MP4):
-                cover_mp4 = mp4.MP4Cover(data_cover)
+                cover_mp4 = mp4.MP4Cover(self.cover_data)
                 self.m.tags["covr"] = [cover_mp4]
 
             result = True
@@ -142,23 +136,3 @@ class Metadata:
         self.m.tags["\xa9wrt"] = ", ".join(self.composer) if self.composer else ""
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["isrc"] = self.isrc
-
-    @staticmethod
-    def cover_data(url: str = None, path_file: str = None) -> str | bytes:
-        result: str | bytes = ""
-
-        if url:
-            try:
-                result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
-            except Exception as e:
-                # TODO: Implement propper logging.
-                print(e)
-        elif path_file:
-            try:
-                with open(path_file, "rb") as f:
-                    result = f.read()
-            except OSError as e:
-                # TODO: Implement propper logging.
-                print(e)
-
-        return result
