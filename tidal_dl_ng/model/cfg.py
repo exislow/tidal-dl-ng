@@ -10,8 +10,6 @@ from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
 @dataclass
 class Settings:
     skip_existing: SkipExisting = SkipExisting.Disabled
-    # TODO: Implement cover download to a separate file.
-    # album_cover_save: bool = True
     lyrics_embed: bool = False
     lyrics_file: bool = False
     # TODO: Implement API KEY selection.
@@ -36,6 +34,8 @@ class Settings:
     video_convert_mp4: bool = True
     path_binary_ffmpeg: str = ""
     metadata_cover_dimension: CoverDimensions = CoverDimensions.Px320
+    metadata_cover_embed: bool = True
+    cover_album_file: bool = True
     extract_flac: bool = True
 
 
@@ -79,6 +79,8 @@ class HelpSettings:
     metadata_cover_dimension: str = (
         "The dimensions of the cover image embedded into the track. Possible values: 320x320, 640x640x 1280x1280."
     )
+    metadata_cover_embed: str = "Embed album cover into file."
+    cover_album_file: str = "Save cover to 'cover.jpg', if an album is downloaded."
     extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
 
 

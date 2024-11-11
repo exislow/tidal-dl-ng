@@ -31,7 +31,6 @@ from tidal_dl_ng.helper.tidal import (
     search_results_all,
     user_media_lists,
 )
-from tidal_dl_ng.metadata import Metadata
 
 try:
     import qdarktheme
@@ -757,7 +756,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if cover_url and self.cover_url_current != cover_url:
             self.cover_url_current = cover_url
-            data_cover: bytes = Metadata.cover_data(cover_url)
+            data_cover: bytes = Download.cover_data(cover_url)
             pixmap: QtGui.QPixmap = QtGui.QPixmap()
             pixmap.loadFromData(data_cover)
             self.l_pm_cover.setPixmap(pixmap)
