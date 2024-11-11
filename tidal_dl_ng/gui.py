@@ -253,9 +253,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
-        model.setColumnCount(7)
+        labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date Added"]
+
+        model.setColumnCount(len(labels_column))
         model.setRowCount(0)
-        model.setHorizontalHeaderLabels(["#", "obj", "Artist", "Title", "Album", "Duration", "Quality"])
+        model.setHorizontalHeaderLabels(labels_column)
 
     def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(1, True)
@@ -480,6 +482,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child_album: QtGui.QStandardItem = QtGui.QStandardItem(item.album)
         child_duration: QtGui.QStandardItem = QtGui.QStandardItem(duration)
         child_quality: QtGui.QStandardItem = QtGui.QStandardItem(item.quality)
+        child_date_added: QtGui.QStandardItem = QtGui.QStandardItem(item.date_user_added)
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
@@ -488,7 +491,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child_dummy.setEnabled(False)
             child_index.appendRow(child_dummy)
 
-        return child_index, child_obj, child_artist, child_title, child_album, child_duration, child_quality
+        return (
+            child_index,
+            child_obj,
+            child_artist,
+            child_title,
+            child_album,
+            child_duration,
+            child_quality,
+            child_date_added,
+        )
 
     def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
         self.model_tr_results.appendRow(item_child)
@@ -537,6 +549,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(item, Track | Video | Album):
                 explicit = " 🅴" if item.explicit else ""
 
+            date_user_added: str = item.user_date_added.strftime("%Y-%m-%d_%H:%M") if item.user_date_added else ""
+
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
                     position=idx,
@@ -547,6 +561,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -560,6 +575,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=item.video_quality,
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -573,6 +589,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -586,6 +603,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -600,6 +618,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)
@@ -613,6 +632,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     obj=item,
                     quality="",
                     explicit=False,
+                    date_user_added=date_user_added,
                 )
 
                 result.append(result_item)

@@ -28,6 +28,7 @@ class ResultItem:
     obj: object
     quality: str
     explicit: bool
+    date_user_added: str
 
 
 @dataclass
