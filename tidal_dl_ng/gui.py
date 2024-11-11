@@ -248,6 +248,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnWidth(3, 150)
         tree.setColumnWidth(4, 150)
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        # Connect the contextmenu
+        tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
         model.setColumnCount(7)
@@ -358,7 +361,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.spinner.stop()
         self.spinner = None
 
-    def menu_context_tree_lists(self, point):
+    def menu_context_tree_lists(self, point: QtCore.QPoint):
         # Infos about the node selected.
         index = self.tr_lists_user.indexAt(point)
 
@@ -369,12 +372,46 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # We build the menu.
         menu = QtWidgets.QMenu()
         menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction("Copy Share URL", lambda: self.thread_copy_url_share(self.tr_lists_user, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
-    def thread_download_list_media(self, point):
+    def menu_context_tree_results(self, point: QtCore.QPoint):
+        # Infos about the node selected.
+        index = self.tr_results.indexAt(point)
+
+        # Do not open menu if something went wrong or a parent node is clicked.
+        if not index.isValid():
+            return
+
+        # We build the menu.
+        menu = QtWidgets.QMenu()
+        menu.addAction("Copy Share URL", lambda: self.thread_copy_url_share(self.tr_results, point))
+
+        menu.exec(self.tr_results.mapToGlobal(point))
+
+    def thread_download_list_media(self, point: QtCore.QPoint):
         self.thread_it(self.on_download_list_media, point)
-        self.thread_it(self.list_items_show_result, point=point)
+
+    def thread_copy_url_share(self, tree_target: QtWidgets.QTreeWidget, point: QtCore.QPoint):
+        self.thread_it(self.on_copy_url_share, tree_target, point)
+
+    def on_copy_url_share(self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None):
+        if isinstance(tree_target, QtWidgets.QTreeWidget):
+
+            item: QtWidgets.QTreeWidgetItem = tree_target.itemAt(point)
+            media: Album | Artist | Mix | Playlist = get_user_list_media_item(item)
+        else:
+            index: QtCore.QModelIndex = tree_target.indexAt(point)
+            media: Track | Video | Album | Artist | Mix | Playlist = get_results_media_item(
+                index, self.proxy_tr_results, self.model_tr_results
+            )
+
+        clipboard = QtWidgets.QApplication.clipboard()
+        url_share = media.share_url if hasattr(media, "share_url") else "No share URL available."
+
+        clipboard.clear()
+        clipboard.setText(url_share)
 
     def on_download_list_media(self, point: QtCore.QPoint = None):
         items: [QtWidgets.QTreeWidgetItem]
