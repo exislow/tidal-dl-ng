@@ -164,6 +164,8 @@ class Download:
                         # mark the whole thing as corrupt.
                         result_segments = False
 
+        # Bring list into right order, so segments can be easily merged.
+        dl_segment_results.sort(key=lambda x: x.id_segment)
         # TODO: Implement error handling on corrupt segments (also in the following method.
         reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
         tmp_path_file_decrypted: pathlib.Path = pathlib.Path("")
@@ -205,6 +207,8 @@ class Download:
     ) -> DownloadSegmentResult:
         result: bool = False
         path_segment: pathlib.Path = path_base / url_to_filename(url)
+        # Calculate the segment ID based on the file name within the URL.
+        id_segment: int = int(path_segment.stem)
 
         try:
             # Create the request object with stream=True, so the content won't be loaded into memory at once.
@@ -228,7 +232,7 @@ class Download:
             if not progress_to_stdout:
                 self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
 
-            return DownloadSegmentResult(result, url, path_segment)
+            return DownloadSegmentResult(result=result, url=url, path_segment=path_segment, id_segment=id_segment)
 
     def item(
         self,
