@@ -1,4 +1,5 @@
 import base64
+import pathlib
 
 from Crypto.Cipher import AES
 from Crypto.Util import Counter
@@ -35,7 +36,7 @@ def decrypt_security_token(security_token: str) -> (str, str):
     return key, nonce
 
 
-def decrypt_file(path_file_encrypted: str, path_file_destination: str, key: str, nonce: str) -> None:
+def decrypt_file(path_file_encrypted: pathlib.Path, path_file_destination: pathlib.Path, key: str, nonce: str) -> None:
     """
     Decrypts an encrypted MQA file given the file, key and nonce.
     TODO: Is it really only necessary for MQA of for all other formats, too?
@@ -46,9 +47,9 @@ def decrypt_file(path_file_encrypted: str, path_file_destination: str, key: str,
     decryptor = AES.new(key, AES.MODE_CTR, counter=counter)
 
     # Open and decrypt
-    with open(path_file_encrypted, "rb") as f_src:
+    with path_file_encrypted.open("rb") as f_src:
         audio_decrypted = decryptor.decrypt(f_src.read())
 
         # Replace with decrypted file
-        with open(path_file_destination, "wb") as f_dst:
+        with path_file_destination.open("wb") as f_dst:
             f_dst.write(audio_decrypted)

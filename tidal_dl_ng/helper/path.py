@@ -1,8 +1,10 @@
 import math
 import os
+import posixpath
 import re
 import sys
 from pathlib import Path, PosixPath
+from urllib.parse import unquote, urlsplit
 
 from pathvalidate import sanitize_filename, sanitize_filepath
 from pathvalidate.error import ValidationError
@@ -295,3 +297,22 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+
+def url_to_filename(url: str) -> str:
+    """Return basename corresponding to url.
+    >>> print(url_to_filename('http://example.com/path/to/file%C3%80?opt=1'))
+    fileÀ
+    >>> print(url_to_filename('http://example.com/slash%2fname')) # '/' in name
+    Taken from https://gist.github.com/zed/c2168b9c52b032b5fb7d
+    Traceback (most recent call last):
+    ...
+    ValueError
+    """
+    urlpath: str = urlsplit(url).path
+    basename: str = posixpath.basename(unquote(urlpath))
+
+    if os.path.basename(basename) != basename or unquote(posixpath.basename(urlpath)) != basename:
+        raise ValueError  # reject '%2f' or 'dir%5Cbasename.ext' on Windows
+
+    return basename

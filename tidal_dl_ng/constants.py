@@ -6,6 +6,9 @@ EXTENSION_LYRICS: str = ".lrc"
 UNIQUIFY_THRESHOLD: int = 99
 FILENAME_SANITIZE_PLACEHOLDER: str = "_"
 COVER_NAME: str = "cover.jpg"
+BLOCK_SIZE: int = 4096
+BLOCKS: int = 1024
+CHUNK_SIZE: int = BLOCK_SIZE * BLOCKS
 
 
 class QualityVideo(StrEnum):
