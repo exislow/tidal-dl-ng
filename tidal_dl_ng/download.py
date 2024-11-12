@@ -5,12 +5,13 @@ import shutil
 import tempfile
 import time
 from collections.abc import Callable
+from concurrent import futures
 from uuid import uuid4
 
 import ffmpeg
 import m3u8
 import requests
-from constants import COVER_NAME
+from constants import CHUNK_SIZE, COVER_NAME
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
@@ -20,7 +21,7 @@ from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo, SkipExisting
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
-from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize
+from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename
 from tidal_dl_ng.helper.tidal import (
     instantiate_media,
     items_results_all,
@@ -30,6 +31,7 @@ from tidal_dl_ng.helper.tidal import (
     name_builder_title,
 )
 from tidal_dl_ng.metadata import Metadata
+from tidal_dl_ng.model.downloader import DownloadSegmentResult
 from tidal_dl_ng.model.gui_data import ProgressBars
 
 
@@ -88,10 +90,13 @@ class Download:
     def _download(
         self,
         media: Track | Video,
-        path_file: str,
-    ) -> str:
+        path_file: pathlib.Path,
+    ) -> pathlib.Path:
         media_name: str = name_builder_item(media)
         urls: [str]
+        path_base: pathlib.Path = path_file.parent
+        result_segments: bool = True
+        dl_segment_results: [DownloadSegmentResult] = []
 
         # Get urls for media.
         if isinstance(media, Track):
@@ -106,9 +111,9 @@ class Download:
 
         # Set the correct progress output channel.
         if self.progress_gui is None:
-            progress_stdout: bool = True
+            progress_to_stdout: bool = True
         else:
-            progress_stdout: bool = False
+            progress_to_stdout: bool = False
             # Send signal to GUI with media name
             self.progress_gui.item_name.emit(media_name[:30])
 
@@ -119,8 +124,11 @@ class Download:
             progress_total: int = urls_count
             block_size: int | None = None
         elif urls_count == 1:
-            # Will be computed later.
-            progress_total: float = None
+            # Get file size and compute progress steps
+            r = requests.head(urls[0], timeout=REQUESTS_TIMEOUT_SEC)
+            total_size_in_bytes: int = int(r.headers.get("content-length", 0))
+            block_size: int | None = 1048576
+            progress_total: float = total_size_in_bytes / block_size
         else:
             raise ValueError
 
@@ -128,57 +136,99 @@ class Download:
         p_task: TaskID = self.progress.add_task(
             f"[blue]Item '{media_name[:30]}'",
             total=progress_total,
-            visible=progress_stdout,
+            visible=progress_to_stdout,
         )
 
-        # Write content to file until progress is finished.
+        # Download segments until progress is finished.
         while not self.progress.tasks[p_task].finished:
-            with open(path_file, "wb") as f:
-                for url in urls:
-                    try:
-                        # Create the request object with stream=True, so the content won't be loaded into memory at once.
-                        r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+            with futures.ThreadPoolExecutor(
+                max_workers=self.settings.data.downloads_simultaneous_per_track_max
+            ) as executor:
+                # Dispatch all download tasks to worker threads
+                l_futures: [any] = [
+                    executor.submit(self._download_segment, url, path_base, block_size, p_task, progress_to_stdout)
+                    for url in urls
+                ]
+                # Report results as they become available
+                for future in futures.as_completed(l_futures):
+                    # Retrieve result
+                    result_dl_segment: DownloadSegmentResult = future.result()
 
-                        r.raise_for_status()
+                    dl_segment_results.append(result_dl_segment)
 
-                        # Compute progress iterations based on the file size and update task details.
-                        if not progress_total:
-                            # Get file size and compute progress steps
-                            total_size_in_bytes: int = int(r.headers.get("content-length", 0))
-                            block_size: int | None = 1048576
-                            progress_total: float = total_size_in_bytes / block_size
+                    # check for a link that was skipped
+                    if not result_dl_segment.result and (result_dl_segment.url is not urls[-1]):
+                        # Sometimes it happens, if a track is very short (< 8 seconds or so), that the last URL in `urls` is
+                        # invalid (HTTP Error 500) and not necessary. File won't be corrupt.
+                        # If this is NOT the case, but any other URL has resulted in an error,
+                        # mark the whole thing as corrupt.
+                        result_segments = False
 
-                            self.progress.update(p_task, total=progress_total)
+        # TODO: Implement error handling on corrupt segments (also in the following method.
+        reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
+        tmp_path_file_decrypted: pathlib.Path = pathlib.Path("")
 
-                        # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
-                        for data in r.iter_content(chunk_size=block_size):
-                            f.write(data)
-                            # Advance progress bar.
-                            self.progress.advance(p_task)
-                    except HTTPError as e:
-                        if url is urls[-1]:
-                            # It happens, if a track is very short (< 8 seconds or so), that the last URL in `urls` is
-                            # invalid (HTTP Error 500) and not necessary. File won't be corrupt.
-                            # Thus, advance progress bar to avoid infinity loops.
-                            self.progress.advance(p_task)
-                        else:
-                            # Finish downloading early and report error.
-                            # TODO: The track should somehow be marked as corrupt.
-                            self.progress.update(p_task, completed=progress_total)
-                            self.fn_logger.error(e)
-                    finally:
-                        # To send the progress to the GUI, we need to emit the percentage.
-                        if not progress_stdout:
-                            self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
-
-        if isinstance(media, Track) and stream_manifest.is_encrypted:
-            key, nonce = decrypt_security_token(stream_manifest.encryption_key)
-            tmp_path_file_decrypted = path_file + "_decrypted"
-            decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
-        else:
-            tmp_path_file_decrypted = path_file
+        if reult_merge:
+            if isinstance(media, Track) and stream_manifest.is_encrypted:
+                key, nonce = decrypt_security_token(stream_manifest.encryption_key)
+                tmp_path_file_decrypted = path_file + "_decrypted"
+                decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
+            else:
+                tmp_path_file_decrypted = path_file
 
         return tmp_path_file_decrypted
+
+    def _segments_merge(self, path_file, dl_segment_results) -> bool:
+        result: bool
+
+        # Copy the content of all segments into one file.
+        try:
+            with path_file.open("wb") as f_target:
+                for dl_segment_result in dl_segment_results:
+                    if dl_segment_result.result:
+                        with dl_segment_result.path_segment.open("rb") as f_segment:
+                            # Read and write junks, which gives better HDD write performance
+                            while segment := f_segment.read(CHUNK_SIZE):
+                                f_target.write(segment)
+
+                        # Delete segment from HDD
+                        dl_segment_result.path_segment.unlink()
+
+            result = True
+        except:
+            result = False
+
+        return result
+
+    def _download_segment(
+        self, url: str, path_base: pathlib.Path, block_size: int | None, p_task: TaskID, progress_to_stdout: bool
+    ) -> DownloadSegmentResult:
+        result: bool = False
+        path_segment: pathlib.Path = path_base / url_to_filename(url)
+
+        try:
+            # Create the request object with stream=True, so the content won't be loaded into memory at once.
+            r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+
+            r.raise_for_status()
+
+            # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
+            with path_segment.open("wb") as f:
+                for data in r.iter_content(chunk_size=block_size):
+                    f.write(data)
+                    # Advance progress bar.
+                    self.progress.advance(p_task)
+
+            result = True
+        except HTTPError:
+            # TODO: Maybe return e as well?
+            self.progress.advance(p_task)
+        finally:
+            # To send the progress to the GUI, we need to emit the percentage.
+            if not progress_to_stdout:
+                self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
+
+            return DownloadSegmentResult(result, url, path_segment)
 
     def item(
         self,
@@ -221,6 +271,7 @@ class Download:
 
         # Get extension.
         file_extension: str
+        do_flac_extract = False
 
         if isinstance(media, Track):
             # If a quality is explicitly set, change it.
@@ -232,8 +283,6 @@ class Download:
             file_extension = AudioExtensions.M4A if file_extension == AudioExtensions.MP4 else file_extension
 
             if self.settings.data.extract_flac:
-                do_flac_extract = False
-
                 if (
                     media.get_stream().get_stream_manifest().codecs.upper() == Codec.FLAC
                     and file_extension != AudioExtensions.FLAC
@@ -266,7 +315,11 @@ class Download:
         if not file_exists:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file = os.path.join(tmp_path_dir, str(uuid4()))
+                tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
+
+                # Create empty file
+                tmp_path_file.touch()
+
                 # Download media.
                 tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
@@ -403,7 +456,7 @@ class Download:
         return result
 
     def metadata_write(
-        self, track: Track, path_media: str, is_parent_album: str
+        self, track: Track, path_media: pathlib.Path, is_parent_album: bool
     ) -> (bool, pathlib.Path | None, pathlib.Path | None):
         result: bool = False
         path_lyrics: pathlib.Path | None = None
@@ -433,14 +486,14 @@ class Download:
                 print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         if lyrics and self.settings.data.lyrics_file:
-            path_lyrics = self.lyrics_to_file(pathlib.Path(path_media).parent, lyrics)
+            path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)
 
         if self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album):
             url_cover = track.album.image(int(self.settings.data.metadata_cover_dimension))
             cover_data = self.cover_data(url=url_cover)
 
         if cover_data and self.settings.data.cover_album_file and is_parent_album:
-            path_cover = self.cover_to_file(pathlib.Path(path_media).parent, cover_data)
+            path_cover = self.cover_to_file(path_media.parent, cover_data)
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
@@ -533,8 +586,8 @@ class Download:
                 if not progress_stdout:
                     self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
 
-    def _video_convert(self, path_file: str) -> str:
-        path_file_out = path_file + AudioExtensions.MP4
+    def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
+        path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
         result, _ = (
             ffmpeg.input(path_file)
             .output(path_file_out, map=0, c="copy", loglevel="quiet")
@@ -543,8 +596,8 @@ class Download:
 
         return path_file_out
 
-    def _extract_flac(self, path_media_src: str) -> str:
-        path_media_out = path_media_src + AudioExtensions.FLAC
+    def _extract_flac(self, path_media_src: pathlib.Path) -> pathlib.Path:
+        path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
         result, _ = (
             ffmpeg.input(path_media_src)
             .output(

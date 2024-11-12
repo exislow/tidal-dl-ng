@@ -37,6 +37,7 @@ class Settings:
     metadata_cover_embed: bool = True
     cover_album_file: bool = True
     extract_flac: bool = True
+    downloads_simultaneous_per_track_max: int = 20
 
 
 @dataclass_json
@@ -82,6 +83,7 @@ class HelpSettings:
     metadata_cover_embed: str = "Embed album cover into file."
     cover_album_file: str = "Save cover to 'cover.jpg', if an album is downloaded."
     extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
+    downloads_simultaneous_per_track_max: str = "Maximum number of simultaneous chunk downloads per track."
 
 
 @dataclass_json
