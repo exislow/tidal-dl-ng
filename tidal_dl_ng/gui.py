@@ -128,14 +128,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             result = self.tidal.login_token()
 
             if not result:
-                hint: str = "Watiting for user input."
+                hint: str = "After you have finished the TIDAL login via web browser click the 'OK' button."
+
                 while not result:
-                    url_login = self.tidal.session.pkce_login_url()
-                    d_login: DialogLogin = DialogLogin(url_login=url_login, hint=hint, parent=self)
-                    url_redirect: str = d_login.url_redirect
+                    login, future = self.tidal.session.login_oauth()
+
+                    d_login: DialogLogin = DialogLogin(url_login=login.verification_uri_complete, hint=hint, expires_in=login.expires_in, parent=self)
 
                     if d_login.return_code == 1:
                         try:
+                            future.result()
                             token: dict[str, str | int] = self.tidal.session.pkce_get_auth_token(url_redirect)
                             self.tidal.session.process_auth_token(token)
                             self.tidal.login_finalize()
