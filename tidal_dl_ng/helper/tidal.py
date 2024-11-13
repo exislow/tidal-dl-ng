@@ -186,7 +186,7 @@ def instantiate_media(
 def quality_audio_highest(media: Track | Album) -> Quality:
     quality: Quality
 
-    if MediaMetadataTags.hires_lossless in media.media_metadata_tags:
+    if MediaMetadataTags.hi_res_lossless in media.media_metadata_tags:
         quality = Quality.hi_res_lossless
     elif MediaMetadataTags.lossless in media.media_metadata_tags:
         quality = Quality.high_lossless

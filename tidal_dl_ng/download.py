@@ -102,7 +102,7 @@ class Download:
 
         # Get urls for media.
         if isinstance(media, Track):
-            urls = media.get_stream().get_stream_manifest().urls
+            urls = media.get_stream().get_stream_manifest().get_urls()
             stream_manifest: StreamManifest = media.get_stream().get_stream_manifest()
         elif isinstance(media, Video):
             m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
