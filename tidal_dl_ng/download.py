@@ -11,7 +11,6 @@ from uuid import uuid4
 import ffmpeg
 import m3u8
 import requests
-from constants import CHUNK_SIZE, COVER_NAME
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
@@ -20,7 +19,14 @@ from tidalapi.exceptions import TooManyRequests
 from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo
+from tidal_dl_ng.constants import (
+    CHUNK_SIZE,
+    COVER_NAME,
+    EXTENSION_LYRICS,
+    REQUESTS_TIMEOUT_SEC,
+    MediaType,
+    QualityVideo,
+)
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename
