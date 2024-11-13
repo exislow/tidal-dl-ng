@@ -281,13 +281,13 @@ class Download:
         file_extension_dummy: str = AudioExtensions.FLAC
         file_name_relative = format_path_media(file_template, media)
         path_media_dst: pathlib.Path = (
-            (pathlib.Path(self.path_base).expanduser() / file_name_relative).resolve().absolute()
+            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
+            .resolve()
+            .absolute()
         )
 
         # Sanitize final path_file to fit into OS boundaries.
-        path_media_dst = pathlib.Path(
-            path_file_sanitize(str(path_media_dst.with_suffix(file_extension_dummy)), adapt=True)
-        )
+        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
 
         # Compute if and how downloads need to be skipped.
         if self.skip_existing:
@@ -327,7 +327,9 @@ class Download:
             elif isinstance(media, Video):
                 file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
-            # TODO: correct extension
+            # Compute file name and create destination directory
+            path_media_dst = path_media_dst.with_suffix(file_extension)
+            os.makedirs(path_media_dst.parent, exist_ok=True)
 
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
@@ -359,15 +361,14 @@ class Download:
                         )
 
                     # Move lyrics file
-                    if self.settings.data.lyrics_file and not isinstance(media, Video):
+                    if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
                         self._move_lyrics(tmp_path_lyrics, path_media_dst)
 
                     # Move cover file
-                    if self.settings.data.cover_album_file:
+                    if self.settings.data.cover_album_file and tmp_path_cover:
                         self._move_cover(tmp_path_cover, path_media_dst)
 
                 # Move final file to the configured destination directory.
-                os.makedirs(path_media_dst.parent, exist_ok=True)
                 shutil.move(tmp_path_file, path_media_dst)
 
             if quality_audio:
@@ -410,7 +411,7 @@ class Download:
         result: bool
 
         # Check if the file was downloaded
-        if path_file_source and os.path.isfile(path_file_source):
+        if path_file_source and path_file_source.is_file():
             # Move it.
             shutil.move(path_file_source, path_file_destination)
 
