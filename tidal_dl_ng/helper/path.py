@@ -1,9 +1,9 @@
 import math
 import os
+import pathlib
 import posixpath
 import re
 import sys
-from pathlib import Path, PosixPath
 from urllib.parse import unquote, urlsplit
 
 from pathvalidate import sanitize_filename, sanitize_filepath
@@ -197,7 +197,7 @@ def get_format_template(
 def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = False) -> (bool, str):
     # Split into path and filename
     pathname, filename = os.path.split(path_file)
-    file_extension: str = Path(path_file).suffix
+    file_extension: str = pathlib.Path(path_file).suffix
 
     # Sanitize path
     try:
@@ -207,7 +207,7 @@ def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = Fal
     except ValidationError:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
-            pathname_sanitized: str = Path.home()
+            pathname_sanitized: str = str(pathlib.Path.home())
         else:
             raise
 
@@ -274,10 +274,10 @@ def file_unique_suffix(path_file: str, seperator: str = "_") -> str:
     return unique_suffix
 
 
-def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
+def check_file_exists(path_file: pathlib.Path, extension_ignore: bool = False) -> bool:
     if extension_ignore:
-        path_file_stem: str = Path(path_file).stem
-        path_parent: PosixPath = Path(path_file).parent
+        path_file_stem: str = pathlib.Path(path_file).stem
+        path_parent: pathlib.Path = pathlib.Path(path_file).parent
         path_files: [str] = []
 
         for extension in AudioExtensions:

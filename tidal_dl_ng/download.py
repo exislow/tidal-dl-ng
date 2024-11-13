@@ -92,7 +92,7 @@ class Download:
         self,
         media: Track | Video,
         path_file: pathlib.Path,
-    ) -> pathlib.Path:
+    ) -> (bool, pathlib.Path):
         media_name: str = name_builder_item(media)
         urls: [str]
         path_base: pathlib.Path = path_file.parent
@@ -165,21 +165,20 @@ class Download:
                         # mark the whole thing as corrupt.
                         result_segments = False
 
-        # Bring list into right order, so segments can be easily merged.
-        dl_segment_results.sort(key=lambda x: x.id_segment)
-        # TODO: Implement error handling on corrupt segments (also in the following method.
-        reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
-        tmp_path_file_decrypted: pathlib.Path = pathlib.Path("")
+        tmp_path_file_decrypted: pathlib.Path = path_file
 
-        if reult_merge:
-            if isinstance(media, Track) and stream_manifest.is_encrypted:
+        # Only if no error happened while downloading.
+        if result_segments:
+            # Bring list into right order, so segments can be easily merged.
+            dl_segment_results.sort(key=lambda x: x.id_segment)
+            reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
+
+            if reult_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
                 key, nonce = decrypt_security_token(stream_manifest.encryption_key)
-                tmp_path_file_decrypted = path_file + "_decrypted"
+                tmp_path_file_decrypted = path_file.with_suffix("_decrypted")
                 decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
-            else:
-                tmp_path_file_decrypted = path_file
 
-        return tmp_path_file_decrypted
+        return result_segments, tmp_path_file_decrypted
 
     def _segments_merge(self, path_file, dl_segment_results) -> bool:
         result: bool
@@ -229,7 +228,7 @@ class Download:
         except HTTPError as e:
             error = e
             self.progress.advance(p_task)
-            self.fn_logger.exception(e.charachter_written)
+            self.fn_logger.exception(e)
 
         # To send the progress to the GUI, we need to emit the percentage.
         if not progress_to_stdout:
@@ -281,12 +280,14 @@ class Download:
         # Create file name and path
         file_extension_dummy: str = AudioExtensions.FLAC
         file_name_relative = format_path_media(file_template, media)
-        path_media_dst = os.path.abspath(
-            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
+        path_media_dst: pathlib.Path = (
+            (pathlib.Path(self.path_base).expanduser() / file_name_relative).resolve().absolute()
         )
 
         # Sanitize final path_file to fit into OS boundaries.
-        path_media_dst = path_file_sanitize(path_media_dst + file_extension_dummy, adapt=True)
+        path_media_dst = pathlib.Path(
+            path_file_sanitize(str(path_media_dst.with_suffix(file_extension_dummy)), adapt=True)
+        )
 
         # Compute if and how downloads need to be skipped.
         if self.skip_existing:
@@ -336,37 +337,38 @@ class Download:
                 tmp_path_file.touch()
 
                 # Download media.
-                tmp_path_file = self._download(media=media, path_file=tmp_path_file)
+                result_download, tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
-                # Convert video from TS to MP4
-                if isinstance(media, Video) and self.settings.data.video_convert_mp4:
-                    # Convert `*.ts` file to `*.mp4` using ffmpeg
-                    tmp_path_file = self._video_convert(tmp_path_file)
+                if result_download:
+                    # Convert video from TS to MP4
+                    if isinstance(media, Video) and self.settings.data.video_convert_mp4:
+                        # Convert `*.ts` file to `*.mp4` using ffmpeg
+                        tmp_path_file = self._video_convert(tmp_path_file)
 
-                # Extract FLAC from MP4 container using ffmpeg
-                if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
-                    tmp_path_file = self._extract_flac(tmp_path_file)
+                    # Extract FLAC from MP4 container using ffmpeg
+                    if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
+                        tmp_path_file = self._extract_flac(tmp_path_file)
 
-                tmp_path_lyrics: pathlib.Path | None = None
-                tmp_path_cover: pathlib.Path | None = None
+                    tmp_path_lyrics: pathlib.Path | None = None
+                    tmp_path_cover: pathlib.Path | None = None
 
-                # Write metadata to file.
-                if not isinstance(media, Video):
-                    result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
-                        media, tmp_path_file, is_parent_album
-                    )
+                    # Write metadata to file.
+                    if not isinstance(media, Video):
+                        result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
+                            media, tmp_path_file, is_parent_album
+                        )
+
+                    # Move lyrics file
+                    if self.settings.data.lyrics_file and not isinstance(media, Video):
+                        self._move_lyrics(tmp_path_lyrics, path_media_dst)
+
+                    # Move cover file
+                    if self.settings.data.cover_album_file:
+                        self._move_cover(tmp_path_cover, path_media_dst)
 
                 # Move final file to the configured destination directory.
-                os.makedirs(os.path.dirname(path_media_dst), exist_ok=True)
+                os.makedirs(path_media_dst.parent, exist_ok=True)
                 shutil.move(tmp_path_file, path_media_dst)
-
-                # Move lyrics file
-                if self.settings.data.lyrics_file and not isinstance(media, Video):
-                    self._move_lyrics(tmp_path_lyrics, path_media_dst)
-
-                # Move cover file
-                if self.settings.data.cover_album_file:
-                    self._move_cover(tmp_path_cover, path_media_dst)
 
             if quality_audio:
                 # Set quality back to the global user value
@@ -418,16 +420,16 @@ class Download:
 
         return result
 
-    def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: str) -> bool:
+    def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
         # Build tmp lyrics filename
-        path_file_lyrics: str = os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS
+        path_file_lyrics: pathlib.Path = file_media_dst.with_suffix(EXTENSION_LYRICS)
         result: bool = self._move_file(path_lyrics, path_file_lyrics)
 
         return result
 
-    def _move_cover(self, path_cover: pathlib.Path, file_media_dst: str) -> bool:
+    def _move_cover(self, path_cover: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
         # Build tmp lyrics filename
-        path_file_cover: pathlib.Path = pathlib.Path(file_media_dst).parent.absolute() / COVER_NAME
+        path_file_cover: pathlib.Path = file_media_dst.parent / COVER_NAME
         result: bool = self._move_file(path_cover, path_file_cover)
 
         return result
