@@ -40,7 +40,7 @@ rich = "^13.9.4"
 toml = "^0.10.2"
 typer = "^0.12.5"
 ffmpeg-python = "^0.2.0"
-tidalapi = "^0.8.0"
+tidalapi = { git = "git@github.com:exislow/python-tidal.git", branch = "302-return-raw-values" }
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme-fork"]
