@@ -12,6 +12,7 @@ import ffmpeg
 import m3u8
 import requests
 from constants import CHUNK_SIZE, COVER_NAME
+from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
@@ -164,6 +165,7 @@ class Download:
                         # If this is NOT the case, but any other URL has resulted in an error,
                         # mark the whole thing as corrupt.
                         result_segments = False
+                        self.fn_logger.error(f"Something went wrong while downloading {media_name}. File is corrupt!")
 
         tmp_path_file_decrypted: pathlib.Path = path_file
 
@@ -211,9 +213,15 @@ class Download:
         id_segment: int = int(str(path_segment.stem).split("_")[-1])
         error: HTTPError | None = None
 
+        # Retry download on failed segments, with an exponential delay between retries
+        s = requests.Session()
+        retries = Retry(total=5, backoff_factor=1)  # , status_forcelist=[ 502, 503, 504 ])
+
+        s.mount("https://", HTTPAdapter(max_retries=retries))
+
         try:
             # Create the request object with stream=True, so the content won't be loaded into memory at once.
-            r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+            r = s.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
             r.raise_for_status()
 
@@ -225,7 +233,7 @@ class Download:
                     self.progress.advance(p_task)
 
             result = True
-        except HTTPError as e:
+        except Exception as e:
             error = e
             self.progress.advance(p_task)
             self.fn_logger.exception(e)
