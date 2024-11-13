@@ -1011,24 +1011,24 @@ files = [
 
 [[package]]
 name = "mkdocstrings"
-version = "0.24.3"
+version = "0.27.0"
 description = "Automatic documentation from sources, for MkDocs."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "mkdocstrings-0.24.3-py3-none-any.whl", hash = "sha256:5c9cf2a32958cd161d5428699b79c8b0988856b0d4a8c5baf8395fc1bf4087c3"},
-    {file = "mkdocstrings-0.24.3.tar.gz", hash = "sha256:f327b234eb8d2551a306735436e157d0a22d45f79963c60a8b585d5f7a94c1d2"},
+    {file = "mkdocstrings-0.27.0-py3-none-any.whl", hash = "sha256:6ceaa7ea830770959b55a16203ac63da24badd71325b96af950e59fd37366332"},
+    {file = "mkdocstrings-0.27.0.tar.gz", hash = "sha256:16adca6d6b0a1f9e0c07ff0b02ced8e16f228a9d65a37c063ec4c14d7b76a657"},
 ]
 
 [package.dependencies]
 click = ">=7.0"
 Jinja2 = ">=2.11.1"
-Markdown = ">=3.3"
+Markdown = ">=3.6"
 MarkupSafe = ">=1.1"
 mkdocs = ">=1.4"
-mkdocs-autorefs = ">=0.3.1"
+mkdocs-autorefs = ">=1.2"
 mkdocstrings-python = {version = ">=0.5.2", optional = true, markers = "extra == \"python\""}
-platformdirs = ">=2.2.0"
+platformdirs = ">=2.2"
 pymdown-extensions = ">=6.3"
 
 [package.extras]
@@ -1038,18 +1038,19 @@ python-legacy = ["mkdocstrings-python-legacy (>=0.2.1)"]
 
 [[package]]
 name = "mkdocstrings-python"
-version = "1.10.0"
+version = "1.12.2"
 description = "A Python handler for mkdocstrings."
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 files = [
-    {file = "mkdocstrings_python-1.10.0-py3-none-any.whl", hash = "sha256:ba833fbd9d178a4b9d5cb2553a4df06e51dc1f51e41559a4d2398c16a6f69ecc"},
-    {file = "mkdocstrings_python-1.10.0.tar.gz", hash = "sha256:71678fac657d4d2bb301eed4e4d2d91499c095fd1f8a90fa76422a87a5693828"},
+    {file = "mkdocstrings_python-1.12.2-py3-none-any.whl", hash = "sha256:7f7d40d6db3cb1f5d19dbcd80e3efe4d0ba32b073272c0c0de9de2e604eda62a"},
+    {file = "mkdocstrings_python-1.12.2.tar.gz", hash = "sha256:7a1760941c0b52a2cd87b960a9e21112ffe52e7df9d0b9583d04d47ed2e186f3"},
 ]
 
 [package.dependencies]
-griffe = ">=0.44"
-mkdocstrings = ">=0.24.2"
+griffe = ">=0.49"
+mkdocs-autorefs = ">=1.2"
+mkdocstrings = ">=0.26"
 
 [[package]]
 name = "mpegdash"
@@ -2236,4 +2237,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "7320eb9a300445a91002452fa6961cc177c6f81f72bc71acedf0e243ffa318d9"
+content-hash = "6a5d6313d6690d1d6c8ab1940903888bd880b97718d7157c7124be087e902f6a"
