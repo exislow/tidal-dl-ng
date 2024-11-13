@@ -208,7 +208,7 @@ class Download:
         result: bool = False
         path_segment: pathlib.Path = path_base / url_to_filename(url)
         # Calculate the segment ID based on the file name within the URL.
-        id_segment: int = int(path_segment.stem)
+        id_segment: int = int(str(path_segment.stem).split("_")[-1])
         error: HTTPError | None = None
 
         try:
@@ -386,7 +386,7 @@ class Download:
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
         if download_delay and not skip_file:
-            time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
+            time_sleep: float = round(random.SystemRandom().uniform(1.5, 4), 1)
 
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
@@ -608,7 +608,7 @@ class Download:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
         result, _ = (
             ffmpeg.input(path_file)
-            .output(path_file_out, map=0, c="copy", loglevel="quiet")
+            .output(str(path_file_out), map=0, c="copy", loglevel="quiet")
             .run(cmd=self.settings.data.path_binary_ffmpeg)
         )
 
@@ -619,7 +619,12 @@ class Download:
         result, _ = (
             ffmpeg.input(path_media_src)
             .output(
-                path_media_out, map=0, movflags="use_metadata_tags", acodec="copy", map_metadata="0:g", loglevel="quiet"
+                str(path_media_out),
+                map=0,
+                movflags="use_metadata_tags",
+                acodec="copy",
+                map_metadata="0:g",
+                loglevel="quiet",
             )
             .run(cmd=self.settings.data.path_binary_ffmpeg)
         )
