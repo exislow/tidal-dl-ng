@@ -12,13 +12,15 @@ import ffmpeg
 import m3u8
 import requests
 from constants import CHUNK_SIZE, COVER_NAME
+from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
+from tidalapi.exceptions import TooManyRequests
 from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions
 
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo, SkipExisting
+from tidal_dl_ng.constants import EXTENSION_LYRICS, REQUESTS_TIMEOUT_SEC, MediaType, QualityVideo
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
 from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename
@@ -53,7 +55,7 @@ class RequestsClient:
 class Download:
     settings: Settings
     session: Session
-    skip_existing: SkipExisting = SkipExisting.Disabled
+    skip_existing: bool = False
     fn_logger: Callable
     progress_gui: ProgressBars
     progress: Progress
@@ -63,7 +65,7 @@ class Download:
         session: Session,
         path_base: str,
         fn_logger: Callable,
-        skip_existing: SkipExisting = SkipExisting.Disabled,
+        skip_existing: bool = False,
         progress_gui: ProgressBars = None,
         progress: Progress = None,
     ):
@@ -91,7 +93,7 @@ class Download:
         self,
         media: Track | Video,
         path_file: pathlib.Path,
-    ) -> pathlib.Path:
+    ) -> (bool, pathlib.Path):
         media_name: str = name_builder_item(media)
         urls: [str]
         path_base: pathlib.Path = path_file.parent
@@ -163,22 +165,22 @@ class Download:
                         # If this is NOT the case, but any other URL has resulted in an error,
                         # mark the whole thing as corrupt.
                         result_segments = False
+                        self.fn_logger.error(f"Something went wrong while downloading {media_name}. File is corrupt!")
 
-        # Bring list into right order, so segments can be easily merged.
-        dl_segment_results.sort(key=lambda x: x.id_segment)
-        # TODO: Implement error handling on corrupt segments (also in the following method.
-        reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
-        tmp_path_file_decrypted: pathlib.Path = pathlib.Path("")
+        tmp_path_file_decrypted: pathlib.Path = path_file
 
-        if reult_merge:
-            if isinstance(media, Track) and stream_manifest.is_encrypted:
+        # Only if no error happened while downloading.
+        if result_segments:
+            # Bring list into right order, so segments can be easily merged.
+            dl_segment_results.sort(key=lambda x: x.id_segment)
+            reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
+
+            if reult_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
                 key, nonce = decrypt_security_token(stream_manifest.encryption_key)
-                tmp_path_file_decrypted = path_file + "_decrypted"
+                tmp_path_file_decrypted = path_file.with_suffix("_decrypted")
                 decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
-            else:
-                tmp_path_file_decrypted = path_file
 
-        return tmp_path_file_decrypted
+        return result_segments, tmp_path_file_decrypted
 
     def _segments_merge(self, path_file, dl_segment_results) -> bool:
         result: bool
@@ -208,11 +210,18 @@ class Download:
         result: bool = False
         path_segment: pathlib.Path = path_base / url_to_filename(url)
         # Calculate the segment ID based on the file name within the URL.
-        id_segment: int = int(path_segment.stem)
+        id_segment: int = int(str(path_segment.stem).split("_")[-1])
+        error: HTTPError | None = None
+
+        # Retry download on failed segments, with an exponential delay between retries
+        s = requests.Session()
+        retries = Retry(total=5, backoff_factor=1)  # , status_forcelist=[ 502, 503, 504 ])
+
+        s.mount("https://", HTTPAdapter(max_retries=retries))
 
         try:
             # Create the request object with stream=True, so the content won't be loaded into memory at once.
-            r = requests.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+            r = s.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
             r.raise_for_status()
 
@@ -224,15 +233,18 @@ class Download:
                     self.progress.advance(p_task)
 
             result = True
-        except HTTPError:
-            # TODO: Maybe return e as well?
+        except Exception as e:
+            error = e
             self.progress.advance(p_task)
-        finally:
-            # To send the progress to the GUI, we need to emit the percentage.
-            if not progress_to_stdout:
-                self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
+            self.fn_logger.exception(e)
 
-            return DownloadSegmentResult(result=result, url=url, path_segment=path_segment, id_segment=id_segment)
+        # To send the progress to the GUI, we need to emit the percentage.
+        if not progress_to_stdout:
+            self.progress_gui.item.emit(self.progress.tasks[p_task].percentage)
+
+        return DownloadSegmentResult(
+            result=result, url=url, path_segment=path_segment, id_segment=id_segment, error=error
+        )
 
     def item(
         self,
@@ -273,50 +285,66 @@ class Download:
 
             return False, ""
 
-        # Get extension.
-        file_extension: str
-        do_flac_extract = False
+        # Create file name and path
+        file_extension_dummy: str = AudioExtensions.FLAC
+        file_name_relative = format_path_media(file_template, media)
+        path_media_dst: pathlib.Path = (
+            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
+            .resolve()
+            .absolute()
+        )
 
-        if isinstance(media, Track):
-            # If a quality is explicitly set, change it.
-            if quality_audio:
-                quality_audio_old: Quality = self.adjust_quality_audio(quality_audio)
+        # Sanitize final path_file to fit into OS boundaries.
+        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
 
-            file_extension = media.get_stream().get_stream_manifest().file_extension
-            # Use M4A extension for MP4 audio tracks, because it looks better and is completely interchangeable.
-            file_extension = AudioExtensions.M4A if file_extension == AudioExtensions.MP4 else file_extension
+        # Compute if and how downloads need to be skipped.
+        if self.skip_existing:
+            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+        else:
+            skip_file: bool = False
 
-            if self.settings.data.extract_flac:
-                if (
-                    media.get_stream().get_stream_manifest().codecs.upper() == Codec.FLAC
+        if not skip_file:
+            # Get extension.
+            file_extension: str
+            do_flac_extract = False
+            # If a quality is explicitly set, change it and remember the previously set quality.
+            quality_audio_old: Quality = self.adjust_quality_audio(quality_audio) if quality_audio else quality_audio
+            quality_video_old: QualityVideo = (
+                self.adjust_quality_video(quality_video) if quality_video else quality_video
+            )
+
+            if isinstance(media, Track):
+                try:
+                    media_stream = media.get_stream()
+                except TooManyRequests:
+                    self.fn_logger.exception(
+                        f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
+                        f"Consider to activate delay between downloads."
+                    )
+
+                    return False, ""
+                except:
+                    self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
+
+                    return False, ""
+
+                file_extension = media_stream.get_stream_manifest().file_extension
+                # Use M4A extension for MP4 audio tracks, because it looks better and is completely interchangeable.
+                file_extension = AudioExtensions.M4A if file_extension == AudioExtensions.MP4 else file_extension
+
+                if self.settings.data.extract_flac and (
+                    media_stream.get_stream_manifest().codecs.upper() == Codec.FLAC
                     and file_extension != AudioExtensions.FLAC
                 ):
                     file_extension = AudioExtensions.FLAC
                     do_flac_extract = True
-        elif isinstance(media, Video):
-            if quality_video:
-                quality_video_old: QualityVideo = self.adjust_quality_video(quality_video)
+            elif isinstance(media, Video):
+                file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
-            file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
+            # Compute file name and create destination directory
+            path_media_dst = path_media_dst.with_suffix(file_extension)
+            os.makedirs(path_media_dst.parent, exist_ok=True)
 
-        # Create file name and path
-        file_name_relative = format_path_media(file_template, media)
-        path_media_dst = os.path.abspath(
-            os.path.normpath(os.path.join(os.path.expanduser(self.path_base), file_name_relative))
-        )
-
-        # Sanitize final path_file to fit into OS boundaries.
-        uniquify: bool = self.skip_existing == SkipExisting.Append
-        path_media_dst = path_file_sanitize(path_media_dst + file_extension, adapt=True, uniquify=uniquify)
-
-        # Compute if and how downloads need to be skipped.
-        if self.skip_existing in (SkipExisting.ExtensionIgnore, SkipExisting.Filename):
-            extension_ignore: bool = self.skip_existing == SkipExisting.ExtensionIgnore
-            file_exists: bool = check_file_exists(path_media_dst, extension_ignore=extension_ignore)
-        else:
-            file_exists: bool = False
-
-        if not file_exists:
             # Create a temp directory and file.
             with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
                 tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
@@ -325,54 +353,54 @@ class Download:
                 tmp_path_file.touch()
 
                 # Download media.
-                tmp_path_file = self._download(media=media, path_file=tmp_path_file)
+                result_download, tmp_path_file = self._download(media=media, path_file=tmp_path_file)
 
-                # Convert video from TS to MP4
-                if isinstance(media, Video) and self.settings.data.video_convert_mp4:
-                    # Convert `*.ts` file to `*.mp4` using ffmpeg
-                    tmp_path_file = self._video_convert(tmp_path_file)
+                if result_download:
+                    # Convert video from TS to MP4
+                    if isinstance(media, Video) and self.settings.data.video_convert_mp4:
+                        # Convert `*.ts` file to `*.mp4` using ffmpeg
+                        tmp_path_file = self._video_convert(tmp_path_file)
 
-                # Extract FLAC from MP4 container using ffmpeg
-                if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
-                    tmp_path_file = self._extract_flac(tmp_path_file)
+                    # Extract FLAC from MP4 container using ffmpeg
+                    if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
+                        tmp_path_file = self._extract_flac(tmp_path_file)
 
-                tmp_path_lyrics: pathlib.Path | None = None
-                tmp_path_cover: pathlib.Path | None = None
+                    tmp_path_lyrics: pathlib.Path | None = None
+                    tmp_path_cover: pathlib.Path | None = None
 
-                # Write metadata to file.
-                if not isinstance(media, Video):
-                    result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
-                        media, tmp_path_file, is_parent_album
-                    )
+                    # Write metadata to file.
+                    if not isinstance(media, Video):
+                        result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
+                            media, tmp_path_file, is_parent_album
+                        )
+
+                    # Move lyrics file
+                    if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
+                        self._move_lyrics(tmp_path_lyrics, path_media_dst)
+
+                    # Move cover file
+                    if self.settings.data.cover_album_file and tmp_path_cover:
+                        self._move_cover(tmp_path_cover, path_media_dst)
 
                 # Move final file to the configured destination directory.
-                os.makedirs(os.path.dirname(path_media_dst), exist_ok=True)
                 shutil.move(tmp_path_file, path_media_dst)
 
-                # Move lyrics file
-                if self.settings.data.lyrics_file and not isinstance(media, Video):
-                    self._move_lyrics(tmp_path_lyrics, path_media_dst)
+            if quality_audio:
+                # Set quality back to the global user value
+                self.adjust_quality_audio(quality_audio_old)
 
-                # Move cover file
-                if self.settings.data.cover_album_file:
-                    self._move_cover(tmp_path_cover, path_media_dst)
+            if quality_video:
+                # Set quality back to the global user value
+                self.adjust_quality_video(quality_video_old)
         else:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_media_dst}'")
 
-        status_download: bool = not file_exists
-
-        if quality_audio:
-            # Set quality back to the global user value
-            self.adjust_quality_audio(quality_audio_old)
-
-        if quality_video:
-            # Set quality back to the global user value
-            self.adjust_quality_video(quality_video_old)
+        status_download: bool = not skip_file
 
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
-        if download_delay:
-            time_sleep: float = round(random.SystemRandom().uniform(2, 5), 1)
+        if download_delay and not skip_file:
+            time_sleep: float = round(random.SystemRandom().uniform(1.5, 4), 1)
 
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
@@ -397,7 +425,7 @@ class Download:
         result: bool
 
         # Check if the file was downloaded
-        if path_file_source and os.path.isfile(path_file_source):
+        if path_file_source and path_file_source.is_file():
             # Move it.
             shutil.move(path_file_source, path_file_destination)
 
@@ -407,16 +435,16 @@ class Download:
 
         return result
 
-    def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: str) -> bool:
+    def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
         # Build tmp lyrics filename
-        path_file_lyrics: str = os.path.splitext(file_media_dst)[0] + EXTENSION_LYRICS
+        path_file_lyrics: pathlib.Path = file_media_dst.with_suffix(EXTENSION_LYRICS)
         result: bool = self._move_file(path_lyrics, path_file_lyrics)
 
         return result
 
-    def _move_cover(self, path_cover: pathlib.Path, file_media_dst: str) -> bool:
+    def _move_cover(self, path_cover: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
         # Build tmp lyrics filename
-        path_file_cover: pathlib.Path = pathlib.Path(file_media_dst).parent.absolute() / COVER_NAME
+        path_file_cover: pathlib.Path = file_media_dst.parent / COVER_NAME
         result: bool = self._move_file(path_cover, path_file_cover)
 
         return result
@@ -575,7 +603,7 @@ class Download:
         while not self.progress.finished:
             for item_media in items:
                 # Download the item.
-                status_download, result_path_file = self.item(
+                status, result_path_file = self.item(
                     media=item_media,
                     file_template=file_name_relative,
                     quality_audio=quality_audio,
@@ -594,7 +622,7 @@ class Download:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
         result, _ = (
             ffmpeg.input(path_file)
-            .output(path_file_out, map=0, c="copy", loglevel="quiet")
+            .output(str(path_file_out), map=0, c="copy", loglevel="quiet")
             .run(cmd=self.settings.data.path_binary_ffmpeg)
         )
 
@@ -605,7 +633,12 @@ class Download:
         result, _ = (
             ffmpeg.input(path_media_src)
             .output(
-                path_media_out, map=0, movflags="use_metadata_tags", acodec="copy", map_metadata="0:g", loglevel="quiet"
+                str(path_media_out),
+                map=0,
+                movflags="use_metadata_tags",
+                acodec="copy",
+                map_metadata="0:g",
+                loglevel="quiet",
             )
             .run(cmd=self.settings.data.path_binary_ffmpeg)
         )

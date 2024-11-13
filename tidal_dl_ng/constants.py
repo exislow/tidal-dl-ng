@@ -27,13 +27,6 @@ class MediaType(StrEnum):
     ARTIST: str = "artist"
 
 
-class SkipExisting(StrEnum):
-    Disabled: str = "False"
-    Filename: str = "exact"
-    ExtensionIgnore: str = "extension_ignore"
-    Append: str = "append"
-
-
 class CoverDimensions(StrEnum):
     Px80: str = "80"
     Px160: str = "160"

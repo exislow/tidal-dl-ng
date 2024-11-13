@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo
 
 
 @dataclass_json
 @dataclass
 class Settings:
-    skip_existing: SkipExisting = SkipExisting.Disabled
+    skip_existing: bool = True
     lyrics_embed: bool = False
     lyrics_file: bool = False
     # TODO: Implement API KEY selection.
@@ -43,11 +43,7 @@ class Settings:
 @dataclass_json
 @dataclass
 class HelpSettings:
-    skip_existing: str = (
-        "Do not download, if file already exists. Possible option false = do not skip, "
-        "'exact' = if filename already exists, 'extension_ignore' = skip even if a file with a "
-        "different file extension exists."
-    )
+    skip_existing: str = "Skip download if file already exists."
     album_cover_save: str = "Safe cover to album folder."
     lyrics_embed: str = "Embed lyrics in audio file, if lyrics are available."
     lyrics_file: str = "Save lyrics to separate *.lrc file, if lyrics are available."
