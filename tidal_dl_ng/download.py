@@ -300,8 +300,10 @@ class Download:
             file_extension: str
             do_flac_extract = False
             # If a quality is explicitly set, change it and remember the previously set quality.
-            quality_audio_old: Quality = self.adjust_quality_audio(quality_audio)
-            quality_video_old: QualityVideo = self.adjust_quality_video(quality_video)
+            quality_audio_old: Quality = self.adjust_quality_audio(quality_audio) if quality_audio else quality_audio
+            quality_video_old: QualityVideo = (
+                self.adjust_quality_video(quality_video) if quality_video else quality_video
+            )
 
             if isinstance(media, Track):
                 try:
@@ -311,6 +313,10 @@ class Download:
                         f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
                         f"Consider to activate delay between downloads."
                     )
+
+                    return False, ""
+                except:
+                    self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
 
                     return False, ""
 
