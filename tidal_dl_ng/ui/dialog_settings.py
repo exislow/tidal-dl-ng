@@ -153,6 +153,24 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.lh_flags_4)
 
+        self.horizontalLayout = QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.lv_flag_skip_existing = QVBoxLayout()
+        self.lv_flag_skip_existing.setObjectName("lv_flag_skip_existing")
+        self.cb_skip_existing = QCheckBox(self.gb_flags)
+        self.cb_skip_existing.setObjectName("cb_skip_existing")
+
+        self.lv_flag_skip_existing.addWidget(self.cb_skip_existing)
+
+        self.horizontalLayout.addLayout(self.lv_flag_skip_existing)
+
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+
+        self.horizontalLayout.addLayout(self.verticalLayout_3)
+
+        self.lv_flags.addLayout(self.horizontalLayout)
+
         self.lv_main.addWidget(self.gb_flags)
 
         self.gb_choices = QGroupBox(DialogSettings)
@@ -164,38 +182,13 @@ class Ui_DialogSettings:
         self.gb_choices.setSizePolicy(sizePolicy3)
         self.lv_choices = QVBoxLayout(self.gb_choices)
         self.lv_choices.setObjectName("lv_choices")
-        self.lh_choices_skip_existing = QHBoxLayout()
-        self.lh_choices_skip_existing.setObjectName("lh_choices_skip_existing")
-        self.l_icon_skip_existing = QLabel(self.gb_choices)
-        self.l_icon_skip_existing.setObjectName("l_icon_skip_existing")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.l_icon_skip_existing.sizePolicy().hasHeightForWidth())
-        self.l_icon_skip_existing.setSizePolicy(sizePolicy4)
-
-        self.lh_choices_skip_existing.addWidget(self.l_icon_skip_existing)
-
-        self.l_skip_existing = QLabel(self.gb_choices)
-        self.l_skip_existing.setObjectName("l_skip_existing")
-        sizePolicy4.setHeightForWidth(self.l_skip_existing.sizePolicy().hasHeightForWidth())
-        self.l_skip_existing.setSizePolicy(sizePolicy4)
-
-        self.lh_choices_skip_existing.addWidget(self.l_skip_existing)
-
-        self.c_skip_existing = QComboBox(self.gb_choices)
-        self.c_skip_existing.setObjectName("c_skip_existing")
-
-        self.lh_choices_skip_existing.addWidget(self.c_skip_existing)
-
-        self.lh_choices_skip_existing.setStretch(2, 50)
-
-        self.lv_choices.addLayout(self.lh_choices_skip_existing)
-
         self.lh_choices_quality_audio = QHBoxLayout()
         self.lh_choices_quality_audio.setObjectName("lh_choices_quality_audio")
         self.l_icon_quality_audio = QLabel(self.gb_choices)
         self.l_icon_quality_audio.setObjectName("l_icon_quality_audio")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
         sizePolicy4.setHeightForWidth(self.l_icon_quality_audio.sizePolicy().hasHeightForWidth())
         self.l_icon_quality_audio.setSizePolicy(sizePolicy4)
 
@@ -532,9 +525,8 @@ class Ui_DialogSettings:
         self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_metadata_cover_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_cover_album_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_skip_existing.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
-        self.l_icon_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.l_skip_existing.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_quality_video.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
