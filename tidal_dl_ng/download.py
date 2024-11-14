@@ -105,6 +105,7 @@ class Download:
         path_base: pathlib.Path = path_file.parent
         result_segments: bool = True
         dl_segment_results: [DownloadSegmentResult] = []
+        result_merge: bool = False
 
         # Get urls for media.
         if isinstance(media, Track):
@@ -179,14 +180,16 @@ class Download:
         if result_segments:
             # Bring list into right order, so segments can be easily merged.
             dl_segment_results.sort(key=lambda x: x.id_segment)
-            reult_merge: bool = self._segments_merge(path_file, dl_segment_results)
+            result_merge: bool = self._segments_merge(path_file, dl_segment_results)
 
-            if reult_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
+            if not result_merge:
+                self.fn_logger.error(f"Something went wrong while writing to {media_name}. File is corrupt!")
+            elif result_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
                 key, nonce = decrypt_security_token(stream_manifest.encryption_key)
                 tmp_path_file_decrypted = path_file.with_suffix("_decrypted")
                 decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
 
-        return result_segments, tmp_path_file_decrypted
+        return result_merge, tmp_path_file_decrypted
 
     def _segments_merge(self, path_file, dl_segment_results) -> bool:
         result: bool
@@ -195,17 +198,16 @@ class Download:
         try:
             with path_file.open("wb") as f_target:
                 for dl_segment_result in dl_segment_results:
-                    if dl_segment_result.result:
-                        with dl_segment_result.path_segment.open("rb") as f_segment:
-                            # Read and write junks, which gives better HDD write performance
-                            while segment := f_segment.read(CHUNK_SIZE):
-                                f_target.write(segment)
+                    with dl_segment_result.path_segment.open("rb") as f_segment:
+                        # Read and write junks, which gives better HDD write performance
+                        while segment := f_segment.read(CHUNK_SIZE):
+                            f_target.write(segment)
 
-                        # Delete segment from HDD
-                        dl_segment_result.path_segment.unlink()
+                    # Delete segment from HDD
+                    dl_segment_result.path_segment.unlink()
 
             result = True
-        except:
+        except Exception:
             result = False
 
         return result
