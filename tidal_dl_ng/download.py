@@ -336,9 +336,16 @@ class Download:
 
                     return False, ""
 
-                file_extension = media_stream.get_stream_manifest().file_extension
-                # Use M4A extension for MP4 audio tracks, because it looks better and is completely interchangeable.
-                file_extension = AudioExtensions.M4A if file_extension == AudioExtensions.MP4 else file_extension
+                # TODO: HOTFIX! Go back to
+                # file_extension = media_stream.get_stream_manifest().file_extension
+                # After tidalapi has fixed #304
+                stream_manifest: StreamManifest = media_stream.get_stream_manifest()
+                if stream_manifest.file_extension is VideoExtensions.TS:
+                    file_extension = stream_manifest.file_extension
+                elif AudioExtensions.FLAC in stream_manifest.dash_info.first_url:
+                    file_extension = AudioExtensions.FLAC
+                else:
+                    file_extension = AudioExtensions.M4A
 
                 if self.settings.data.extract_flac and (
                     media_stream.get_stream_manifest().codecs.upper() == Codec.FLAC
