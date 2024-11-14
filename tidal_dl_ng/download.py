@@ -218,7 +218,9 @@ class Download:
         result: bool = False
         path_segment: pathlib.Path = path_base / url_to_filename(url)
         # Calculate the segment ID based on the file name within the URL.
-        id_segment: int = int(str(path_segment.stem).split("_")[-1])
+        filename_stem: str = str(path_segment.stem).split("_")[-1]
+        # CAUTION: This is a workaround, so BTS (LOW quality) track will work. They usually have only ONE link.
+        id_segment: int = int(filename_stem) if filename_stem.isdecimal() else 0
         error: HTTPError | None = None
 
         # Retry download on failed segments, with an exponential delay between retries
@@ -342,7 +344,7 @@ class Download:
                 stream_manifest: StreamManifest = media_stream.get_stream_manifest()
                 if stream_manifest.file_extension is VideoExtensions.TS:
                     file_extension = stream_manifest.file_extension
-                elif AudioExtensions.FLAC in stream_manifest.dash_info.first_url:
+                elif stream_manifest.dash_info and AudioExtensions.FLAC in stream_manifest.dash_info.first_url:
                     file_extension = AudioExtensions.FLAC
                 else:
                     file_extension = AudioExtensions.M4A
