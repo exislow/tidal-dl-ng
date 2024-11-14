@@ -6,7 +6,6 @@ from collections.abc import Callable, Sequence
 from PySide6.QtGui import QStandardItem
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
-from tidalapi.types import JsonObj
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
@@ -133,8 +132,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 hint: str = "After you have finished the TIDAL login via web browser click the 'OK' button."
 
                 while not result:
-                    json_obj: JsonObj = self.tidal.session._login_with_link()
-                    link_login: LinkLogin = LinkLogin(json_obj)
+                    link_login: LinkLogin = self.tidal.session.get_link_login()
                     d_login: DialogLogin = DialogLogin(
                         url_login=link_login.verification_uri_complete,
                         hint=hint,
@@ -144,7 +142,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                     if d_login.return_code == 1:
                         try:
-                            self.tidal.session._process_link_login(json_obj)
+                            self.tidal.session.process_link_login(link_login, until_expiry=False)
                             self.tidal.login_finalize()
 
                             result = True
