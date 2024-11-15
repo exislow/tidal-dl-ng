@@ -25,8 +25,10 @@ def name_builder_album_artist(media: Track | Album) -> str:
     return ", ".join(artists_tmp)
 
 
-def name_builder_title(media: Track | Video) -> str:
-    result: str = media.full_name if hasattr(media, "full_name") else media.name
+def name_builder_title(media: Track | Video | Mix | Playlist | Album | Video) -> str:
+    result: str = (
+        media.title if isinstance(media, Mix) else media.full_name if hasattr(media, "full_name") else media.name
+    )
 
     return result
 

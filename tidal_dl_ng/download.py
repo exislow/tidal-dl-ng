@@ -244,10 +244,8 @@ class Download:
                     self.progress.advance(p_task)
 
             result = True
-        except Exception as e:
-            error = e
+        except Exception:
             self.progress.advance(p_task)
-            self.fn_logger.exception(e)
 
         # To send the progress to the GUI, we need to emit the percentage.
         if not progress_to_stdout:
@@ -397,8 +395,12 @@ class Download:
                         self._move_lyrics(tmp_path_lyrics, path_media_dst)
 
                     # Move cover file
+                    # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
+                    #  dowloaded for an album once.
                     if self.settings.data.cover_album_file and tmp_path_cover:
                         self._move_cover(tmp_path_cover, path_media_dst)
+
+                    self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
 
                 # Move final file to the configured destination directory.
                 shutil.move(tmp_path_file, path_media_dst)
@@ -590,29 +592,22 @@ class Download:
         file_name_relative = format_path_media(file_template, media)
 
         # Get the name of the list and check, if videos should be included.
-        videos_include: bool = True
-
-        if isinstance(media, Mix):
-            list_media_name = media.title[:30]
-        elif video_download:
-            list_media_name = name_builder_title(media)[:30]
-        else:
-            videos_include = False
-            list_media_name = name_builder_title(media)[:30]
+        list_media_name: str = name_builder_title(media)
+        list_media_name_short: str = list_media_name[:30]
 
         # Get all items of the list.
-        items = items_results_all(media, videos_include=videos_include)
+        items = items_results_all(media, videos_include=video_download)
 
         # Determine where to redirect the progress information.
         if self.progress_gui is None:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
-            self.progress_gui.list_name.emit(list_media_name[:30])
+            self.progress_gui.list_name.emit(list_media_name_short[:30])
 
         # Create the list progress task.
         p_task1: TaskID = self.progress.add_task(
-            f"[green]List '{list_media_name}'", total=len(items), visible=progress_stdout
+            f"[green]List '{list_media_name_short}'", total=len(items), visible=progress_stdout
         )
 
         is_album: bool = isinstance(media, Album)
@@ -635,6 +630,8 @@ class Download:
 
                 if not progress_stdout:
                     self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
+
+        self.fn_logger.info(f"Finished list '{list_media_name}'.")
 
     def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
