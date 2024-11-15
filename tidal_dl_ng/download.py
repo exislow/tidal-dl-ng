@@ -149,6 +149,7 @@ class Download:
         )
 
         # Download segments until progress is finished.
+        # TODO: Compute download speed (https://github.com/Textualize/rich/blob/master/examples/downloader.py)
         while not self.progress.tasks[p_task].finished:
             with futures.ThreadPoolExecutor(
                 max_workers=self.settings.data.downloads_simultaneous_per_track_max
