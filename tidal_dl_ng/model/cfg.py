@@ -25,10 +25,10 @@ class Settings:
     quality_video: QualityVideo = QualityVideo.P480
     format_album: str = (
         "Albums/{album_artist} - {album_title}{album_explicit}/{track_volume_num_optional}"
-        "{album_track_num}. {artist_name} - {track_title}{track_explicit}"
+        "{album_track_num}. {artist_name} - {track_title}{album_explicit}"
     )
-    format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}{track_explicit}"
-    format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}{track_explicit}"
+    format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}"
+    format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}"
     format_track: str = "Tracks/{artist_name} - {track_title}{track_explicit}"
     format_video: str = "Videos/{artist_name} - {track_title}{track_explicit}"
     video_convert_mp4: bool = True
