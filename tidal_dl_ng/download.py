@@ -98,6 +98,7 @@ class Download:
     def _download(
         self,
         media: Track | Video,
+        stream_manifest: StreamManifest,
         path_file: pathlib.Path,
     ) -> (bool, pathlib.Path):
         media_name: str = name_builder_item(media)
@@ -108,15 +109,17 @@ class Download:
         result_merge: bool = False
 
         # Get urls for media.
-        if isinstance(media, Track):
-            urls = media.get_stream().get_stream_manifest().get_urls()
-            stream_manifest: StreamManifest = media.get_stream().get_stream_manifest()
-        elif isinstance(media, Video):
-            m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
-            # Find the desired video resolution or the next best one.
-            m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, int(self.settings.data.quality_video))
-            # Populate urls.
-            urls = m3u8_playlist.files
+        try:
+            if isinstance(media, Track):
+                urls = stream_manifest.get_urls()
+            elif isinstance(media, Video):
+                m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
+                # Find the desired video resolution or the next best one.
+                m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, int(self.settings.data.quality_video))
+                # Populate urls.
+                urls = m3u8_playlist.files
+        except Exception:
+            return False, path_file
 
         # Set the correct progress output channel.
         if self.progress_gui is None:
@@ -187,7 +190,7 @@ class Download:
                 self.fn_logger.error(f"Something went wrong while writing to {media_name}. File is corrupt!")
             elif result_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
                 key, nonce = decrypt_security_token(stream_manifest.encryption_key)
-                tmp_path_file_decrypted = path_file.with_suffix("_decrypted")
+                tmp_path_file_decrypted = path_file.with_suffix(".decrypted")
                 decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
 
         return result_merge, tmp_path_file_decrypted
@@ -322,25 +325,25 @@ class Download:
                 self.adjust_quality_video(quality_video) if quality_video else quality_video
             )
 
+            try:
+                media_stream = media.get_stream()
+                stream_manifest: StreamManifest = media_stream.get_stream_manifest()
+            except TooManyRequests:
+                self.fn_logger.exception(
+                    f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
+                    f"Consider to activate delay between downloads."
+                )
+
+                return False, ""
+            except Exception:
+                self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
+
+                return False, ""
+
             if isinstance(media, Track):
-                try:
-                    media_stream = media.get_stream()
-                except TooManyRequests:
-                    self.fn_logger.exception(
-                        f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
-                        f"Consider to activate delay between downloads."
-                    )
-
-                    return False, ""
-                except:
-                    self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
-
-                    return False, ""
-
                 # TODO: HOTFIX! Go back to
                 # file_extension = media_stream.get_stream_manifest().file_extension
                 # After tidalapi has fixed #304
-                stream_manifest: StreamManifest = media_stream.get_stream_manifest()
                 if stream_manifest.file_extension is VideoExtensions.TS:
                     file_extension = stream_manifest.file_extension
                 elif stream_manifest.dash_info and AudioExtensions.FLAC in stream_manifest.dash_info.first_url:
@@ -349,8 +352,7 @@ class Download:
                     file_extension = AudioExtensions.M4A
 
                 if self.settings.data.extract_flac and (
-                    media_stream.get_stream_manifest().codecs.upper() == Codec.FLAC
-                    and file_extension != AudioExtensions.FLAC
+                    stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC
                 ):
                     file_extension = AudioExtensions.FLAC
                     do_flac_extract = True
@@ -369,7 +371,9 @@ class Download:
                 tmp_path_file.touch()
 
                 # Download media.
-                result_download, tmp_path_file = self._download(media=media, path_file=tmp_path_file)
+                result_download, tmp_path_file = self._download(
+                    media=media, stream_manifest=stream_manifest, path_file=tmp_path_file
+                )
 
                 if result_download:
                     # Convert video from TS to MP4
@@ -396,7 +400,7 @@ class Download:
 
                     # Move cover file
                     # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
-                    #  dowloaded for an album once.
+                    #  downloaded for an album once.
                     if self.settings.data.cover_album_file and tmp_path_cover:
                         self._move_cover(tmp_path_cover, path_media_dst)
 
@@ -420,7 +424,12 @@ class Download:
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
         if download_delay and not skip_file:
-            time_sleep: float = round(random.SystemRandom().uniform(1.5, 4), 1)
+            time_sleep: float = round(
+                random.SystemRandom().uniform(
+                    self.settings.data.download_delay_sec_min, self.settings.data.download_delay_sec_max
+                ),
+                1,
+            )
 
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
