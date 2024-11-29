@@ -16,7 +16,7 @@ from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.exceptions import TooManyRequests
-from tidalapi.media import AudioExtensions, Codec, Quality, StreamManifest, VideoExtensions
+from tidalapi.media import AudioExtensions, Codec, Quality, Stream, StreamManifest, VideoExtensions
 
 from tidal_dl_ng.config import Settings
 from tidal_dl_ng.constants import (
@@ -326,7 +326,7 @@ class Download:
             )
 
             try:
-                media_stream = media.get_stream()
+                media_stream: Stream = media.get_stream()
                 stream_manifest: StreamManifest = media_stream.get_stream_manifest()
             except TooManyRequests:
                 self.fn_logger.exception(
@@ -383,7 +383,7 @@ class Download:
                     # Write metadata to file.
                     if not isinstance(media, Video):
                         result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
-                            media, tmp_path_file, is_parent_album
+                            media, tmp_path_file, is_parent_album, media_stream
                         )
 
                     # Move lyrics file
@@ -509,7 +509,7 @@ class Download:
         return result
 
     def metadata_write(
-        self, track: Track, path_media: pathlib.Path, is_parent_album: bool
+        self, track: Track, path_media: pathlib.Path, is_parent_album: bool, media_stream: Stream
     ) -> (bool, pathlib.Path | None, pathlib.Path | None):
         result: bool = False
         path_lyrics: pathlib.Path | None = None
@@ -564,6 +564,10 @@ class Download:
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
             cover_data=cover_data if self.settings.data.metadata_cover_embed else None,
+            album_replay_gain=media_stream.album_replay_gain,
+            album_peak_amplitude=media_stream.album_peak_amplitude,
+            track_replay_gain=media_stream.track_replay_gain,
+            track_peak_amplitude=media_stream.track_peak_amplitude,
         )
 
         m.save()
