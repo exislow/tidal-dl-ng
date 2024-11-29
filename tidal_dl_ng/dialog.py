@@ -10,7 +10,7 @@ from tidalapi import Quality as QualityAudio
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.meta import ReleaseLatest
@@ -159,7 +159,6 @@ class DialogPreferences(QtWidgets.QDialog):
 
     def _init_comboboxes(self):
         self.parameters_combo = [
-            ("skip_existing", SkipExisting),
             ("quality_audio", QualityAudio),
             ("quality_video", QualityVideo),
             ("metadata_cover_dimension", CoverDimensions),
@@ -175,6 +174,7 @@ class DialogPreferences(QtWidgets.QDialog):
             "extract_flac",
             "metadata_cover_embed",
             "cover_album_file",
+            "skip_existing",
         ]
 
     def gui_populate(self):

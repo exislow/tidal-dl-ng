@@ -210,6 +210,24 @@
           </item>
          </layout>
         </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <layout class="QVBoxLayout" name="lv_flag_skip_existing">
+            <item>
+             <widget class="QCheckBox" name="cb_skip_existing">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_3"/>
+          </item>
+         </layout>
+        </item>
        </layout>
       </widget>
      </item>
@@ -225,39 +243,6 @@
         <string>Choices</string>
        </property>
        <layout class="QVBoxLayout" name="lv_choices">
-        <item>
-         <layout class="QHBoxLayout" name="lh_choices_skip_existing" stretch="0,0,50">
-          <item>
-           <widget class="QLabel" name="l_icon_skip_existing">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>TextLabel</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="l_skip_existing">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>TextLabel</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QComboBox" name="c_skip_existing"/>
-          </item>
-         </layout>
-        </item>
         <item>
          <layout class="QHBoxLayout" name="lh_choices_quality_audio" stretch="0,0,50">
           <item>

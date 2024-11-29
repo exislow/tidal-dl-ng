@@ -111,6 +111,8 @@ class Metadata:
         self.m.tags["LYRICS"] = self.lyrics
 
     def set_mp3(self):
+        # ID3 Frame (tags) overview: https://exiftool.org/TagNames/ID3.html / https://id3.org/id3v2.3.0
+        # Mapping overview: https://docs.mp3tag.de/mapping/
         self.m.tags.add(TIT2(encoding=3, text=self.title))
         self.m.tags.add(TALB(encoding=3, text=self.album))
         self.m.tags.add(TOPE(encoding=3, text=self.albumartist))

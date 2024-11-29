@@ -516,6 +516,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._init_dl()
 
     def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
+        query = query.strip()
+
         # If a direct link was searched for, skip search and create the object from the link directly.
         if "http" in query:
             media_type = get_tidal_media_type(query)

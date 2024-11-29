@@ -3,13 +3,13 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SkipExisting
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo
 
 
 @dataclass_json
 @dataclass
 class Settings:
-    skip_existing: SkipExisting = SkipExisting.Disabled
+    skip_existing: bool = True
     lyrics_embed: bool = False
     lyrics_file: bool = False
     # TODO: Implement API KEY selection.
@@ -25,7 +25,7 @@ class Settings:
     quality_video: QualityVideo = QualityVideo.P480
     format_album: str = (
         "Albums/{album_artist} - {album_title}{album_explicit}/{track_volume_num_optional}"
-        "{album_track_num}. {artist_name} - {track_title}"
+        "{album_track_num}. {artist_name} - {track_title}{album_explicit}"
     )
     format_playlist: str = "Playlists/{playlist_name}/{artist_name} - {track_title}"
     format_mix: str = "Mix/{mix_name}/{artist_name} - {track_title}"
@@ -37,16 +37,15 @@ class Settings:
     metadata_cover_embed: bool = True
     cover_album_file: bool = True
     extract_flac: bool = True
+    downloads_simultaneous_per_track_max: int = 20
+    download_delay_sec_min: float = 3.0
+    download_delay_sec_max: float = 5.0
 
 
 @dataclass_json
 @dataclass
 class HelpSettings:
-    skip_existing: str = (
-        "Do not download, if file already exists. Possible option false = do not skip, "
-        "'exact' = if filename already exists, 'extension_ignore' = skip even if a file with a "
-        "different file extension exists."
-    )
+    skip_existing: str = "Skip download if file already exists."
     album_cover_save: str = "Safe cover to album folder."
     lyrics_embed: str = "Embed lyrics in audio file, if lyrics are available."
     lyrics_file: str = "Save lyrics to separate *.lrc file, if lyrics are available."
@@ -82,6 +81,9 @@ class HelpSettings:
     metadata_cover_embed: str = "Embed album cover into file."
     cover_album_file: str = "Save cover to 'cover.jpg', if an album is downloaded."
     extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
+    downloads_simultaneous_per_track_max: str = "Maximum number of simultaneous chunk downloads per track."
+    download_delay_sec_min: float = "Lower boundary for the calculation of the download delay in seconds."
+    download_delay_sec_max: float = "Upper boundary for the calculation of the download delay in seconds."
 
 
 @dataclass_json

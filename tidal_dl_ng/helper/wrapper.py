@@ -21,3 +21,6 @@ class LoggerWrapped:
 
     def critical(self, value):
         self.fn_print(value)
+
+    def exception(self, value):
+        self.fn_print(value)

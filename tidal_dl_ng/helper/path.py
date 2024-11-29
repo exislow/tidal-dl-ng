@@ -1,8 +1,10 @@
 import math
 import os
+import pathlib
+import posixpath
 import re
 import sys
-from pathlib import Path, PosixPath
+from urllib.parse import unquote, urlsplit
 
 from pathvalidate import sanitize_filename, sanitize_filepath
 from pathvalidate.error import ValidationError
@@ -77,8 +79,7 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
                     elif hasattr(media, "artist"):
                         result = media.artist.name
             case "album_artist":
-                if isinstance(media, Album):
-                    result = name_builder_album_artist(media)
+                result = name_builder_album_artist(media)
             case "track_title":
                 if isinstance(media, Track | Video):
                     result = name_builder_title(media)
@@ -195,7 +196,7 @@ def get_format_template(
 def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = False) -> (bool, str):
     # Split into path and filename
     pathname, filename = os.path.split(path_file)
-    file_extension: str = Path(path_file).suffix
+    file_extension: str = pathlib.Path(path_file).suffix
 
     # Sanitize path
     try:
@@ -205,7 +206,7 @@ def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = Fal
     except ValidationError:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
-            pathname_sanitized: str = Path.home()
+            pathname_sanitized: str = str(pathlib.Path.home())
         else:
             raise
 
@@ -272,10 +273,10 @@ def file_unique_suffix(path_file: str, seperator: str = "_") -> str:
     return unique_suffix
 
 
-def check_file_exists(path_file: str, extension_ignore: bool = False) -> bool:
+def check_file_exists(path_file: pathlib.Path, extension_ignore: bool = False) -> bool:
     if extension_ignore:
-        path_file_stem: str = Path(path_file).stem
-        path_parent: PosixPath = Path(path_file).parent
+        path_file_stem: str = pathlib.Path(path_file).stem
+        path_parent: pathlib.Path = pathlib.Path(path_file).parent
         path_files: [str] = []
 
         for extension in AudioExtensions:
@@ -295,3 +296,22 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+
+def url_to_filename(url: str) -> str:
+    """Return basename corresponding to url.
+    >>> print(url_to_filename('http://example.com/path/to/file%C3%80?opt=1'))
+    fileÀ
+    >>> print(url_to_filename('http://example.com/slash%2fname')) # '/' in name
+    Taken from https://gist.github.com/zed/c2168b9c52b032b5fb7d
+    Traceback (most recent call last):
+    ...
+    ValueError
+    """
+    urlpath: str = urlsplit(url).path
+    basename: str = posixpath.basename(unquote(urlpath))
+
+    if os.path.basename(basename) != basename or unquote(posixpath.basename(urlpath)) != basename:
+        raise ValueError  # reject '%2f' or 'dir%5Cbasename.ext' on Windows
+
+    return basename
