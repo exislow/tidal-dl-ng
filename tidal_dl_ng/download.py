@@ -341,15 +341,7 @@ class Download:
                 return False, ""
 
             if isinstance(media, Track):
-                # TODO: HOTFIX! Go back to
-                # file_extension = media_stream.get_stream_manifest().file_extension
-                # After tidalapi has fixed #304
-                if stream_manifest.file_extension is VideoExtensions.TS:
-                    file_extension = stream_manifest.file_extension
-                elif stream_manifest.dash_info and AudioExtensions.FLAC in stream_manifest.dash_info.first_url:
-                    file_extension = AudioExtensions.FLAC
-                else:
-                    file_extension = AudioExtensions.M4A
+                file_extension = media_stream.get_stream_manifest().file_extension
 
                 if self.settings.data.extract_flac and (
                     stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC
