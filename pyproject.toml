@@ -38,9 +38,9 @@ pyqtdarktheme-fork = {version = "^2.3.2", optional = true}
 mpegdash = "^0.4.0"
 rich = "^13.9.4"
 toml = "^0.10.2"
-typer = "^0.13.0"
+typer = "^0.14.0"
 ffmpeg-python = "^0.2.0"
-tidalapi = "^0.8.1"
+tidalapi = "^0.8.2"
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme-fork"]
