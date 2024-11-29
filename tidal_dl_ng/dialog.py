@@ -1,3 +1,4 @@
+import datetime
 import os.path
 import shutil
 import webbrowser
@@ -83,10 +84,12 @@ class DialogLogin(QtWidgets.QDialog):
 
     ui: Ui_DialogLogin
     url_redirect: str
-    return_code: int
 
-    def __init__(self, url_login: str, hint: str, parent=None):
+    def __init__(self, url_login: str, hint: str, expires_in: int, parent=None):
         super().__init__(parent)
+
+        datetime_current: datetime.datetime = datetime.datetime.now()
+        datetime_expires: datetime.datetime = datetime_current + datetime.timedelta(0, expires_in)
 
         # Create an instance of the GUI
         self.ui = Ui_DialogLogin()
@@ -94,12 +97,11 @@ class DialogLogin(QtWidgets.QDialog):
         # Run the .setupUi() method to show the GUI
         self.ui.setupUi(self)
         # Set data.
-        self.ui.tb_url_login.setText(f'<a href="{url_login}">{url_login}</a>')
+        self.ui.tb_url_login.setText(f'<a href="https://{url_login}">https://{url_login}</a>')
         self.ui.l_hint.setText(hint)
+        self.ui.l_expires_date_time.setText(datetime_expires.strftime("%Y-%m-%d %H:%M"))
         # Show
         self.return_code = self.exec()
-
-        self.url_redirect = self.ui.te_url_redirect.toPlainText()
 
 
 class DialogPreferences(QtWidgets.QDialog):

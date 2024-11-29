@@ -168,9 +168,9 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
             fn_print("You either do not have a token or your token is invalid.")
             fn_print("No worries, we will handle this...")
             # Login method: Device linking
-            # self.session.login_oauth_simple(fn_print)
-            # Login method: PKCE authorization (enables HiRes streaming)
-            self.session.login_pkce(fn_print)
+            self.session.login_oauth_simple(fn_print)
+            # Login method: PKCE authorization (was necessary for HI_RES_LOSSLESS streaming earlier)
+            # self.session.login_pkce(fn_print)
 
             is_login = self.login_finalize()
 

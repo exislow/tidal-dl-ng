@@ -34,14 +34,17 @@
      <verstretch>0</verstretch>
     </sizepolicy>
    </property>
+   <property name="layoutDirection">
+    <enum>Qt::LayoutDirection::LeftToRight</enum>
+   </property>
    <property name="styleSheet">
     <string notr="true"/>
    </property>
    <property name="orientation">
-    <enum>Qt::Horizontal</enum>
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
    <property name="standardButtons">
-    <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
    </property>
   </widget>
   <widget class="QWidget" name="verticalLayoutWidget">
@@ -69,7 +72,7 @@
        </font>
       </property>
       <property name="text">
-       <string>TIDAL PKCE Login</string>
+       <string>TIDAL Login (as Device)</string>
       </property>
      </widget>
     </item>
@@ -87,7 +90,7 @@
        </font>
       </property>
       <property name="text">
-       <string>Click the link below and login with your TIDAL credentials. You will be redirected to an &quot;Ooops&quot; page after a successful login. Copy the URL of this &quot;Ooops&quot; page and post it in the box below.</string>
+       <string>Click the link below and login with your TIDAL credentials. TIDAL will ask you, if you like to add this app as a new device. You need to confirm this.</string>
       </property>
       <property name="wordWrap">
        <bool>true</bool>
@@ -105,11 +108,30 @@
      </widget>
     </item>
     <item>
-     <widget class="QTextEdit" name="te_url_redirect">
-      <property name="placeholderText">
-       <string>Copy and paste the redirect URL after login here...</string>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <widget class="QLabel" name="l_expires_description">
+        <property name="text">
+         <string>This link expires at:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="l_expires_date_time">
+        <property name="font">
+         <font>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>COMPUTING</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
     <item>
      <widget class="QLabel" name="l_hint">
@@ -126,6 +148,9 @@
       </property>
       <property name="text">
        <string>Waiting...</string>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
       </property>
      </widget>
     </item>
