@@ -98,8 +98,8 @@ class Download:
     def _download(
         self,
         media: Track | Video,
-        stream_manifest: StreamManifest,
         path_file: pathlib.Path,
+        stream_manifest: StreamManifest | None = None,
     ) -> (bool, pathlib.Path):
         media_name: str = name_builder_item(media)
         urls: [str]
@@ -325,23 +325,25 @@ class Download:
                 self.adjust_quality_video(quality_video) if quality_video else quality_video
             )
 
-            try:
-                media_stream: Stream = media.get_stream()
-                stream_manifest: StreamManifest = media_stream.get_stream_manifest()
-            except TooManyRequests:
-                self.fn_logger.exception(
-                    f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
-                    f"Consider to activate delay between downloads."
-                )
-
-                return False, ""
-            except Exception:
-                self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
-
-                return False, ""
+            stream_manifest: StreamManifest | None = None
 
             if isinstance(media, Track):
-                file_extension = media_stream.get_stream_manifest().file_extension
+                try:
+                    media_stream: Stream = media.get_stream()
+                    stream_manifest = media_stream.get_stream_manifest()
+                except TooManyRequests:
+                    self.fn_logger.exception(
+                        f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
+                        f"Consider to activate delay between downloads."
+                    )
+
+                    return False, ""
+                except Exception:
+                    self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
+
+                    return False, ""
+
+                file_extension = stream_manifest.file_extension
 
                 if self.settings.data.extract_flac and (
                     stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC

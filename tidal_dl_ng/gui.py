@@ -3,7 +3,6 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from PySide6.QtGui import QStandardItem
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -462,7 +461,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def populate_tree_result_child(
         self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int
-    ) -> Sequence[QStandardItem]:
+    ) -> Sequence[QtGui.QStandardItem]:
         duration: str = ""
 
         # TODO: Duration needs to be calculated later to properly fill with zeros.
