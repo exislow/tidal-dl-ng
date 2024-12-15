@@ -7,7 +7,7 @@
 
 This tool allows to download songs and videos from TIDAL. Multithreaded and multi-chunked downloads are supported.
 
-**A paid plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24 bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
+**A paid plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
