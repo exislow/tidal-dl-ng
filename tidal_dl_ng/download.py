@@ -621,22 +621,30 @@ class Download:
 
         # Iterate through list items
         while not self.progress.finished:
-            for item_media in items:
-                # Download the item.
-                status, result_path_file = self.item(
-                    media=item_media,
-                    file_template=file_name_relative,
-                    quality_audio=quality_audio,
-                    quality_video=quality_video,
-                    download_delay=download_delay,
-                    is_parent_album=is_album,
-                )
+            with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
+                # Dispatch all download tasks to worker threads
+                l_futures: [any] = [
+                    executor.submit(
+                        self.item,
+                        media=item_media,
+                        file_template=file_name_relative,
+                        quality_audio=quality_audio,
+                        quality_video=quality_video,
+                        download_delay=download_delay,
+                        is_parent_album=is_album,
+                    )
+                    for item_media in items
+                ]
+                # Report results as they become available
+                for future in futures.as_completed(l_futures):
+                    # Retrieve result
+                    status, result_path_file = future.result()
 
-                # Advance progress bar.
-                self.progress.advance(p_task1)
+                    # Advance progress bar.
+                    self.progress.advance(p_task1)
 
-                if not progress_stdout:
-                    self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
+                    if not progress_stdout:
+                        self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
 
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
 

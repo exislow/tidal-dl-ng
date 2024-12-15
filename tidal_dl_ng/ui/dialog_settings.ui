@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>705</height>
+    <height>767</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -381,6 +381,34 @@
            <widget class="QSpinBox" name="sb_album_track_num_pad_min">
             <property name="maximum">
              <number>4</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <widget class="QLabel" name="l_downloads_concurrent_max">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="l_icon_downloads_concurrent_max">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="sb_downloads_concurrent_max">
+            <property name="minimum">
+             <number>1</number>
+            </property>
+            <property name="maximum">
+             <number>5</number>
             </property>
            </widget>
           </item>

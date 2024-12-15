@@ -27,7 +27,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 705)
+        DialogSettings.resize(640, 767)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -292,6 +292,27 @@ class Ui_DialogSettings:
         self.horizontalLayout_9.addWidget(self.sb_album_track_num_pad_min)
 
         self.verticalLayout_8.addLayout(self.horizontalLayout_9)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName("horizontalLayout_11")
+        self.l_downloads_concurrent_max = QLabel(self.gb_numbers)
+        self.l_downloads_concurrent_max.setObjectName("l_downloads_concurrent_max")
+
+        self.horizontalLayout_11.addWidget(self.l_downloads_concurrent_max)
+
+        self.l_icon_downloads_concurrent_max = QLabel(self.gb_numbers)
+        self.l_icon_downloads_concurrent_max.setObjectName("l_icon_downloads_concurrent_max")
+
+        self.horizontalLayout_11.addWidget(self.l_icon_downloads_concurrent_max)
+
+        self.sb_downloads_concurrent_max = QSpinBox(self.gb_numbers)
+        self.sb_downloads_concurrent_max.setObjectName("sb_downloads_concurrent_max")
+        self.sb_downloads_concurrent_max.setMinimum(1)
+        self.sb_downloads_concurrent_max.setMaximum(5)
+
+        self.horizontalLayout_11.addWidget(self.sb_downloads_concurrent_max)
+
+        self.verticalLayout_8.addLayout(self.horizontalLayout_11)
 
         self.lv_main.addWidget(self.gb_numbers)
 
@@ -563,6 +584,8 @@ class Ui_DialogSettings:
         self.gb_numbers.setTitle(QCoreApplication.translate("DialogSettings", "Numbers", None))
         self.l_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.gb_path.setTitle(QCoreApplication.translate("DialogSettings", "Path", None))
         self.l_icon_download_base_path.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_download_base_path.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
