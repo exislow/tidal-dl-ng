@@ -162,7 +162,7 @@ class DialogPreferences(QtWidgets.QDialog):
         ]
 
     def _init_spin_box(self):
-        self.parameters_spin_box = ["album_track_num_pad_min"]
+        self.parameters_spin_box = ["album_track_num_pad_min", "downloads_concurrent_max"]
 
     def _init_comboboxes(self):
         self.parameters_combo = [
