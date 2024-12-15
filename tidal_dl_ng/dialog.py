@@ -116,11 +116,13 @@ class DialogPreferences(QtWidgets.QDialog):
     parameters_checkboxes: [str]
     parameters_combo: [(str, StrEnum)]
     parameters_line_edit: [str]
+    parameters_spin_box: [str]
     prefix_checkbox: str = "cb_"
     prefix_label: str = "l_"
     prefix_icon: str = "icon_"
     prefix_line_edit: str = "le_"
     prefix_combo: str = "c_"
+    prefix_spin_box: str = "sb_"
 
     def __init__(self, settings: Settings, settings_save: QtCore.Signal, parent=None):
         super().__init__(parent)
@@ -135,6 +137,7 @@ class DialogPreferences(QtWidgets.QDialog):
         self._init_checkboxes()
         self._init_comboboxes()
         self._init_line_edit()
+        self._init_spin_box()
 
         # Create an instance of the GUI
         self.ui = Ui_DialogSettings()
@@ -143,6 +146,7 @@ class DialogPreferences(QtWidgets.QDialog):
         self.ui.setupUi(self)
         # Set data.
         self.gui_populate()
+        # Post setup
 
         self.exec()
 
@@ -156,6 +160,9 @@ class DialogPreferences(QtWidgets.QDialog):
             "format_video",
             "path_binary_ffmpeg",
         ]
+
+    def _init_spin_box(self):
+        self.parameters_spin_box = ["album_track_num_pad_min"]
 
     def _init_comboboxes(self):
         self.parameters_combo = [
@@ -181,6 +188,7 @@ class DialogPreferences(QtWidgets.QDialog):
         self.populate_checkboxes()
         self.populate_combo()
         self.populate_line_edit()
+        self.populate_spin_box()
 
     def dialog_chose_file(
         self,
@@ -225,7 +233,7 @@ class DialogPreferences(QtWidgets.QDialog):
             label_icon.setPixmap(QtGui.QPixmap(self.icon.pixmap(QtCore.QSize(16, 16))))
             label_icon.setToolTip(getattr(self.help_settings, pn))
             label.setText(pn)
-            line_edit.setText(getattr(self.data, pn))
+            line_edit.setText(str(getattr(self.data, pn)))
 
         # Base Path File Dialog
         self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_chose_file(self.ui.le_download_base_path))
@@ -265,6 +273,17 @@ class DialogPreferences(QtWidgets.QDialog):
             checkbox.setIcon(self.icon)
             checkbox.setChecked(getattr(self.data, pn))
 
+    def populate_spin_box(self):
+        for pn in self.parameters_spin_box:
+            label_icon: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + self.prefix_icon + pn)
+            label: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + pn)
+            spin_box: QtWidgets.QSpinBox = getattr(self.ui, self.prefix_spin_box + pn)
+
+            label_icon.setPixmap(QtGui.QPixmap(self.icon.pixmap(QtCore.QSize(16, 16))))
+            label_icon.setToolTip(getattr(self.help_settings, pn))
+            label.setText(pn)
+            spin_box.setValue(getattr(self.data, pn))
+
     def accept(self):
         # Get settings.
         self.to_settings()
@@ -279,5 +298,8 @@ class DialogPreferences(QtWidgets.QDialog):
 
         for item in self.parameters_combo:
             setattr(self.settings.data, item[0], getattr(self.ui, self.prefix_combo + item[0]).currentData())
+
+        for item in self.parameters_spin_box:
+            setattr(self.settings.data, item, getattr(self.ui, self.prefix_spin_box + item).value())
 
         self.s_settings_save.emit()

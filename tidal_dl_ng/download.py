@@ -299,7 +299,7 @@ class Download:
 
         # Create file name and path
         file_extension_dummy: str = AudioExtensions.FLAC
-        file_name_relative = format_path_media(file_template, media)
+        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
             (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
             .resolve()
@@ -596,7 +596,7 @@ class Download:
             raise MediaMissing
 
         # Create file name and path
-        file_name_relative = format_path_media(file_template, media)
+        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
 
         # Get the name of the list and check, if videos should be included.
         list_media_name: str = name_builder_title(media)
