@@ -1,11 +1,13 @@
 # 🔰 TIDAL Downloader Next Generation! (tidal-dl-ng)
 
 [![Release](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)
-[![Build status](https://img.shields.io/github/actions/workflow/status/exislow/tidal-dl-ng/main.yml?branch=main)](https://github.com/exislow/tidal-dl-ng/actions/workflows/main.yml?query=branch%3Amain)
+[![Build status](https://img.shields.io/github/actions/workflow/status/exislow/tidal-dl-ng/on-release-master.yml)](https://github.com/exislow/tidal-dl-ng/actions/workflows/on-release-master.yml)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)
 [![License](https://img.shields.io/github/license/exislow/tidal-dl-ng)](https://img.shields.io/github/license/exislow/tidal-dl-ng)
 
-This tool allows to download songs and videos from TIDAL. A paid plan is required! Audio quality varies up to HiRes Lossless / TIDAL MAX 24 Bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
+This tool allows to download songs and videos from TIDAL. Multithreaded and multi-chunked downloads are supported.
+
+**A paid plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24 bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
@@ -36,7 +38,7 @@ If you like this projects and want to support it, you can buy me a coffee :-)
 
 ## 💻 Installation / Upgrade
 
-**Requirements**: Python 3.11 or 3.12 (other versions might work but are not tested!)
+**Requirements**: Python >= 3.11 (other versions might work but are not tested!)
 
 ```bash
 pip install --upgrade tidal-dl-ng
@@ -67,9 +69,12 @@ If you like to have the GUI version only, have a look at the
 
 ## 🧁 Features
 
-- Download Tracks, Videos, Albums, Playlists
+- Download Tracks, Videos, Albums, Playlists etc.
+- Multithreaded and multi-chunked downloads
 - Metadata for songs
 - Adjustable audio and video download quality.
+- FLAC extraction from MP4 containers
+- Lyrics and album art / cover download
 
 ## ▶️ Getting started with development
 
