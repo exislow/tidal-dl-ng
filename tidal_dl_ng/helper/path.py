@@ -49,7 +49,9 @@ def path_file_settings() -> str:
     return os.path.join(path_config_base(), "settings.json")
 
 
-def format_path_media(fmt_template: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix) -> str:
+def format_path_media(
+    fmt_template: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, album_track_num_pad_min: int = 0
+) -> str:
     result = fmt_template
 
     # Search track format template for placeholder.
@@ -58,7 +60,7 @@ def format_path_media(fmt_template: str, media: Track | Album | Playlist | UserP
 
     for _matchNum, match in enumerate(matches, start=1):
         template_str = match.group()
-        result_fmt = format_str_media(match.group(1), media)
+        result_fmt = format_str_media(match.group(1), media, album_track_num_pad_min)
 
         if result_fmt != match.group(1):
             value = sanitize_filename(result_fmt)
@@ -67,7 +69,9 @@ def format_path_media(fmt_template: str, media: Track | Album | Playlist | UserP
     return result
 
 
-def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix) -> str:  # noqa: C901
+def format_str_media(
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, album_track_num_pad_min: int = 0
+) -> str:
     result: str = name
 
     try:
@@ -98,7 +102,10 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
                 if isinstance(media, Track | Video):
                     num_tracks: int = media.album.num_tracks if hasattr(media, "album") else 1
                     count_digits: int = int(math.log10(num_tracks)) + 1
-                    result = str(media.track_num).zfill(count_digits)
+                    count_digits_computed: int = (
+                        count_digits if count_digits > album_track_num_pad_min else album_track_num_pad_min
+                    )
+                    result = str(media.track_num).zfill(count_digits_computed)
             case "album_num_tracks":
                 if isinstance(media, Track | Video):
                     result = str(media.album.num_tracks if hasattr(media, "album") else 1)
@@ -160,11 +167,11 @@ def format_str_media(name: str, media: Track | Album | Playlist | UserPlaylist |
             case "track_volume_num_optional":
                 if isinstance(media, Track | Video):
                     num_volumes: int = media.album.num_volumes if hasattr(media, "album") else 1
-                    result = "" if num_volumes is 1 else str(media.volume_num)
+                    result = "" if num_volumes == 1 else str(media.volume_num)
             case "track_volume_num_optional_CD":
                 if isinstance(media, Track | Video):
                     num_volumes: int = media.album.num_volumes if hasattr(media, "album") else 1
-                    result = "" if num_volumes is 1 else f"CD{media.volume_num!s}"
+                    result = "" if num_volumes == 1 else f"CD{media.volume_num!s}"
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
