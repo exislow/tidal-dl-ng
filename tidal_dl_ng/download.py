@@ -299,7 +299,7 @@ class Download:
 
         # Create file name and path
         file_extension_dummy: str = AudioExtensions.FLAC
-        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
+        file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
             (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
             .resolve()
@@ -353,8 +353,9 @@ class Download:
             elif isinstance(media, Video):
                 file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
-            # Compute file name and create destination directory
+            # Compute file name, sanitize once again and create destination directory
             path_media_dst = path_media_dst.with_suffix(file_extension)
+            path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
             os.makedirs(path_media_dst.parent, exist_ok=True)
 
             # Create a temp directory and file.
@@ -400,8 +401,14 @@ class Download:
 
                     self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
 
-                # Move final file to the configured destination directory.
-                shutil.move(tmp_path_file, path_media_dst)
+                    # Move final file to the configured destination directory.
+                    shutil.move(tmp_path_file, path_media_dst)
+
+                    # If files needs to be symlinked, do postprocessing here.
+                    if self.settings.data.symlink_to_track and not isinstance(media, Video):
+                        path_media_symlink_dst: pathlib.Path = self.media_move_and_symlink(
+                            media, path_media_dst, file_extension
+                        )
 
             if quality_audio:
                 # Set quality back to the global user value
@@ -429,6 +436,31 @@ class Download:
             time.sleep(time_sleep)
 
         return status_download, path_media_dst
+
+    def media_move_and_symlink(
+        self, media: Track | Video, path_media_src: pathlib.Path, file_extension: str
+    ) -> pathlib.Path:
+        # Compute tracks path, sanitize and ensure path exists
+        file_name_relative: str = format_path_media(self.settings.data.format_track, media)
+        path_media_dst: pathlib.Path = (
+            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)).resolve().absolute()
+        )
+        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
+
+        os.makedirs(path_media_dst.parent, exist_ok=True)
+
+        # Move item and symlink it
+        if self.skip_existing:
+            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+        else:
+            skip_file: bool = False
+
+        if not skip_file:
+            shutil.move(path_media_src, path_media_dst)
+
+        os.symlink(path_media_dst, path_media_src)
+
+        return path_media_dst
 
     def adjust_quality_audio(self, quality) -> Quality:
         # Save original quality settings
