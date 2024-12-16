@@ -310,8 +310,21 @@ class Download:
         path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
 
         # Compute if and how downloads need to be skipped.
+        skip_download: bool = False
+
         if self.skip_existing:
             skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+
+            if self.settings.data.symlink_to_track and not isinstance(media, Video):
+                # Compute symlink tracks path, sanitize and check if file exists
+                file_name_symlink_relative: str = format_path_media(self.settings.data.format_track, media)
+                path_media_symlink_dst: pathlib.Path = (
+                    (pathlib.Path(self.path_base).expanduser() / (file_name_symlink_relative + file_extension_dummy))
+                    .resolve()
+                    .absolute()
+                )
+                path_media_symlink_dst = pathlib.Path(path_file_sanitize(str(path_media_symlink_dst), adapt=True))
+                skip_download = check_file_exists(path_media_symlink_dst, extension_ignore=True)
         else:
             skip_file: bool = False
 
@@ -358,57 +371,58 @@ class Download:
             path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
             os.makedirs(path_media_dst.parent, exist_ok=True)
 
-            # Create a temp directory and file.
-            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
+            if not skip_download:
+                # Create a temp directory and file.
+                with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
+                    tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
 
-                # Create empty file
-                tmp_path_file.touch()
+                    # Create empty file
+                    tmp_path_file.touch()
 
-                # Download media.
-                result_download, tmp_path_file = self._download(
-                    media=media, stream_manifest=stream_manifest, path_file=tmp_path_file
+                    # Download media.
+                    result_download, tmp_path_file = self._download(
+                        media=media, stream_manifest=stream_manifest, path_file=tmp_path_file
+                    )
+
+                    if result_download:
+                        # Convert video from TS to MP4
+                        if isinstance(media, Video) and self.settings.data.video_convert_mp4:
+                            # Convert `*.ts` file to `*.mp4` using ffmpeg
+                            tmp_path_file = self._video_convert(tmp_path_file)
+
+                        # Extract FLAC from MP4 container using ffmpeg
+                        if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
+                            tmp_path_file = self._extract_flac(tmp_path_file)
+
+                        tmp_path_lyrics: pathlib.Path | None = None
+                        tmp_path_cover: pathlib.Path | None = None
+
+                        # Write metadata to file.
+                        if not isinstance(media, Video):
+                            result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
+                                media, tmp_path_file, is_parent_album, media_stream
+                            )
+
+                        # Move lyrics file
+                        if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
+                            self._move_lyrics(tmp_path_lyrics, path_media_dst)
+
+                        # Move cover file
+                        # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
+                        #  downloaded for an album once.
+                        if self.settings.data.cover_album_file and tmp_path_cover:
+                            self._move_cover(tmp_path_cover, path_media_dst)
+
+                        self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
+
+                        # Move final file to the configured destination directory.
+                        shutil.move(tmp_path_file, path_media_dst)
+
+            # If files needs to be symlinked, do postprocessing here.
+            if self.settings.data.symlink_to_track and not isinstance(media, Video):
+                path_media_symlink_dst: pathlib.Path = self.media_move_and_symlink(
+                    media, path_media_dst, file_extension
                 )
-
-                if result_download:
-                    # Convert video from TS to MP4
-                    if isinstance(media, Video) and self.settings.data.video_convert_mp4:
-                        # Convert `*.ts` file to `*.mp4` using ffmpeg
-                        tmp_path_file = self._video_convert(tmp_path_file)
-
-                    # Extract FLAC from MP4 container using ffmpeg
-                    if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
-                        tmp_path_file = self._extract_flac(tmp_path_file)
-
-                    tmp_path_lyrics: pathlib.Path | None = None
-                    tmp_path_cover: pathlib.Path | None = None
-
-                    # Write metadata to file.
-                    if not isinstance(media, Video):
-                        result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
-                            media, tmp_path_file, is_parent_album, media_stream
-                        )
-
-                    # Move lyrics file
-                    if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
-                        self._move_lyrics(tmp_path_lyrics, path_media_dst)
-
-                    # Move cover file
-                    # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
-                    #  downloaded for an album once.
-                    if self.settings.data.cover_album_file and tmp_path_cover:
-                        self._move_cover(tmp_path_cover, path_media_dst)
-
-                    self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
-
-                    # Move final file to the configured destination directory.
-                    shutil.move(tmp_path_file, path_media_dst)
-
-                    # If files needs to be symlinked, do postprocessing here.
-                    if self.settings.data.symlink_to_track and not isinstance(media, Video):
-                        path_media_symlink_dst: pathlib.Path = self.media_move_and_symlink(
-                            media, path_media_dst, file_extension
-                        )
 
             if quality_audio:
                 # Set quality back to the global user value
