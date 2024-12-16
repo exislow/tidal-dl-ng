@@ -468,14 +468,20 @@ class Download:
         # Move item and symlink it
         if path_media_dst != path_media_src:
             if self.skip_existing:
-                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=False)
+                skip_symlink: bool = path_media_src.is_symlink()
             else:
                 skip_file: bool = False
+                skip_symlink: bool = False
 
             if not skip_file:
+                self.fn_logger.debug(f"Move: {path_media_src} -> {path_media_dst}")
                 shutil.move(path_media_src, path_media_dst)
 
-            os.symlink(path_media_dst, path_media_src)
+            if not skip_symlink:
+                self.fn_logger.debug(f"Symlink: {path_media_src} -> {path_media_dst}")
+                path_media_src.unlink(missing_ok=True)
+                path_media_src.symlink_to(path_media_dst)
 
         return path_media_dst
 
@@ -711,6 +717,8 @@ class Download:
             # Sanitize final playlist name to fit into OS boundaries.
             path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
             path_playlist = pathlib.Path(path_file_sanitize(path_playlist, adapt=True))
+
+            self.fn_logger.debug(f"Playlist: Creating {path_playlist}")
 
             # Get all tracks in the directory
             path_tracks: [pathlib.Path] = []

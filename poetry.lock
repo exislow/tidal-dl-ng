@@ -178,13 +178,13 @@ files = [
 
 [[package]]
 name = "certifi"
-version = "2024.8.30"
+version = "2024.12.14"
 description = "Python package for providing Mozilla's CA Bundle."
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "certifi-2024.8.30-py3-none-any.whl", hash = "sha256:922820b53db7a7257ffbda3f597266d435245903d80737e34f8a45ff3e3230d8"},
-    {file = "certifi-2024.8.30.tar.gz", hash = "sha256:bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9"},
+    {file = "certifi-2024.12.14-py3-none-any.whl", hash = "sha256:1275f7a45be9464efc1173084eaa30f866fe2e47d389406136d332ed4967ec56"},
+    {file = "certifi-2024.12.14.tar.gz", hash = "sha256:b650d30f370c2b724812bee08008be0c4163b163ddaec3f2546c1caf65f191db"},
 ]
 
 [[package]]
@@ -971,13 +971,13 @@ pyyaml = ">=5.1"
 
 [[package]]
 name = "mkdocs-material"
-version = "9.5.48"
+version = "9.5.49"
 description = "Documentation that simply works"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "mkdocs_material-9.5.48-py3-none-any.whl", hash = "sha256:b695c998f4b939ce748adbc0d3bff73fa886a670ece948cf27818fa115dc16f8"},
-    {file = "mkdocs_material-9.5.48.tar.gz", hash = "sha256:a582531e8b34f4c7ed38c29d5c44763053832cf2a32f7409567e0c74749a47db"},
+    {file = "mkdocs_material-9.5.49-py3-none-any.whl", hash = "sha256:c3c2d8176b18198435d3a3e119011922f3e11424074645c24019c2dcf08a360e"},
+    {file = "mkdocs_material-9.5.49.tar.gz", hash = "sha256:3671bb282b4f53a1c72e08adbe04d2481a98f85fed392530051f80ff94a9621d"},
 ]
 
 [package.dependencies]
@@ -2024,19 +2024,23 @@ name = "tidalapi"
 version = "0.8.2"
 description = "Unofficial API for TIDAL music streaming service."
 optional = false
-python-versions = "<4.0,>=3.8"
-files = [
-    {file = "tidalapi-0.8.2-py3-none-any.whl", hash = "sha256:46998ecb9103aee6d1346ad2974df05fe9bc03a429a89d5a701571fe4d9c4525"},
-    {file = "tidalapi-0.8.2.tar.gz", hash = "sha256:9eab07291f92f506694b6d326dd1e6651349eaa71597cef634a62915312db38c"},
-]
+python-versions = "^3.8"
+files = []
+develop = false
 
 [package.dependencies]
-isodate = ">=0.7.2,<0.8.0"
-mpegdash = ">=0.4.0,<0.5.0"
-python-dateutil = ">=2.8.2,<3.0.0"
-ratelimit = ">=2.2.1,<3.0.0"
-requests = ">=2.32.3,<3.0.0"
-typing-extensions = ">=4.12.2,<5.0.0"
+isodate = "^0.7.2"
+mpegdash = "^0.4.0"
+python-dateutil = "^2.8.2"
+ratelimit = "^2.2.1"
+requests = "^2.32.3"
+typing-extensions = "^4.12.2"
+
+[package.source]
+type = "git"
+url = "git@github.com:exislow/python-tidal.git"
+reference = "309-file-extension"
+resolved_reference = "2f4a0dcc93fe40748c1ff0fd4773c9a6eeb6cc36"
 
 [[package]]
 name = "tokenize-rt"
@@ -2267,4 +2271,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "dce4c40a6d0552a6d21c5801e7fecbcb8254f3abc4fbc5a39c31c8ac14aec2c4"
+content-hash = "fbac1f69d010fa9495b26a3e4ee83dda2c61a4c1116d88e1d75bcd1d5c99ae98"
