@@ -42,6 +42,8 @@ class Settings:
     download_delay_sec_max: float = 5.0
     album_track_num_pad_min: int = 1
     downloads_concurrent_max: int = 3
+    symlink_to_track: bool = False
+    playlist_create: bool = False
 
 
 @dataclass_json
@@ -90,6 +92,11 @@ class HelpSettings:
         "Minimum length of the album track count, will be padded with zeroes (0). To disable padding set this to 1."
     )
     downloads_concurrent_max: str = "Maximum concurrent number of downloads (threads)."
+    symlink_to_track: str = (
+        "If enabled the tracks of albums, playlists and mixes will be downloaded to the track directory but symlinked "
+        "accordingly."
+    )
+    playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
 
 
 @dataclass_json

@@ -27,7 +27,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 767)
+        DialogSettings.resize(640, 800)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -165,12 +165,34 @@ class Ui_DialogSettings:
 
         self.horizontalLayout.addLayout(self.lv_flag_skip_existing)
 
-        self.verticalLayout_3 = QVBoxLayout()
-        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.lv_symlink_to_track = QVBoxLayout()
+        self.lv_symlink_to_track.setObjectName("lv_symlink_to_track")
+        self.cb_symlink_to_track = QCheckBox(self.gb_flags)
+        self.cb_symlink_to_track.setObjectName("cb_symlink_to_track")
 
-        self.horizontalLayout.addLayout(self.verticalLayout_3)
+        self.lv_symlink_to_track.addWidget(self.cb_symlink_to_track)
+
+        self.horizontalLayout.addLayout(self.lv_symlink_to_track)
 
         self.lv_flags.addLayout(self.horizontalLayout)
+
+        self.horizontalLayout_12 = QHBoxLayout()
+        self.horizontalLayout_12.setObjectName("horizontalLayout_12")
+        self.lv_playlist_create = QVBoxLayout()
+        self.lv_playlist_create.setObjectName("lv_playlist_create")
+        self.cb_playlist_create = QCheckBox(self.gb_flags)
+        self.cb_playlist_create.setObjectName("cb_playlist_create")
+
+        self.lv_playlist_create.addWidget(self.cb_playlist_create)
+
+        self.horizontalLayout_12.addLayout(self.lv_playlist_create)
+
+        self.verticalLayout_4 = QVBoxLayout()
+        self.verticalLayout_4.setObjectName("verticalLayout_4")
+
+        self.horizontalLayout_12.addLayout(self.verticalLayout_4)
+
+        self.lv_flags.addLayout(self.horizontalLayout_12)
 
         self.lv_main.addWidget(self.gb_flags)
 
@@ -574,6 +596,8 @@ class Ui_DialogSettings:
         self.cb_metadata_cover_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_cover_album_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_skip_existing.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_symlink_to_track.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_playlist_create.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

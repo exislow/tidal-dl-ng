@@ -182,6 +182,8 @@ class DialogPreferences(QtWidgets.QDialog):
             "metadata_cover_embed",
             "cover_album_file",
             "skip_existing",
+            "symlink_to_track",
+            "playlist_create",
         ]
 
     def gui_populate(self):
