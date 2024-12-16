@@ -23,6 +23,8 @@ from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
     EXTENSION_LYRICS,
+    PLAYLIST_EXTENSION,
+    PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
     MediaType,
     QualityVideo,
@@ -299,7 +301,7 @@ class Download:
 
         # Create file name and path
         file_extension_dummy: str = AudioExtensions.FLAC
-        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
+        file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
             (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
             .resolve()
@@ -310,8 +312,21 @@ class Download:
         path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
 
         # Compute if and how downloads need to be skipped.
+        skip_download: bool = False
+
         if self.skip_existing:
             skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+
+            if self.settings.data.symlink_to_track and not isinstance(media, Video):
+                # Compute symlink tracks path, sanitize and check if file exists
+                file_name_symlink_relative: str = format_path_media(self.settings.data.format_track, media)
+                path_media_symlink_dst: pathlib.Path = (
+                    (pathlib.Path(self.path_base).expanduser() / (file_name_symlink_relative + file_extension_dummy))
+                    .resolve()
+                    .absolute()
+                )
+                path_media_symlink_dst = pathlib.Path(path_file_sanitize(str(path_media_symlink_dst), adapt=True))
+                skip_download = check_file_exists(path_media_symlink_dst, extension_ignore=True)
         else:
             skip_file: bool = False
 
@@ -353,55 +368,63 @@ class Download:
             elif isinstance(media, Video):
                 file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
-            # Compute file name and create destination directory
+            # Compute file name, sanitize once again and create destination directory
             path_media_dst = path_media_dst.with_suffix(file_extension)
+            path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
             os.makedirs(path_media_dst.parent, exist_ok=True)
 
-            # Create a temp directory and file.
-            with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
-                tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
+            if not skip_download:
+                # Create a temp directory and file.
+                with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp_path_dir:
+                    tmp_path_file: pathlib.Path = pathlib.Path(tmp_path_dir) / str(uuid4())
 
-                # Create empty file
-                tmp_path_file.touch()
+                    # Create empty file
+                    tmp_path_file.touch()
 
-                # Download media.
-                result_download, tmp_path_file = self._download(
-                    media=media, stream_manifest=stream_manifest, path_file=tmp_path_file
+                    # Download media.
+                    result_download, tmp_path_file = self._download(
+                        media=media, stream_manifest=stream_manifest, path_file=tmp_path_file
+                    )
+
+                    if result_download:
+                        # Convert video from TS to MP4
+                        if isinstance(media, Video) and self.settings.data.video_convert_mp4:
+                            # Convert `*.ts` file to `*.mp4` using ffmpeg
+                            tmp_path_file = self._video_convert(tmp_path_file)
+
+                        # Extract FLAC from MP4 container using ffmpeg
+                        if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
+                            tmp_path_file = self._extract_flac(tmp_path_file)
+
+                        tmp_path_lyrics: pathlib.Path | None = None
+                        tmp_path_cover: pathlib.Path | None = None
+
+                        # Write metadata to file.
+                        if not isinstance(media, Video):
+                            result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
+                                media, tmp_path_file, is_parent_album, media_stream
+                            )
+
+                        # Move lyrics file
+                        if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
+                            self._move_lyrics(tmp_path_lyrics, path_media_dst)
+
+                        # Move cover file
+                        # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
+                        #  downloaded for an album once.
+                        if self.settings.data.cover_album_file and tmp_path_cover:
+                            self._move_cover(tmp_path_cover, path_media_dst)
+
+                        self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
+
+                        # Move final file to the configured destination directory.
+                        shutil.move(tmp_path_file, path_media_dst)
+
+            # If files needs to be symlinked, do postprocessing here.
+            if self.settings.data.symlink_to_track and not isinstance(media, Video):
+                path_media_symlink_dst: pathlib.Path = self.media_move_and_symlink(
+                    media, path_media_dst, file_extension
                 )
-
-                if result_download:
-                    # Convert video from TS to MP4
-                    if isinstance(media, Video) and self.settings.data.video_convert_mp4:
-                        # Convert `*.ts` file to `*.mp4` using ffmpeg
-                        tmp_path_file = self._video_convert(tmp_path_file)
-
-                    # Extract FLAC from MP4 container using ffmpeg
-                    if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
-                        tmp_path_file = self._extract_flac(tmp_path_file)
-
-                    tmp_path_lyrics: pathlib.Path | None = None
-                    tmp_path_cover: pathlib.Path | None = None
-
-                    # Write metadata to file.
-                    if not isinstance(media, Video):
-                        result_metadata, tmp_path_lyrics, tmp_path_cover = self.metadata_write(
-                            media, tmp_path_file, is_parent_album, media_stream
-                        )
-
-                    # Move lyrics file
-                    if self.settings.data.lyrics_file and not isinstance(media, Video) and tmp_path_lyrics:
-                        self._move_lyrics(tmp_path_lyrics, path_media_dst)
-
-                    # Move cover file
-                    # TODO: Cover is downloaded with every track of the album. Needs refactoring, so cover is only
-                    #  downloaded for an album once.
-                    if self.settings.data.cover_album_file and tmp_path_cover:
-                        self._move_cover(tmp_path_cover, path_media_dst)
-
-                    self.fn_logger.info(f"Downloaded item '{name_builder_item(media)}'.")
-
-                # Move final file to the configured destination directory.
-                shutil.move(tmp_path_file, path_media_dst)
 
             if quality_audio:
                 # Set quality back to the global user value
@@ -429,6 +452,32 @@ class Download:
             time.sleep(time_sleep)
 
         return status_download, path_media_dst
+
+    def media_move_and_symlink(
+        self, media: Track | Video, path_media_src: pathlib.Path, file_extension: str
+    ) -> pathlib.Path:
+        # Compute tracks path, sanitize and ensure path exists
+        file_name_relative: str = format_path_media(self.settings.data.format_track, media)
+        path_media_dst: pathlib.Path = (
+            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)).resolve().absolute()
+        )
+        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
+
+        os.makedirs(path_media_dst.parent, exist_ok=True)
+
+        # Move item and symlink it
+        if path_media_dst != path_media_src:
+            if self.skip_existing:
+                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+            else:
+                skip_file: bool = False
+
+            if not skip_file:
+                shutil.move(path_media_src, path_media_dst)
+
+            os.symlink(path_media_dst, path_media_src)
+
+        return path_media_dst
 
     def adjust_quality_audio(self, quality) -> Quality:
         # Save original quality settings
@@ -596,7 +645,7 @@ class Download:
             raise MediaMissing
 
         # Create file name and path
-        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
+        file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
 
         # Get the name of the list and check, if videos should be included.
         list_media_name: str = name_builder_title(media)
@@ -618,6 +667,7 @@ class Download:
         )
 
         is_album: bool = isinstance(media, Album)
+        result_dirs: [pathlib.Path] = []
 
         # Iterate through list items
         while not self.progress.finished:
@@ -639,6 +689,7 @@ class Download:
                 for future in futures.as_completed(l_futures):
                     # Retrieve result
                     status, result_path_file = future.result()
+                    result_dirs.append(result_path_file.parent)
 
                     # Advance progress bar.
                     self.progress.advance(p_task1)
@@ -646,7 +697,43 @@ class Download:
                     if not progress_stdout:
                         self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
 
+        # Create playlist file
+        if self.settings.data.playlist_create:
+            self.playlist_populate(set(result_dirs), list_media_name, is_album)
+
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
+
+    def playlist_populate(self, dirs_scoped: [pathlib.Path], name_list: str, is_album: bool) -> [pathlib.Path]:
+        result: [pathlib.Path] = []
+
+        # For each dir, which contains tracks
+        for dir_scoped in dirs_scoped:
+            # Sanitize final playlist name to fit into OS boundaries.
+            path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
+            path_playlist = pathlib.Path(path_file_sanitize(path_playlist, adapt=True))
+
+            # Get all tracks in the directory
+            path_tracks: [pathlib.Path] = []
+
+            for extension_audio in AudioExtensions:
+                path_tracks = path_tracks + list(dir_scoped.glob(f"*{extension_audio!s}"))
+
+            # If it is not an album sort by modification time
+            if not is_album:
+                path_tracks.sort(key=lambda x: os.path.getmtime(x))
+
+            # Write data to m3u file
+            with path_playlist.open(mode="w", encoding="utf-8") as f:
+                for path_track in path_tracks:
+                    # If its a symlink write the relative file path to the actual track into the playlist file
+                    if path_track.is_symlink():
+                        media_file_target = path_track.resolve().relative_to(path_track.parent, walk_up=True)
+
+                    f.write(str(media_file_target) + os.linesep)
+
+            result.append(path_playlist)
+
+        return result
 
     def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
