@@ -9,6 +9,8 @@ COVER_NAME: str = "cover.jpg"
 BLOCK_SIZE: int = 4096
 BLOCKS: int = 1024
 CHUNK_SIZE: int = BLOCK_SIZE * BLOCKS
+PLAYLIST_EXTENSION: str = ".m3u"
+PLAYLIST_PREFIX: str = "_"
 
 
 class QualityVideo(StrEnum):

@@ -75,6 +75,8 @@ If you like to have the GUI version only, have a look at the
 - Adjustable audio and video download quality.
 - FLAC extraction from MP4 containers
 - Lyrics and album art / cover download
+- Creates playlist files
+- Can symlink tracks instead of having several copies, if added to different playlist
 
 ## ▶️ Getting started with development
 

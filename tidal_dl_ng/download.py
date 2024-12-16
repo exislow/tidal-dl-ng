@@ -23,6 +23,8 @@ from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
     EXTENSION_LYRICS,
+    PLAYLIST_EXTENSION,
+    PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
     MediaType,
     QualityVideo,
@@ -464,15 +466,16 @@ class Download:
         os.makedirs(path_media_dst.parent, exist_ok=True)
 
         # Move item and symlink it
-        if self.skip_existing:
-            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
-        else:
-            skip_file: bool = False
+        if path_media_dst != path_media_src:
+            if self.skip_existing:
+                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+            else:
+                skip_file: bool = False
 
-        if not skip_file:
-            shutil.move(path_media_src, path_media_dst)
+            if not skip_file:
+                shutil.move(path_media_src, path_media_dst)
 
-        os.symlink(path_media_dst, path_media_src)
+            os.symlink(path_media_dst, path_media_src)
 
         return path_media_dst
 
@@ -642,7 +645,7 @@ class Download:
             raise MediaMissing
 
         # Create file name and path
-        file_name_relative = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
+        file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
 
         # Get the name of the list and check, if videos should be included.
         list_media_name: str = name_builder_title(media)
@@ -664,6 +667,7 @@ class Download:
         )
 
         is_album: bool = isinstance(media, Album)
+        result_dirs: [pathlib.Path] = []
 
         # Iterate through list items
         while not self.progress.finished:
@@ -685,6 +689,7 @@ class Download:
                 for future in futures.as_completed(l_futures):
                     # Retrieve result
                     status, result_path_file = future.result()
+                    result_dirs.append(result_path_file.parent)
 
                     # Advance progress bar.
                     self.progress.advance(p_task1)
@@ -692,7 +697,43 @@ class Download:
                     if not progress_stdout:
                         self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
 
+        # Create playlist file
+        if self.settings.data.playlist_create:
+            self.playlist_populate(set(result_dirs), list_media_name, is_album)
+
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
+
+    def playlist_populate(self, dirs_scoped: [pathlib.Path], name_list: str, is_album: bool) -> [pathlib.Path]:
+        result: [pathlib.Path] = []
+
+        # For each dir, which contains tracks
+        for dir_scoped in dirs_scoped:
+            # Sanitize final playlist name to fit into OS boundaries.
+            path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
+            path_playlist = pathlib.Path(path_file_sanitize(path_playlist, adapt=True))
+
+            # Get all tracks in the directory
+            path_tracks: [pathlib.Path] = []
+
+            for extension_audio in AudioExtensions:
+                path_tracks = path_tracks + list(dir_scoped.glob(f"*{extension_audio!s}"))
+
+            # If it is not an album sort by modification time
+            if not is_album:
+                path_tracks.sort(key=lambda x: os.path.getmtime(x))
+
+            # Write data to m3u file
+            with path_playlist.open(mode="w", encoding="utf-8") as f:
+                for path_track in path_tracks:
+                    # If its a symlink write the relative file path to the actual track into the playlist file
+                    if path_track.is_symlink():
+                        media_file_target = path_track.resolve().relative_to(path_track.parent, walk_up=True)
+
+                    f.write(str(media_file_target) + os.linesep)
+
+            result.append(path_playlist)
+
+        return result
 
     def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
