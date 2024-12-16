@@ -260,6 +260,20 @@ class Download:
             result=result, url=url, path_segment=path_segment, id_segment=id_segment, error=error
         )
 
+    def extension_guess(self, quality_audio: Quality, is_video: bool) -> AudioExtensions | VideoExtensions:
+        result: AudioExtensions | VideoExtensions
+
+        if is_video:
+            result = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
+        else:
+            result = (
+                AudioExtensions.FLAC
+                if self.settings.data.extract_flac and quality_audio in (Quality.hi_res_lossless, Quality.high_lossless)
+                else AudioExtensions.M4A
+            )
+
+        return result
+
     def item(
         self,
         file_template: str,
@@ -300,13 +314,11 @@ class Download:
             return False, ""
 
         # Create file name and path
-        file_extension_dummy: str = AudioExtensions.FLAC
+        file_extension_dummy: str = self.extension_guess(quality_audio, isinstance(media, Video))
         file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
-            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy))
-            .resolve()
-            .absolute()
-        )
+            pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy)
+        ).absolute()
 
         # Sanitize final path_file to fit into OS boundaries.
         path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
@@ -315,31 +327,36 @@ class Download:
         skip_download: bool = False
 
         if self.skip_existing:
-            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
+            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=False)
 
             if self.settings.data.symlink_to_track and not isinstance(media, Video):
                 # Compute symlink tracks path, sanitize and check if file exists
-                file_name_symlink_relative: str = format_path_media(self.settings.data.format_track, media)
-                path_media_symlink_dst: pathlib.Path = (
-                    (pathlib.Path(self.path_base).expanduser() / (file_name_symlink_relative + file_extension_dummy))
-                    .resolve()
-                    .absolute()
+                file_name_track_dir_relative: str = format_path_media(self.settings.data.format_track, media)
+                path_media_track_dir: pathlib.Path = (
+                    pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
+                ).absolute()
+                path_media_track_dir = pathlib.Path(path_file_sanitize(str(path_media_track_dir), adapt=True))
+                file_exists_track_dir: bool = check_file_exists(path_media_track_dir, extension_ignore=False)
+                file_exists_playlist_dir: bool = (
+                    not file_exists_track_dir and skip_file and not path_media_dst.is_symlink()
                 )
-                path_media_symlink_dst = pathlib.Path(path_file_sanitize(str(path_media_symlink_dst), adapt=True))
-                skip_download = check_file_exists(path_media_symlink_dst, extension_ignore=True)
+                skip_download = file_exists_playlist_dir or file_exists_track_dir
+
+                # If
+                if skip_file and file_exists_playlist_dir:
+                    skip_file = False
         else:
             skip_file: bool = False
 
         if not skip_file:
-            # Get extension.
-            file_extension: str
-            do_flac_extract = False
             # If a quality is explicitly set, change it and remember the previously set quality.
             quality_audio_old: Quality = self.adjust_quality_audio(quality_audio) if quality_audio else quality_audio
             quality_video_old: QualityVideo = (
                 self.adjust_quality_video(quality_video) if quality_video else quality_video
             )
-
+            do_flac_extract = False
+            # Get extension.
+            file_extension: str
             stream_manifest: StreamManifest | None = None
 
             if isinstance(media, Track):
@@ -422,9 +439,7 @@ class Download:
 
             # If files needs to be symlinked, do postprocessing here.
             if self.settings.data.symlink_to_track and not isinstance(media, Video):
-                path_media_symlink_dst: pathlib.Path = self.media_move_and_symlink(
-                    media, path_media_dst, file_extension
-                )
+                path_media_track_dir: pathlib.Path = self.media_move_and_symlink(media, path_media_dst, file_extension)
 
             if quality_audio:
                 # Set quality back to the global user value
@@ -459,8 +474,8 @@ class Download:
         # Compute tracks path, sanitize and ensure path exists
         file_name_relative: str = format_path_media(self.settings.data.format_track, media)
         path_media_dst: pathlib.Path = (
-            (pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)).resolve().absolute()
-        )
+            pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)
+        ).absolute()
         path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
 
         os.makedirs(path_media_dst.parent, exist_ok=True)
@@ -733,7 +748,7 @@ class Download:
             # Write data to m3u file
             with path_playlist.open(mode="w", encoding="utf-8") as f:
                 for path_track in path_tracks:
-                    # If its a symlink write the relative file path to the actual track into the playlist file
+                    # If it's a symlink write the relative file path to the actual track into the playlist file
                     if path_track.is_symlink():
                         media_file_target = path_track.resolve().relative_to(path_track.parent, walk_up=True)
 
