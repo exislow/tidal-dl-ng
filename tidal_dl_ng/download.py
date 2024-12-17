@@ -285,7 +285,7 @@ class Download:
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
         is_parent_album: bool = False,
-    ) -> (bool, str):
+    ) -> (bool, pathlib.Path):
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
@@ -710,7 +710,9 @@ class Download:
                 for future in futures.as_completed(l_futures):
                     # Retrieve result
                     status, result_path_file = future.result()
-                    result_dirs.append(result_path_file.parent)
+
+                    if status:
+                        result_dirs.append(result_path_file.parent)
 
                     # Advance progress bar.
                     self.progress.advance(p_task1)
