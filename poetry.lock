@@ -22,9 +22,6 @@ files = [
     {file = "astroid-3.3.6.tar.gz", hash = "sha256:6aaea045f938c735ead292204afdb977a36e989522b7833ef6fea94de743f442"},
 ]
 
-[package.dependencies]
-typing-extensions = {version = ">=4.0.0", markers = "python_version < \"3.11\""}
-
 [[package]]
 name = "babel"
 version = "2.16.0"
@@ -38,62 +35,6 @@ files = [
 
 [package.extras]
 dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
-
-[[package]]
-name = "backports-datetime-fromisoformat"
-version = "2.0.2"
-description = "Backport of Python 3.11's datetime.fromisoformat"
-optional = false
-python-versions = ">3"
-files = [
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:09e70210726a70f3dd02ab9725bf2fcf469bda6d7554ea955588202e43e45b7d"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-macosx_11_0_universal2.whl", hash = "sha256:ec971f93353e0ee957b3bbb037d58371331eedb9bee1b6676a866f8be97289a4"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:191b0d327838eb21818e94a66b89118c086ada8f77ac9e6161980ef486fe0cbb"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:00441807d47dec7b89acafaa6570f561c43f5c7b7934d86f101b783a365a0f0c"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ba0af8719e161ce2fa5f5e426cceef1ff04b611c69a61636c8a7bf25d687cfa0"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:5afc32e1cdac293b054af04187d4adafcaceca99e12e5ff7807aee08074d85cb"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:70b044fdd274e32ece726d30b1728b4a21bc78fed0be6294091c6f04228b39ec"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp310-cp310-win_amd64.whl", hash = "sha256:6f493622b06e23e10646df7ea23e0d8350e8b1caccb5509ea82f8c3e64db32c7"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:55f59c88511dd15dabccf7916cbf23f8610203ac026454588084ddabf46127ee"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:65ca1f21319d78145456a70301396483ceebf078353641233494ea548ccc47db"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-macosx_11_0_x86_64.whl", hash = "sha256:79fc695afd66989f28e73de0ad91019abad789045577180dd482b6ede5bdca1e"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:019a87bd234734c2badb4c3e1ce4e807c5f2081f398a45a320e0c4919e5cee13"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:ea2b77e8810b691f1dd347d5c3d4ad829d18a9e81a04a0ebbc958d431967db31"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:944c987b777d7a81d97c94cdee2a8597bf6bdc94090094689456d3b02760cb73"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:30a2ab8c1fe4eb0013e7fcca29906fbe54e89f9120731ea71032b048dcf2fa17"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp311-cp311-win_amd64.whl", hash = "sha256:e23b602892827e15b1b4f94c61d4872b03b5d13417344d9a8daec80277244a32"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:64ec1ee18bc839847b067ab21a34a27e0d2cc4c6d041e4b05218cf6fed787740"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:54a3df9d6ae0e64b7677b9e3bba4fc7dce3ad56a3fa6bd66fb26796f8911de67"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-macosx_11_0_x86_64.whl", hash = "sha256:e54fa5663efcba6122bca037fd49220b7311e94cf6cc72e2f2a6f5d05c700bef"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:00ecff906ed4eb19808d8e4f0b141c14a1963d3688ba318c9e00aa7da7f71301"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e85f1ad56e2bcb24408e420de5508be47e54b0912ebe1325134e71837ec23a08"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:36d5cbece09dff2a3f8f517f3cda64f2ccec56db07808714b1f122326cd76fbd"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d47e186dcc366e6063248730a137a90de0472b2aaa5047ef39104fcacbcbcdbe"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp312-cp312-win_amd64.whl", hash = "sha256:3e9c81c6acc21953ffa9a627f15c4afcdbce6e456ca1d03e0d6dbf131429bd56"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:5a2574f4b542b9679db2b8a786c779249d2d5057dad01f9433cfb79a921da92c"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-macosx_11_0_universal2.whl", hash = "sha256:e62aa2eb6dc87a76a29b88601747925db439f793de7a8d2bbca4355e805088a6"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:964ec2d2c23908e96f1064560def1547b355e33e7c1ab418265e7e6242d25841"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8003f0cebeb6a5c47a1a871d0d09897d3dd54a9e1bcbe313f3e0463d470eed97"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2c88e6660e1fb96476cb9df17d6f5002a2fb5c87546d62b2daa3642aa537e144"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-musllinux_1_2_aarch64.whl", hash = "sha256:7124cda6acdc66755df916c1f52b4e2e9cad85591d40bcd4a80341144fd98b32"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-musllinux_1_2_x86_64.whl", hash = "sha256:c2b0a4a407479964b3f79fde080aad066fe64a350a3fcbb729d3c44b0db21240"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp38-cp38-win_amd64.whl", hash = "sha256:5616519470bc8131429266a869c3c5eeee5817a9a8357e2dd9c521383b774d1b"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:2eb563509f19e803dbbef3e4901d9553c9c3ea2b73c8d8fb85219fc57f16787a"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-macosx_11_0_universal2.whl", hash = "sha256:d37d2f4238e0f412e56fe2c41e8e60bda93be0230d0ee846823b54254ccb95e0"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:7dcefbba71194c73b3b26593c2ea4ad254b19084d0eb83e98e2541651a692703"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:352f6b793cb402cc62c5b60ceab13d30c06fad1372869c716d4d07927b5c7c43"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e7d6a21b482001a9ea44f277dc21d9fb6590e543146aaabe816407d1b87cf41b"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:f97285e80ea192357380cfd2fb2dce056ec65672597172f3af549dcf5d019b1e"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:5a5cfff34bf80f0cd2771da88bd898be1fa60250d6f2dd9e4a59885dbcb7aa7c"},
-    {file = "backports_datetime_fromisoformat-2.0.2-cp39-cp39-win_amd64.whl", hash = "sha256:ed392607d457b1ed50a88dcaf459e11d81c30a2f2d8dab818a1564de6897e76f"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:cb0f24d2c596991e39dfaa60c685b8c69bc9b1da77e9baf2c453882adeec483b"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp310-pypy310_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0083552588270acfaa31ac8de81b29786a1515d7608ff11ccdfcdffc2486212e"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp38-pypy38_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f367b7d7bc00aa6738c95eb48b90817f7f9bd9c61592ceedda29ece97983ee3f"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp38-pypy38_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1e0914e357d8559f1821e46fd5ef5d3bd22ec568125ba9e680b6e70cdc352910"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a94d5a7cf9cdee221b7721544f424c69747a04091cbff53aa6ae8454644b59f9"},
-    {file = "backports_datetime_fromisoformat-2.0.2-pp39-pypy39_pp73-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6a5e4c77a91db6f434c2eec46c0199d3617c19c812f0c74f7ed8e0f9779da9f0"},
-    {file = "backports_datetime_fromisoformat-2.0.2.tar.gz", hash = "sha256:142313bde1f93b0ea55f20f5a6ea034f84c79713daeb252dc47d40019db3812f"},
-]
 
 [[package]]
 name = "bandit"
@@ -156,8 +97,6 @@ mypy-extensions = ">=0.4.3"
 packaging = ">=22.0"
 pathspec = ">=0.9.0"
 platformdirs = ">=2"
-tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
-typing-extensions = {version = ">=4.0.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 colorama = ["colorama (>=0.4.3)"]
@@ -436,9 +375,6 @@ files = [
     {file = "coverage-7.6.9.tar.gz", hash = "sha256:4a8d8977b0c6ef5aeadcb644da9e69ae0dcfe66ec7f368c89c72e058bd71164d"},
 ]
 
-[package.dependencies]
-tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.11.0a6\" and extra == \"toml\""}
-
 [package.extras]
 toml = ["tomli"]
 
@@ -503,7 +439,6 @@ files = [
 [package.dependencies]
 click = ">=8.0.0,<9"
 colorama = {version = ">=0.4.6", markers = "sys_platform == \"win32\""}
-tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "dill"
@@ -530,20 +465,6 @@ files = [
     {file = "distlib-0.3.9-py2.py3-none-any.whl", hash = "sha256:47f8c22fd27c27e25a65601af709b38e4f0a45ea4fc2e710f65755fa8caaaf87"},
     {file = "distlib-0.3.9.tar.gz", hash = "sha256:a60f20dea646b8a33f3e7772f74dc0b2d0772d2837ee1342a00645c81edf9403"},
 ]
-
-[[package]]
-name = "exceptiongroup"
-version = "1.2.2"
-description = "Backport of PEP 654 (exception groups)"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "exceptiongroup-1.2.2-py3-none-any.whl", hash = "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b"},
-    {file = "exceptiongroup-1.2.2.tar.gz", hash = "sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc"},
-]
-
-[package.extras]
-test = ["pytest (>=6)"]
 
 [[package]]
 name = "ffmpeg-python"
@@ -728,9 +649,6 @@ files = [
     {file = "m3u8-6.0.0-py3-none-any.whl", hash = "sha256:566d0748739c552dad10f8c87150078de6a0ec25071fa48e6968e96fc6dcba5d"},
     {file = "m3u8-6.0.0.tar.gz", hash = "sha256:7ade990a1667d7a653bcaf9413b16c3eb5cd618982ff46aaff57fe6d9fa9c0fd"},
 ]
-
-[package.dependencies]
-backports-datetime-fromisoformat = {version = "*", markers = "python_version < \"3.11\""}
 
 [[package]]
 name = "macholib"
@@ -1117,7 +1035,6 @@ files = [
 
 [package.dependencies]
 mypy-extensions = ">=1.0.0"
-tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 typing-extensions = ">=4.6.0"
 
 [package.extras]
@@ -1500,15 +1417,10 @@ files = [
 [package.dependencies]
 astroid = ">=3.3.5,<=3.4.0-dev0"
 colorama = {version = ">=0.4.5", markers = "sys_platform == \"win32\""}
-dill = [
-    {version = ">=0.2", markers = "python_version < \"3.11\""},
-    {version = ">=0.3.7", markers = "python_version >= \"3.12\""},
-    {version = ">=0.3.6", markers = "python_version >= \"3.11\" and python_version < \"3.12\""},
-]
+dill = {version = ">=0.3.7", markers = "python_version >= \"3.12\""}
 isort = ">=4.2.5,<5.13.0 || >5.13.0,<6"
 mccabe = ">=0.6,<0.8"
 platformdirs = ">=2.2.0"
-tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 tomlkit = ">=0.10.1"
 
 [package.extras]
@@ -1546,7 +1458,6 @@ files = [
 
 [package.dependencies]
 packaging = ">=24.1"
-tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 docs = ["furo (>=2024.8.6)", "sphinx-autodoc-typehints (>=2.4.1)"]
@@ -1644,11 +1555,9 @@ files = [
 
 [package.dependencies]
 colorama = {version = "*", markers = "sys_platform == \"win32\""}
-exceptiongroup = {version = ">=1.0.0rc8", markers = "python_version < \"3.11\""}
 iniconfig = "*"
 packaging = "*"
 pluggy = ">=1.5,<2"
-tomli = {version = ">=1", markers = "python_version < \"3.11\""}
 
 [package.extras]
 dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments (>=2.7.2)", "requests", "setuptools", "xmlschema"]
@@ -1934,7 +1843,6 @@ files = [
 [package.dependencies]
 markdown-it-py = ">=2.2.0"
 pygments = ">=2.13.0,<3.0.0"
-typing-extensions = {version = ">=4.0.0,<5.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
@@ -2065,47 +1973,6 @@ files = [
 ]
 
 [[package]]
-name = "tomli"
-version = "2.2.1"
-description = "A lil' TOML parser"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "tomli-2.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:678e4fa69e4575eb77d103de3df8a895e1591b48e740211bd1067378c69e8249"},
-    {file = "tomli-2.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:023aa114dd824ade0100497eb2318602af309e5a55595f76b626d6d9f3b7b0a6"},
-    {file = "tomli-2.2.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:ece47d672db52ac607a3d9599a9d48dcb2f2f735c6c2d1f34130085bb12b112a"},
-    {file = "tomli-2.2.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6972ca9c9cc9f0acaa56a8ca1ff51e7af152a9f87fb64623e31d5c83700080ee"},
-    {file = "tomli-2.2.1-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c954d2250168d28797dd4e3ac5cf812a406cd5a92674ee4c8f123c889786aa8e"},
-    {file = "tomli-2.2.1-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:8dd28b3e155b80f4d54beb40a441d366adcfe740969820caf156c019fb5c7ec4"},
-    {file = "tomli-2.2.1-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:e59e304978767a54663af13c07b3d1af22ddee3bb2fb0618ca1593e4f593a106"},
-    {file = "tomli-2.2.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:33580bccab0338d00994d7f16f4c4ec25b776af3ffaac1ed74e0b3fc95e885a8"},
-    {file = "tomli-2.2.1-cp311-cp311-win32.whl", hash = "sha256:465af0e0875402f1d226519c9904f37254b3045fc5084697cefb9bdde1ff99ff"},
-    {file = "tomli-2.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:2d0f2fdd22b02c6d81637a3c95f8cd77f995846af7414c5c4b8d0545afa1bc4b"},
-    {file = "tomli-2.2.1-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:4a8f6e44de52d5e6c657c9fe83b562f5f4256d8ebbfe4ff922c495620a7f6cea"},
-    {file = "tomli-2.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:8d57ca8095a641b8237d5b079147646153d22552f1c637fd3ba7f4b0b29167a8"},
-    {file = "tomli-2.2.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4e340144ad7ae1533cb897d406382b4b6fede8890a03738ff1683af800d54192"},
-    {file = "tomli-2.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:db2b95f9de79181805df90bedc5a5ab4c165e6ec3fe99f970d0e302f384ad222"},
-    {file = "tomli-2.2.1-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:40741994320b232529c802f8bc86da4e1aa9f413db394617b9a256ae0f9a7f77"},
-    {file = "tomli-2.2.1-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:400e720fe168c0f8521520190686ef8ef033fb19fc493da09779e592861b78c6"},
-    {file = "tomli-2.2.1-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:02abe224de6ae62c19f090f68da4e27b10af2b93213d36cf44e6e1c5abd19fdd"},
-    {file = "tomli-2.2.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:b82ebccc8c8a36f2094e969560a1b836758481f3dc360ce9a3277c65f374285e"},
-    {file = "tomli-2.2.1-cp312-cp312-win32.whl", hash = "sha256:889f80ef92701b9dbb224e49ec87c645ce5df3fa2cc548664eb8a25e03127a98"},
-    {file = "tomli-2.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:7fc04e92e1d624a4a63c76474610238576942d6b8950a2d7f908a340494e67e4"},
-    {file = "tomli-2.2.1-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:f4039b9cbc3048b2416cc57ab3bda989a6fcf9b36cf8937f01a6e731b64f80d7"},
-    {file = "tomli-2.2.1-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:286f0ca2ffeeb5b9bd4fcc8d6c330534323ec51b2f52da063b11c502da16f30c"},
-    {file = "tomli-2.2.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a92ef1a44547e894e2a17d24e7557a5e85a9e1d0048b0b5e7541f76c5032cb13"},
-    {file = "tomli-2.2.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:9316dc65bed1684c9a98ee68759ceaed29d229e985297003e494aa825ebb0281"},
-    {file = "tomli-2.2.1-cp313-cp313-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:e85e99945e688e32d5a35c1ff38ed0b3f41f43fad8df0bdf79f72b2ba7bc5272"},
-    {file = "tomli-2.2.1-cp313-cp313-musllinux_1_2_aarch64.whl", hash = "sha256:ac065718db92ca818f8d6141b5f66369833d4a80a9d74435a268c52bdfa73140"},
-    {file = "tomli-2.2.1-cp313-cp313-musllinux_1_2_i686.whl", hash = "sha256:d920f33822747519673ee656a4b6ac33e382eca9d331c87770faa3eef562aeb2"},
-    {file = "tomli-2.2.1-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:a198f10c4d1b1375d7687bc25294306e551bf1abfa4eace6650070a5c1ae2744"},
-    {file = "tomli-2.2.1-cp313-cp313-win32.whl", hash = "sha256:d3f5614314d758649ab2ab3a62d4f2004c825922f9e370b29416484086b264ec"},
-    {file = "tomli-2.2.1-cp313-cp313-win_amd64.whl", hash = "sha256:a38aa0308e754b0e3c67e344754dff64999ff9b513e691d0e786265c93583c69"},
-    {file = "tomli-2.2.1-py3-none-any.whl", hash = "sha256:cb55c73c5f4408779d0cf3eef9f762b9c9f147a77de7b258bef0a5628adc85cc"},
-    {file = "tomli-2.2.1.tar.gz", hash = "sha256:cd45e1dc79c835ce60f7404ec8119f2eb06d38b1deba146f07ced3bbc44505ff"},
-]
-
-[[package]]
 name = "tomlkit"
 version = "0.13.2"
 description = "Style preserving TOML library"
@@ -2136,8 +2003,6 @@ packaging = ">=24.1"
 platformdirs = ">=4.3.6"
 pluggy = ">=1.5"
 pyproject-api = ">=1.8"
-tomli = {version = ">=2.0.1", markers = "python_version < \"3.11\""}
-typing-extensions = {version = ">=4.12.2", markers = "python_version < \"3.11\""}
 virtualenv = ">=20.26.6"
 
 [package.extras]
@@ -2270,5 +2135,5 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 
 [metadata]
 lock-version = "2.0"
-python-versions = ">=3.10,<3.13"
-content-hash = "fbac1f69d010fa9495b26a3e4ee83dda2c61a4c1116d88e1d75bcd1d5c99ae98"
+python-versions = ">=3.12,<3.13"
+content-hash = "e6f030f082c3d3d29c2ab1e30a4e27e38f06585a1a0601d30049301d755b6df0"

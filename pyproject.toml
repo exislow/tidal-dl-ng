@@ -15,7 +15,6 @@ classifiers = [
   "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
 ]
 
 [tool.poetry.scripts]
@@ -25,7 +24,7 @@ tdn = "tidal_dl_ng.cli:app"
 tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
-python = ">=3.12,<=3.13"
+python = ">=3.12,<3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 pycryptodome = "^3.21.0"
