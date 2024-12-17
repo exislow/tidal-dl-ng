@@ -1687,13 +1687,13 @@ six = ">=1.5"
 
 [[package]]
 name = "pyupgrade"
-version = "3.19.0"
+version = "3.19.1"
 description = "A tool to automatically upgrade syntax for newer versions."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyupgrade-3.19.0-py2.py3-none-any.whl", hash = "sha256:1364fcae4436a6a236a85960587390ec8a939ad0f65f429346f70a5f201c1489"},
-    {file = "pyupgrade-3.19.0.tar.gz", hash = "sha256:7ed4b7d972ed2788c43994f4a24f949d5bf044342992f3b48e1bed0092ddaa01"},
+    {file = "pyupgrade-3.19.1-py2.py3-none-any.whl", hash = "sha256:8c5b0bfacae5ff30fa136a53eb7f22c34ba007450d4099e9da8089dabb9e67c9"},
+    {file = "pyupgrade-3.19.1.tar.gz", hash = "sha256:d10e8c5f54b8327211828769e98d95d95e4715de632a3414f1eef3f51357b9e2"},
 ]
 
 [package.dependencies]
@@ -2040,7 +2040,7 @@ typing-extensions = "^4.12.2"
 type = "git"
 url = "git@github.com:exislow/python-tidal.git"
 reference = "309-file-extension"
-resolved_reference = "2f4a0dcc93fe40748c1ff0fd4773c9a6eeb6cc36"
+resolved_reference = "ac84d7c656c6eb1cc067e4be2f272fc22c038a1c"
 
 [[package]]
 name = "tokenize-rt"

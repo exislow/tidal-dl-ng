@@ -14,9 +14,8 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 
 [tool.poetry.scripts]
@@ -26,7 +25,7 @@ tdn = "tidal_dl_ng.cli:app"
 tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.12,<=3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 pycryptodome = "^3.21.0"
@@ -84,7 +83,7 @@ build-backend = "poetry.core.masonry.api"
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py312"
 line-length = 120
 fix = true
 # Overview: https://docs.astral.sh/ruff/rules/
@@ -138,7 +137,7 @@ ignore = [
 
 [tool.black]
 # https://github.com/psf/black
-target-version = ["py311"]
+target-version = ["py312"]
 line-length = 120
 color = true
 preview = true
@@ -164,7 +163,7 @@ exclude = '''
 
 [tool.isort]
 # https://github.com/timothycrosley/isort/
-py_version = 311
+py_version = 312
 line_length = 120
 known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
 sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
@@ -178,7 +177,7 @@ known_third_party = ["Crypto", "PySide6", "coloredlogs", "dataclasses_json", "ff
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file
 files = ["tidal_dl_ng"]
-python_version = "3.11"
+python_version = "3.12"
 pretty = true
 show_traceback = true
 color_output = true
