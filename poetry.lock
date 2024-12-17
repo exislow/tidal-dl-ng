@@ -1946,9 +1946,9 @@ typing-extensions = "^4.12.2"
 
 [package.source]
 type = "git"
-url = "git@github.com:exislow/python-tidal.git"
+url = "https://github.com/exislow/python-tidal.git"
 reference = "309-file-extension"
-resolved_reference = "ac84d7c656c6eb1cc067e4be2f272fc22c038a1c"
+resolved_reference = "e848a5d466c9529f1fd694a55a2f00825c8ce2d8"
 
 [[package]]
 name = "tokenize-rt"
@@ -2136,4 +2136,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.12,<3.13"
-content-hash = "e6f030f082c3d3d29c2ab1e30a4e27e38f06585a1a0601d30049301d755b6df0"
+content-hash = "ed38faaae919b98f55b106e8968f288bf74935a458617141341ded18de6bb5fd"
