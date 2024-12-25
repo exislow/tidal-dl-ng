@@ -711,7 +711,7 @@ class Download:
                     # Retrieve result
                     status, result_path_file = future.result()
 
-                    if status:
+                    if result_path_file:
                         result_dirs.append(result_path_file.parent)
 
                     # Advance progress bar.
