@@ -16,19 +16,20 @@ $ tidal-dl-ng --help
 
  Usage: tidal-dl-ng [OPTIONS] COMMAND [ARGS]...
 
-╭─ Options ────────────────────────────────────────────────────────────────────╮
-│ --version  -v                                                                │
-│ --help     -h        Show this message and exit.                             │
-╰──────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ cfg    Print or set an option. If no arguments are given, all options will   │
-│        be listed. If only one argument is given, the value will be printed   │
-│        for this option. To set a value for an option simply pass the value   │
-│        as the second argument                                                │
-│ dl                                                                           │
-│ gui                                                                          │
-│ login                                                                        │
-╰──────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ --version  -v                                                                                                            │
+│ --help     -h        Show this message and exit.                                                                         │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ cfg      Print or set an option. If no arguments are given, all options will be listed. If only one argument is given,   │
+│          the value will be printed for this option. To set a value for an option simply pass the value as the second     │
+│          argument                                                                                                        │
+│ login                                                                                                                    │
+│ logout                                                                                                                   │
+│ gui                                                                                                                      │
+│ dl       Download media from TIDAL by URL or favorites collections.                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
 ```
 
 If you like this projects and want to support it, you can buy me a coffee :-)
@@ -49,9 +50,9 @@ pip install --upgrade tidal-dl-ng[gui]
 You can use the command line (CLI) version to download media:
 
 ```bash
-tidal-dl-ng dl https://tidal.com/browse/track/46755209
+tidal-dl-ng dl url https://tidal.com/browse/track/46755209
 # OR
-tdn dl https://tidal.com/browse/track/46755209
+tdn dl fav_tracks
 ```
 
 But also the GUI:
@@ -69,7 +70,7 @@ If you like to have the GUI version only, have a look at the
 
 ## 🧁 Features
 
-- Download Tracks, Videos, Albums, Playlists etc.
+- Download Tracks, Videos, Albums, Playlists, Favorite Tracks/Artists/Albums/Videos, etc.
 - Multithreaded and multi-chunked downloads
 - Metadata for songs
 - Adjustable audio and video download quality.
