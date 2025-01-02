@@ -47,12 +47,21 @@ pip install --upgrade tidal-dl-ng
 pip install --upgrade tidal-dl-ng[gui]
 ```
 
-You can use the command line (CLI) version to download media:
+## ⌨️ Usage
+You can use the command line (CLI) version to download media by URL:
 
 ```bash
 tidal-dl-ng dl url https://tidal.com/browse/track/46755209
 # OR
-tdn dl fav_tracks
+tdn dl url https://tidal.com/browse/track/46755209
+```
+
+Or by your favorites collections:
+```bash
+tidal-dl-ng dl fav_tracks
+tidal-dl-ng dl fav_artists
+tidal-dl-ng dl fav_albums
+tidal-dl-ng dl fav_videos
 ```
 
 But also the GUI:
