@@ -14,7 +14,7 @@ body:
     attributes:
       label: I need Help.
       description: Describe the current situation and state your question.
-      placeholder: Write at least three sentences and be as precise as possible.
+      placeholder: Write at least three sentences and be as precise as possible. **Provide all necessary information** to be able to **reproduce** your case / what you try to describe. Otherwise this issue will be closed!
     validations:
       required: true
   - type: dropdown

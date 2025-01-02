@@ -14,7 +14,7 @@ body:
     attributes:
       label: What happened?
       description: Also tell us, what did you expect to happen?
-      placeholder: Use three sentences or more. Otherwise your report gets rejected. Provide all necessary information to be able to reproduce this bug, for instance, links and exact names to your items to tried to download, images of the error.
+      placeholder: Use three sentences (!) or more. Otherwise your report gets rejected. Provide all necessary information to be able to **reproduce** this bug, for instance, links and exact names to your items to tried to download, images of the error, and the command you have used. If you do not this issue will be rejected and closed.
     validations:
       required: true
   - type: input
@@ -38,7 +38,7 @@ body:
     id: logs
     attributes:
       label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks. No logs? Issue will be rejected and closed.
       render: shell
   - type: textarea
     id: config
