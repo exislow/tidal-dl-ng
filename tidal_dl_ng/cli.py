@@ -23,12 +23,102 @@ from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False)
+dl_fav_group = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=True,
+    help="Download from a favorites collection.",
+)
+app.add_typer(dl_fav_group, name="dl_fav")
 
 
 def version_callback(value: bool):
     if value:
         print(f"{__version__}")
         raise typer.Exit()
+
+
+def _download(ctx: typer.Context, urls: list[str], try_login: bool = True):
+    """
+    Shared logic for downloading a list of URLs.
+
+    :param ctx: The typer context
+    :type ctx: typer.Context
+    :param urls: The list of URLs to download.
+    :type urls: list[str]
+    :return: True if ran successfully.
+    """
+    if try_login:
+        # Call login method to validate the token.
+        ctx.invoke(login, ctx)
+
+    # Create initial objects.
+    settings: Settings = Settings()
+    progress: Progress = Progress(
+        "{task.description}",
+        SpinnerColumn(),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+    )
+    fn_logger = LoggerWrapped(progress.print)
+    dl = Download(
+        session=ctx.obj[CTX_TIDAL].session,
+        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
+        path_base=settings.data.download_base_path,
+        fn_logger=fn_logger,  # noqa: type
+        progress=progress,
+    )
+    progress_table = Table.grid()
+
+    # Style Progress display.
+    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
+
+    urls_pos_last = len(urls) - 1
+
+    for item in urls:
+        media_type: MediaType | bool = False
+
+        # Extract media name and id from link.
+        if "http" in item:
+            media_type = get_tidal_media_type(item)
+            item_id = get_tidal_media_id(item)
+            file_template = get_format_template(media_type, settings)
+        else:
+            print(f"It seems like that you have supplied an invalid URL: {item}")
+
+            continue
+
+        # Create Live display for Progress.
+        with Live(progress_table, refresh_per_second=10):
+            # Download media.
+            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
+                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
+
+                dl.item(
+                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
+                )
+            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
+                item_ids: [int] = []
+
+                if media_type == MediaType.ARTIST:
+                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+                    media_type = MediaType.ALBUM
+                    item_ids = item_ids + all_artist_album_ids(media)
+                else:
+                    item_ids.append(item_id)
+
+                for item_id in item_ids:
+                    dl.items(
+                        media_id=item_id,
+                        media_type=media_type,
+                        file_template=file_template,
+                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
+                        download_delay=settings.data.download_delay,
+                    )
+
+    # Stop Progress display.
+    progress.stop()
+
+    return True
 
 
 @app.callback()
@@ -147,79 +237,59 @@ def download(
 
             raise typer.Abort()
 
+    return _download(ctx, urls)
+
+
+@dl_fav_group.command(
+    name="tracks",
+    help="Download your saved, favorite tracks collection.",
+)
+def download_fav_tracks(ctx: typer.Context):
     # Call login method to validate the token.
     ctx.invoke(login, ctx)
 
-    # Create initial objects.
-    settings: Settings = Settings()
-    progress: Progress = Progress(
-        "{task.description}",
-        SpinnerColumn(),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-    )
-    fn_logger = LoggerWrapped(progress.print)
-    dl = Download(
-        session=ctx.obj[CTX_TIDAL].session,
-        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
-        path_base=settings.data.download_base_path,
-        fn_logger=fn_logger,
-        progress=progress,
-    )
-    progress_table = Table.grid()
+    # Get favorite tracks
+    track_urls = [track.share_url for track in ctx.obj[CTX_TIDAL].session.user.favorites.tracks()]
+    return _download(ctx, track_urls, try_login=False)
 
-    # Style Progress display.
-    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
 
-    urls_pos_last = len(urls) - 1
+@dl_fav_group.command(
+    name="artists",
+    help="Download your saved, favorite artists collection.",
+)
+def download_fav_artists(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
 
-    for item in urls:
-        media_type: MediaType | bool = False
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.artists()]
+    return _download(ctx, artist_urls, try_login=False)
 
-        # Extract media name and id from link.
-        if "http" in item:
-            media_type = get_tidal_media_type(item)
-            item_id = get_tidal_media_id(item)
-            file_template = get_format_template(media_type, settings)
 
-        # If url is invalid skip to next url in list.
-        if not media_type:
-            print(f"It seems like that you have supplied an invalid URL: {item}")
+@dl_fav_group.command(
+    name="albums",
+    help="Download your saved, favorite albums collection.",
+)
+def download_fav_albums(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
 
-            continue
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.albums()]
+    return _download(ctx, artist_urls, try_login=False)
 
-        # Create Live display for Progress.
-        with Live(progress_table, refresh_per_second=10):
-            # Download media.
-            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
-                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
 
-                dl.item(
-                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
-                )
-            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
-                item_ids: [int] = []
+@dl_fav_group.command(
+    name="videos",
+    help="Download your saved, favorite videos collection.",
+)
+def download_fav_videos(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
 
-                if media_type == MediaType.ARTIST:
-                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
-                    media_type = MediaType.ALBUM
-                    item_ids = item_ids + all_artist_album_ids(media)
-                else:
-                    item_ids.append(item_id)
-
-                for item_id in item_ids:
-                    dl.items(
-                        media_id=item_id,
-                        media_type=media_type,
-                        file_template=file_template,
-                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
-                        download_delay=settings.data.download_delay,
-                    )
-
-    # Stop Progress display.
-    progress.stop()
-
-    return True
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.videos()]
+    return _download(ctx, artist_urls, try_login=False)
 
 
 @app.command()

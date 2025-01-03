@@ -28,6 +28,7 @@ $ tidal-dl-ng --help
 │        for this option. To set a value for an option simply pass the value   │
 │        as the second argument                                                │
 │ dl                                                                           │
+│ dl_fav  Download from a favorites collection.                                │
 │ gui                                                                          │
 │ login                                                                        │
 ╰──────────────────────────────────────────────────────────────────────────────╯
@@ -48,12 +49,23 @@ pip install --upgrade tidal-dl-ng
 pip install --upgrade tidal-dl-ng[gui]
 ```
 
-You can use the command line (CLI) version to download media:
+## ⌨️ Usage
+
+You can use the command line (CLI) version to download media by URL:
 
 ```bash
 tidal-dl-ng dl https://tidal.com/browse/track/46755209
 # OR
 tdn dl https://tidal.com/browse/track/46755209
+```
+
+Or by your favorites collections:
+
+```bash
+tidal-dl-ng dl_fav tracks
+tidal-dl-ng dl_fav artists
+tidal-dl-ng dl_fav albums
+tidal-dl-ng dl_fav videos
 ```
 
 But also the GUI:
@@ -71,7 +83,7 @@ If you like to have the GUI version only as a binary, have a look at the
 
 ## 🧁 Features
 
-- Download Tracks, Videos, Albums, Playlists etc.
+- Download Tracks, Videos, Albums, Playlists, Favorite Tracks/Artists/Albums/Videos, etc.
 - Multithreaded and multi-chunked downloads
 - Metadata for songs
 - Adjustable audio and video download quality.
