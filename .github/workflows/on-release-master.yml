@@ -26,7 +26,7 @@ env:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -60,7 +60,7 @@ jobs:
           path: ${{env.RELEASE_UPLOAD_URL}}.txt
   deploy-docs:
     needs: publish
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -71,7 +71,7 @@ jobs:
   compute:
     # Workaround to be able to use variables in matrix.
     # See: https://stackoverflow.com/questions/74072206/github-actions-use-variables-in-matrix-definition
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       ASSET_EXTENSION: ${{ env.ASSET_EXTENSION }}
       OUT_NAME_FILE: ${{ env.OUT_NAME_FILE }}
