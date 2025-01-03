@@ -66,6 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     tray: QtWidgets.QSystemTrayIcon
     spinner: QtWaitingSpinner
     cover_url_current: str = ""
+    shutdown: bool = False
     model_tr_results: QtGui.QStandardItemModel = QtGui.QStandardItemModel()
     proxy_tr_results: HumanProxyModel
     s_spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
@@ -913,7 +914,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
-        while True:
+        while not self.shutdown:
             items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
                 QueueDownloadStatus.Waiting, QtCore.Qt.MatchFlag.MatchExactly, column=0
             )
@@ -1064,6 +1065,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.pb_reload_user_lists.setEnabled(status)
         self.pb_reload_user_lists.setText(button_text)
+
+    def closeEvent(self, event):
+        self.shutdown = True
+
+        event.accept()
 
 
 # TODO: Comment with Google Docstrings.
