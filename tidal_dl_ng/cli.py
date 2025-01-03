@@ -240,6 +240,58 @@ def download(
     return _download(ctx, urls)
 
 
+@dl_fav_group.command(
+    name="tracks",
+    help="Download your saved, favorite tracks collection.",
+)
+def download_fav_tracks(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
+
+    # Get favorite tracks
+    track_urls = [track.share_url for track in ctx.obj[CTX_TIDAL].session.user.favorites.tracks()]
+    return _download(ctx, track_urls, try_login=False)
+
+
+@dl_fav_group.command(
+    name="artists",
+    help="Download your saved, favorite artists collection.",
+)
+def download_fav_artists(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
+
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.artists()]
+    return _download(ctx, artist_urls, try_login=False)
+
+
+@dl_fav_group.command(
+    name="albums",
+    help="Download your saved, favorite albums collection.",
+)
+def download_fav_albums(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
+
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.albums()]
+    return _download(ctx, artist_urls, try_login=False)
+
+
+@dl_fav_group.command(
+    name="videos",
+    help="Download your saved, favorite videos collection.",
+)
+def download_fav_videos(ctx: typer.Context):
+    # Call login method to validate the token.
+    ctx.invoke(login, ctx)
+
+    # Get favorite artists
+    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.videos()]
+    return _download(ctx, artist_urls, try_login=False)
+
+
 @app.command()
 def gui(ctx: typer.Context):
     from tidal_dl_ng.gui import gui_activate
