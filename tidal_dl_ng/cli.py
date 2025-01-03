@@ -23,6 +23,12 @@ from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False)
+dl_fav_group = typer.Typer(
+    context_settings={"help_option_names": ["-h", "--help"]},
+    add_completion=True,
+    help="Download from a favorites collection.",
+)
+app.add_typer(dl_fav_group, name="dl_fav")
 
 
 def version_callback(value: bool):
