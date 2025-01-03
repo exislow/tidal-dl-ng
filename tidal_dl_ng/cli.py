@@ -31,6 +31,90 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
+def _download(ctx: typer.Context, urls: list[str], try_login: bool = True):
+    """
+    Shared logic for downloading a list of URLs.
+
+    :param ctx: The typer context
+    :type ctx: typer.Context
+    :param urls: The list of URLs to download.
+    :type urls: list[str]
+    :return: True if ran successfully.
+    """
+    if try_login:
+        # Call login method to validate the token.
+        ctx.invoke(login, ctx)
+
+    # Create initial objects.
+    settings: Settings = Settings()
+    progress: Progress = Progress(
+        "{task.description}",
+        SpinnerColumn(),
+        BarColumn(),
+        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+    )
+    fn_logger = LoggerWrapped(progress.print)
+    dl = Download(
+        session=ctx.obj[CTX_TIDAL].session,
+        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
+        path_base=settings.data.download_base_path,
+        fn_logger=fn_logger,  # noqa: type
+        progress=progress,
+    )
+    progress_table = Table.grid()
+
+    # Style Progress display.
+    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
+
+    urls_pos_last = len(urls) - 1
+
+    for item in urls:
+        media_type: MediaType | bool = False
+
+        # Extract media name and id from link.
+        if "http" in item:
+            media_type = get_tidal_media_type(item)
+            item_id = get_tidal_media_id(item)
+            file_template = get_format_template(media_type, settings)
+        else:
+            print(f"It seems like that you have supplied an invalid URL: {item}")
+
+            continue
+
+        # Create Live display for Progress.
+        with Live(progress_table, refresh_per_second=10):
+            # Download media.
+            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
+                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
+
+                dl.item(
+                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
+                )
+            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
+                item_ids: [int] = []
+
+                if media_type == MediaType.ARTIST:
+                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+                    media_type = MediaType.ALBUM
+                    item_ids = item_ids + all_artist_album_ids(media)
+                else:
+                    item_ids.append(item_id)
+
+                for item_id in item_ids:
+                    dl.items(
+                        media_id=item_id,
+                        media_type=media_type,
+                        file_template=file_template,
+                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
+                        download_delay=settings.data.download_delay,
+                    )
+
+    # Stop Progress display.
+    progress.stop()
+
+    return True
+
+
 @app.callback()
 def callback_app(
     ctx: typer.Context,
@@ -147,79 +231,7 @@ def download(
 
             raise typer.Abort()
 
-    # Call login method to validate the token.
-    ctx.invoke(login, ctx)
-
-    # Create initial objects.
-    settings: Settings = Settings()
-    progress: Progress = Progress(
-        "{task.description}",
-        SpinnerColumn(),
-        BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-    )
-    fn_logger = LoggerWrapped(progress.print)
-    dl = Download(
-        session=ctx.obj[CTX_TIDAL].session,
-        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
-        path_base=settings.data.download_base_path,
-        fn_logger=fn_logger,
-        progress=progress,
-    )
-    progress_table = Table.grid()
-
-    # Style Progress display.
-    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
-
-    urls_pos_last = len(urls) - 1
-
-    for item in urls:
-        media_type: MediaType | bool = False
-
-        # Extract media name and id from link.
-        if "http" in item:
-            media_type = get_tidal_media_type(item)
-            item_id = get_tidal_media_id(item)
-            file_template = get_format_template(media_type, settings)
-
-        # If url is invalid skip to next url in list.
-        if not media_type:
-            print(f"It seems like that you have supplied an invalid URL: {item}")
-
-            continue
-
-        # Create Live display for Progress.
-        with Live(progress_table, refresh_per_second=10):
-            # Download media.
-            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
-                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
-
-                dl.item(
-                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
-                )
-            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
-                item_ids: [int] = []
-
-                if media_type == MediaType.ARTIST:
-                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
-                    media_type = MediaType.ALBUM
-                    item_ids = item_ids + all_artist_album_ids(media)
-                else:
-                    item_ids.append(item_id)
-
-                for item_id in item_ids:
-                    dl.items(
-                        media_id=item_id,
-                        media_type=media_type,
-                        file_template=file_template,
-                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
-                        download_delay=settings.data.download_delay,
-                    )
-
-    # Stop Progress display.
-    progress.stop()
-
-    return True
+    return _download(ctx, urls)
 
 
 @app.command()
