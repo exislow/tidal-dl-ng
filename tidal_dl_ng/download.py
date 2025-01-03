@@ -31,7 +31,8 @@ from tidal_dl_ng.constants import (
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
-from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename
+from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename, \
+    relative_symlink
 from tidal_dl_ng.helper.tidal import (
     instantiate_media,
     items_results_all,
@@ -496,7 +497,7 @@ class Download:
             if not skip_symlink:
                 self.fn_logger.debug(f"Symlink: {path_media_src} -> {path_media_dst}")
                 path_media_src.unlink(missing_ok=True)
-                path_media_src.symlink_to(path_media_dst)
+                relative_symlink(path_media_dst, path_media_src)
 
         return path_media_dst
 

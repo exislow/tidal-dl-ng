@@ -322,3 +322,22 @@ def url_to_filename(url: str) -> str:
         raise ValueError  # reject '%2f' or 'dir%5Cbasename.ext' on Windows
 
     return basename
+
+def relative_symlink(target: pathlib.Path, destination: pathlib.Path):
+    """Create a symlink pointing to ``target`` from ``location``.
+
+    Attribution: https://gist.github.com/willprice/311faace6fb4f514376fa405d2220615#file-relative_symlink-py
+
+    Args:
+        target: The target of the symlink (the file/directory that is pointed to)
+        destination: The location of the symlink itself.
+    """
+    target_dir = destination.parent
+    target_dir.mkdir(exist_ok=True, parents=True)
+    relative_source = os.path.relpath(target, target_dir)
+    dir_fd = os.open(str(target_dir.absolute()), os.O_RDONLY)
+    print(f"{relative_source} -> {destination.name} in {target_dir}")
+    try:
+        os.symlink(relative_source, destination.name, dir_fd=dir_fd)
+    finally:
+        os.close(dir_fd)
