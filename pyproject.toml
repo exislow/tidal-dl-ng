@@ -38,8 +38,8 @@ mpegdash = "^0.4.0"
 rich = "^13.9.4"
 toml = "^0.10.2"
 typer = "^0.15.1"
-ffmpeg-python = "^0.2.0"
 tidalapi = "^0.8.3"
+python-ffmpeg = "^2.0.12"
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme-fork"]

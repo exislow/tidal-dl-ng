@@ -8,7 +8,7 @@ from collections.abc import Callable
 from concurrent import futures
 from uuid import uuid4
 
-import ffmpeg
+from ffmpeg import FFmpeg
 import m3u8
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -762,28 +762,32 @@ class Download:
 
     def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
-        result, _ = (
-            ffmpeg.input(path_file)
-            .output(str(path_file_out), map=0, c="copy", loglevel="quiet")
-            .run(cmd=self.settings.data.path_binary_ffmpeg)
+        ffmpeg = (
+            FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
+            .option("y")
+            .input(url=path_file)
+            .output(url=path_file_out, codec="copy", map=0, loglevel="quiet")
         )
+
+        ffmpeg.execute()
 
         return path_file_out
 
     def _extract_flac(self, path_media_src: pathlib.Path) -> pathlib.Path:
         path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
-        result, _ = (
-            ffmpeg.input(path_media_src)
+        ffmpeg = (
+            FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
+            .input(url=path_media_src)
             .output(
-                str(path_media_out),
-                map=0,
+                url=path_media_out, map=0,
                 movflags="use_metadata_tags",
                 acodec="copy",
                 map_metadata="0:g",
-                loglevel="quiet",
+                loglevel="quiet"
             )
-            .run(cmd=self.settings.data.path_binary_ffmpeg)
         )
+
+        ffmpeg.execute()
 
         return path_media_out
 
