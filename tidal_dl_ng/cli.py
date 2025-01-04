@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Optional, Callable
+from typing import Annotated, Optional
 
 import typer
 from rich.live import Live
@@ -39,14 +40,16 @@ def version_callback(value: bool):
 
 
 def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bool:
-    """
-    Shared logic for downloading a list of URLs.
+    """Invokes download function and tracks progress.
 
-    :param ctx: The typer context
+    :param ctx: The typer context object.
     :type ctx: typer.Context
     :param urls: The list of URLs to download.
     :type urls: list[str]
+    :param try_login: If true, attempts to login to TIDAL.
+    :type try_login: bool
     :return: True if ran successfully.
+    :rtype: bool
     """
     if try_login:
         # Call login method to validate the token.
@@ -145,6 +148,7 @@ def settings_management(
     If only one argument is given, the value will be printed for this option.
     To set a value for an option simply pass the value as the second argument
 
+    :param editor: If set, your favorite system editor will be opened.
     :param names: (Optional) None (list all options), one (list the value only for this option) or two arguments
         (set the value for the option).
     """
