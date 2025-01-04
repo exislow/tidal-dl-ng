@@ -28,6 +28,7 @@ dl_fav_group = typer.Typer(
     add_completion=True,
     help="Download from a favorites collection.",
 )
+
 app.add_typer(dl_fav_group, name="dl_fav")
 
 
@@ -37,7 +38,7 @@ def version_callback(value: bool):
         raise typer.Exit()
 
 
-def _download(ctx: typer.Context, urls: list[str], try_login: bool = True):
+def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bool:
     """
     Shared logic for downloading a list of URLs.
 
@@ -64,7 +65,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True):
         session=ctx.obj[CTX_TIDAL].session,
         skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
         path_base=settings.data.download_base_path,
-        fn_logger=fn_logger,  # noqa: type
+        fn_logger=fn_logger,
         progress=progress,
     )
     progress_table = Table.grid()
@@ -226,7 +227,7 @@ def download(
             help="List with URLs to download. One per line",
         ),
     ] = None,
-):
+) -> bool:
     if not urls:
         # Read the text file provided.
         if file_urls:
@@ -242,54 +243,58 @@ def download(
 
 @dl_fav_group.command(
     name="tracks",
-    help="Download your saved, favorite tracks collection.",
+    help="Download your favorite tracks collection.",
 )
 def download_fav_tracks(ctx: typer.Context):
-    # Call login method to validate the token.
-    ctx.invoke(login, ctx)
+    # Method name
+    func_name_favorites: str = "tracks"
 
-    # Get favorite tracks
-    track_urls = [track.share_url for track in ctx.obj[CTX_TIDAL].session.user.favorites.tracks()]
-    return _download(ctx, track_urls, try_login=False)
+    return _download_fav_factory(ctx, func_name_favorites)
 
 
 @dl_fav_group.command(
     name="artists",
-    help="Download your saved, favorite artists collection.",
+    help="Download your favorite artists collection.",
 )
 def download_fav_artists(ctx: typer.Context):
-    # Call login method to validate the token.
-    ctx.invoke(login, ctx)
+    # Method name
+    func_name_favorites: str = "artists"
 
-    # Get favorite artists
-    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.artists()]
-    return _download(ctx, artist_urls, try_login=False)
+    return _download_fav_factory(ctx, func_name_favorites)
 
 
 @dl_fav_group.command(
     name="albums",
-    help="Download your saved, favorite albums collection.",
+    help="Download your favorite albums collection.",
 )
 def download_fav_albums(ctx: typer.Context):
-    # Call login method to validate the token.
-    ctx.invoke(login, ctx)
+    # Method name
+    func_name_favorites: str = "albums"
 
-    # Get favorite artists
-    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.albums()]
-    return _download(ctx, artist_urls, try_login=False)
+    return _download_fav_factory(ctx, func_name_favorites)
 
 
 @dl_fav_group.command(
     name="videos",
-    help="Download your saved, favorite videos collection.",
+    help="Download your favorite videos collection.",
 )
 def download_fav_videos(ctx: typer.Context):
+    # Method name
+    func_name_favorites: str = "videos"
+
+    return _download_fav_factory(ctx, func_name_favorites)
+
+
+def _download_fav_factory(ctx: typer.Context, func_name_favorites: str):
     # Call login method to validate the token.
     ctx.invoke(login, ctx)
 
-    # Get favorite artists
-    artist_urls = [artist.share_url for artist in ctx.obj[CTX_TIDAL].session.user.favorites.videos()]
-    return _download(ctx, artist_urls, try_login=False)
+    # Get the method from the module
+    func_favorites = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
+    # Get favorite videos
+    media_urls = [media.share_url for media in func_favorites()]
+
+    return _download(ctx, media_urls, try_login=False)
 
 
 @app.command()
