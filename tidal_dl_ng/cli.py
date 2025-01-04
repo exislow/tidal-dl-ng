@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Callable
 
 import typer
 from rich.live import Live
@@ -231,7 +231,7 @@ def download(
     if not urls:
         # Read the text file provided.
         if file_urls:
-            text = file_urls.read_text()
+            text: str = file_urls.read_text()
             urls = text.splitlines()
         else:
             print("Provide either URLs, IDs or a file containing URLs (one per line).")
@@ -243,9 +243,16 @@ def download(
 
 @dl_fav_group.command(
     name="tracks",
-    help="Download your favorite tracks collection.",
+    help="Download your favorite track collection.",
 )
-def download_fav_tracks(ctx: typer.Context):
+def download_fav_tracks(ctx: typer.Context) -> bool:
+    """Download your favorite track collection.
+
+    :param ctx: Typer context object.
+    :type ctx: typer.Context
+    :return: Download result.
+    :rtype: bool
+    """
     # Method name
     func_name_favorites: str = "tracks"
 
@@ -254,9 +261,16 @@ def download_fav_tracks(ctx: typer.Context):
 
 @dl_fav_group.command(
     name="artists",
-    help="Download your favorite artists collection.",
+    help="Download your favorite artist collection.",
 )
-def download_fav_artists(ctx: typer.Context):
+def download_fav_artists(ctx: typer.Context) -> bool:
+    """Download your favorite artist collection.
+
+    :param ctx: Typer context object.
+    :type ctx: typer.Context
+    :return: Download result.
+    :rtype: bool
+    """
     # Method name
     func_name_favorites: str = "artists"
 
@@ -265,9 +279,16 @@ def download_fav_artists(ctx: typer.Context):
 
 @dl_fav_group.command(
     name="albums",
-    help="Download your favorite albums collection.",
+    help="Download your favorite album collection.",
 )
-def download_fav_albums(ctx: typer.Context):
+def download_fav_albums(ctx: typer.Context) -> bool:
+    """Download your favorite album collection.
+
+    :param ctx: Typer context object.
+    :type ctx: typer.Context
+    :return: Download result.
+    :rtype: bool
+    """
     # Method name
     func_name_favorites: str = "albums"
 
@@ -276,23 +297,39 @@ def download_fav_albums(ctx: typer.Context):
 
 @dl_fav_group.command(
     name="videos",
-    help="Download your favorite videos collection.",
+    help="Download your favorite video collection.",
 )
-def download_fav_videos(ctx: typer.Context):
+def download_fav_videos(ctx: typer.Context) -> bool:
+    """Download your favorite video collection.
+
+    :param ctx: Typer context object.
+    :type ctx: typer.Context
+    :return: Download result.
+    :rtype: bool
+    """
     # Method name
     func_name_favorites: str = "videos"
 
     return _download_fav_factory(ctx, func_name_favorites)
 
 
-def _download_fav_factory(ctx: typer.Context, func_name_favorites: str):
+def _download_fav_factory(ctx: typer.Context, func_name_favorites: str) -> bool:
+    """Factory which helps to download items from the favorites collections.
+
+    :param ctx: Typer context object.
+    :type ctx: typer.Context
+    :param func_name_favorites: Method name to call from `tidalapi` favorites object.
+    :type func_name_favorites: str
+    :return: Download result.
+    :rtype: bool
+    """
     # Call login method to validate the token.
     ctx.invoke(login, ctx)
 
     # Get the method from the module
-    func_favorites = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
+    func_favorites: Callable = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
     # Get favorite videos
-    media_urls = [media.share_url for media in func_favorites()]
+    media_urls: [str] = [media.share_url for media in func_favorites()]
 
     return _download(ctx, media_urls, try_login=False)
 
