@@ -495,8 +495,10 @@ class Download:
 
             if not skip_symlink:
                 self.fn_logger.debug(f"Symlink: {path_media_src} -> {path_media_dst}")
+                path_media_dst_relative: pathlib.Path = path_media_dst.relative_to(path_media_src.parent, walk_up=True)
+
                 path_media_src.unlink(missing_ok=True)
-                path_media_src.symlink_to(path_media_dst)
+                path_media_src.symlink_to(path_media_dst_relative)
 
         return path_media_dst
 
