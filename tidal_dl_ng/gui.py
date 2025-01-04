@@ -37,6 +37,7 @@
 ## nuitka-project: --macos-sign-identity=auto
 # nuitka-project: --macos-app-version=1
 # nuitka-project: --debug
+# nuitka-project: --debugger
 # nuitka-project: --experimental=allow-c-warnings
 ## nuitka-project: --no-debug-immortal-assumptions
 # nuitka-project: --run
