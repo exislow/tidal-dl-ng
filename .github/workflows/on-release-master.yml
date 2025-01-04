@@ -46,7 +46,7 @@ jobs:
           POETRY_REQUESTS_TIMEOUT: 120
       - name: GitHub Release -- Create
         id: release_create
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: false
         env:
@@ -154,13 +154,11 @@ jobs:
           VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}.txt`
           echo "upload_url=$VALUE" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
-        # TODO: Switch to https://github.com/softprops/action-gh-release
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
-          upload_url: ${{steps.get_release_info.outputs.upload_url}}
-          asset_path: ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
-          asset_name: ${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
-          asset_content_type: ${{env.ASSET_MIME}}
+          files: |
+            ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
+
