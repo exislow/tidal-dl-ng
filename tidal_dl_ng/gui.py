@@ -1,3 +1,47 @@
+# Compilation mode, support OS-specific options
+## nuitka-project-if: {OS} in ("Windows", "Linux", "Darwin", "FreeBSD"):
+##    nuitka-project: --onefile
+## nuitka-project-else:
+##    nuitka-project: --mode=standalone
+## WIN
+## --windows-console-mode=disable
+## --clang
+## --windows-icon-from-ico=ICON_PATH
+## --onefile-windows-splash-screen-image=SPLASH_SCREEN_IMAGE
+## macOS
+## --macos-create-app-bundle
+## --macos-app-icon=ICON_PATH
+## --macos-signed-app-name=com.exislow.TidalDlNg
+## --macos-app-name=MACOS_APP_NAME
+## --macos-app-mode=gui
+## --macos-sign-identity=auto
+## --macos-app-version=MACOS_APP_VERSION
+## LINUX
+## --linux-icon=ICON_PATH
+
+# The PySide6 plugin covers qt-plugins
+# nuitka-project: --mode=standalone
+# nuitka-project: --enable-plugin=pyside6
+# nuitka-project: --include-qt-plugins=qml
+# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon.*=tidal_dl_ng/ui/
+# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/default_album_image.png=tidal_dl_ng/ui/default_album_image.png
+# nuitka-project: --company-name=exislow
+## nuitka-project: --product-dir=TIDAL-DL-NG
+# nuitka-project: --file-version=1
+# nuitka-project: --product-version=1
+# nuitka-project: --macos-create-app-bundle
+# nuitka-project: --macos-app-icon=tidal_dl_ng/ui/icon.icns
+# nuitka-project: --macos-signed-app-name=com.exislow.TidalDlNg
+# nuitka-project: --macos-app-name=TIDAL-DL-NG
+# nuitka-project: --macos-app-mode=gui
+## nuitka-project: --macos-sign-identity=auto
+# nuitka-project: --macos-app-version=1
+# nuitka-project: --debug
+# nuitka-project: --experimental=allow-c-warnings
+## nuitka-project: --no-debug-immortal-assumptions
+# nuitka-project: --run
+
+
 import math
 import sys
 import time
