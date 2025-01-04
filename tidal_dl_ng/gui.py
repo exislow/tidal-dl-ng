@@ -20,7 +20,7 @@
 ## --linux-icon=ICON_PATH
 
 # The PySide6 plugin covers qt-plugins
-# nuitka-project: --mode=standalone
+# nuitka-project: --standalone
 # nuitka-project: --enable-plugin=pyside6
 # nuitka-project: --include-qt-plugins=qml
 # nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon.*=tidal_dl_ng/ui/
