@@ -1,6 +1,9 @@
 APP_NAME = "TIDAL-Downloader-NG"
+APP_VERSION=`grep -m 1 'version =' pyproject.toml | tr -s ' ' | tr -d '"' | tr -d "'" | cut -d' ' -f3`
 app_path_dist = "dist"
 path_asset = "tidal_dl_ng/ui"
+APP_BUNDLE_NAME="gui"
+DMG_NAME="dmg"
 
 .PHONY: install
 install: ## Install the poetry environment and install the pre-commit hooks
@@ -57,44 +60,30 @@ docs: ## Build and serve the documentation
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-.PHONY: gui-windows
-gui-windows: ## Build GUI app with PyInstaller
-	@poetry run pyinstaller --noconfirm \
-		--windowed --onedir \
-		--name "$(APP_NAME)" \
-		--noupx \
-		--icon $(path_asset)/icon.ico \
-		--add-binary="pyproject.toml:." \
-		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
+.PHONY: gui
+gui: ## Build GUI app
+	@poetry run python -m nuitka \
+		--macos-app-version=$(APP_VERSION) \
+		--file-version=$(APP_VERSION) \
+		--product-version=$(APP_VERSION) \
+		--macos-app-name=$(APP_NAME) \
+		--output-filename=$(APP_NAME) \
+		--product-name=$(APP_NAME) \
 		tidal_dl_ng/gui.py
+
+.PHONY: gui-windows
+gui-windows: gui ## Build GUI app
+	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).dist" "$(app_path_dist)/$(APP_NAME)"
 
 .PHONY: gui-linux
-gui-linux: ## Build GUI app with PyInstaller
-	@poetry run pyinstaller --noconfirm \
-		--windowed --onedir \
-		--name "$(APP_NAME)" \
-		--noupx \
-		--icon $(path_asset)/icon.png \
-		--add-binary="pyproject.toml:." \
-		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
-		tidal_dl_ng/gui.py
-
-.PHONY: gui-macos
-gui-macos: ## Build GUI app with PyInstaller
-	@poetry run pyinstaller --noconfirm \
-		--windowed --onedir \
-		--name "$(APP_NAME)" \
-		--noupx \
-		--icon $(path_asset)/icon.icns \
-		--add-binary="pyproject.toml:." \
-		--add-data="tidal_dl_ng/ui/default_album_image.png:./tidal_dl_ng/ui" \
-		tidal_dl_ng/gui.py
+gui-linux: gui ## Build GUI app
+	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).dist" "$(app_path_dist)/$(APP_NAME)"
 
 # TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 .PHONY: gui-macos-dmg
 gui-macos-dmg: gui-macos ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
-	@poetry run mv "$(app_path_dist)/$(APP_NAME).app" $(app_path_dist)/dmg
+	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).app" "$(app_path_dist)/$(DMG_NAME)/$(APP_NAME).app"
 	@poetry run create-dmg \
                 --volname "$(APP_NAME)" \
                 --volicon "$(path_asset)/icon.icns" \
@@ -105,6 +94,6 @@ gui-macos-dmg: gui-macos ## Package GUI in a *.dmg file
                 --hide-extension "$(APP_NAME).app" \
                 --app-drop-link 425 120 \
                 "$(app_path_dist)/$(APP_NAME).dmg" \
-                "$(app_path_dist)/dmg/"
+                "$(app_path_dist)/$(DMG_NAME)/"
 
 .DEFAULT_GOAL := help
