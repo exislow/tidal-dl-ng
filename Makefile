@@ -81,7 +81,7 @@ gui-linux: gui ## Build GUI app
 
 # TODO: macos Signing: https://gist.github.com/txoof/0636835d3cc65245c6288b2374799c43
 .PHONY: gui-macos-dmg
-gui-macos-dmg: gui-macos ## Package GUI in a *.dmg file
+gui-macos-dmg: gui ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
 	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).app" "$(app_path_dist)/$(DMG_NAME)/$(APP_NAME).app"
 	@poetry run create-dmg \
