@@ -28,7 +28,7 @@ python = ">=3.12,<3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 dataclasses-json = "^0.6.7"
-pathvalidate = "^3.2.1"
+pathvalidate = "^3.2.3"
 m3u8 = "^6.0.0"
 coloredlogs = "^15.0.1"
 pyside6 = {version = "6.8.0.1", optional = true}
