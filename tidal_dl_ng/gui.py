@@ -83,7 +83,7 @@ try:
     from PySide6 import QtCore, QtGui, QtWidgets
 except ImportError as e:
     print(e)
-    print("Qt dependencies missing. Cannot start GUI. Please execute: 'pip install pyside6 pyqtdarktheme'")
+    print("Qt dependencies missing. Cannot start GUI. Please read the 'README.md' carefully.")
     sys.exit(1)
 
 import coloredlogs.converter

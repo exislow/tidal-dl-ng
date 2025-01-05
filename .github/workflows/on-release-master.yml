@@ -16,7 +16,6 @@ on:
       - "v*.*.*"
 
 env:
-  RELEASE_UPLOAD_URL: "release_upload_url"
   ASSET_EXTENSION: ".zip"
   OUT_NAME_FILE: "TIDAL-Downloader-NG"
   ARCH_MACOS_X64: "macos-x64"
@@ -46,18 +45,11 @@ jobs:
           POETRY_REQUESTS_TIMEOUT: 120
       - name: GitHub Release -- Create
         id: release_create
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: GitHub Release -- Output Release URL File
-        run: echo "${{steps.release_create.outputs.upload_url}}" > ${{env.RELEASE_UPLOAD_URL}}.txt
-      - name: GitHub Release -- Save Upload URL File for publish
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{env.RELEASE_UPLOAD_URL}}
-          path: ${{env.RELEASE_UPLOAD_URL}}.txt
   deploy-docs:
     needs: publish
     runs-on: ubuntu-24.04
@@ -90,8 +82,6 @@ jobs:
           echo "ARCH_WINDOWS_X64=${{ env.ARCH_WINDOWS_X64 }}" >> $GITHUB_OUTPUT
   build-gui-and-upload-assets:
     needs: ["publish", "compute"]
-    env:
-      ASSET_MIME: "application/zip"
     strategy:
       fail-fast: false
       matrix:
@@ -144,23 +134,11 @@ jobs:
         uses: ./.github/actions/setup-poetry-env
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
-      - name: Load Release URL File from release job
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{env.RELEASE_UPLOAD_URL}}
-      - name: Get Release File Name & Upload URL
-        id: get_release_info
-        run: |
-          VALUE=`cat ${{env.RELEASE_UPLOAD_URL}}.txt`
-          echo "upload_url=$VALUE" >> $GITHUB_OUTPUT
       - name: Upload Release Asset
-        # TODO: Switch to https://github.com/softprops/action-gh-release
         id: upload-release-asset
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         with:
-          upload_url: ${{steps.get_release_info.outputs.upload_url}}
-          asset_path: ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
-          asset_name: ${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}
-          asset_content_type: ${{env.ASSET_MIME}}
+          files: |
+            ./dist/${{needs.compute.outputs.OUT_NAME_FILE}}_${{matrix.OS_ARCH}}${{needs.compute.outputs.ASSET_EXTENSION}}

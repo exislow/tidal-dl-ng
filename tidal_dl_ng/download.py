@@ -8,9 +8,9 @@ from collections.abc import Callable
 from concurrent import futures
 from uuid import uuid4
 
-from ffmpeg import FFmpeg
 import m3u8
 import requests
+from ffmpeg import FFmpeg
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
@@ -495,8 +495,10 @@ class Download:
 
             if not skip_symlink:
                 self.fn_logger.debug(f"Symlink: {path_media_src} -> {path_media_dst}")
+                path_media_dst_relative: pathlib.Path = path_media_dst.relative_to(path_media_src.parent, walk_up=True)
+
                 path_media_src.unlink(missing_ok=True)
-                path_media_src.symlink_to(path_media_dst)
+                path_media_src.symlink_to(path_media_dst_relative)
 
         return path_media_dst
 
@@ -779,11 +781,12 @@ class Download:
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
             .input(url=path_media_src)
             .output(
-                url=path_media_out, map=0,
+                url=path_media_out,
+                map=0,
                 movflags="use_metadata_tags",
                 acodec="copy",
                 map_metadata="0:g",
-                loglevel="quiet"
+                loglevel="quiet",
             )
         )
 

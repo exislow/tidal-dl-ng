@@ -9,7 +9,7 @@ This tool allows to download songs and videos from TIDAL. Multithreaded and mult
 
 ⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This is a **false positive**. Please read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement ](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md) and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade). ⚠️
 
-**A paid plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
+**A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
@@ -28,27 +28,31 @@ $ tidal-dl-ng --help
 │        for this option. To set a value for an option simply pass the value   │
 │        as the second argument                                                │
 │ dl                                                                           │
+│ dl_fav Download from a favorites collection.                                 │
 │ gui                                                                          │
 │ login                                                                        │
+│ logout                                                                       │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
-If you like this projects and want to support it, you can buy me a coffee :-)
+If you like this projects and want to support it, feel free to buy me a coffee 🙃✌️
 
 <a href="https://www.buymeacoffee.com/exislow" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/arial-orange.png" alt="Buy Me A Coffee" style="height: 51px !important;width: 217px !important;" ></a>
 <a href="https://ko-fi.com/exislow" target="_blank" rel="noopener noreferrer"><img src="https://help.ko-fi.com/hc/article_attachments/11833788361117" alt="61e11d430afb112ea33c3aa5_Button-1-p-500"></a>
 
 ## 💻 Installation / Upgrade
 
-**Requirements**: Python >= 3.12 (other versions might work but are not tested!)
+**Requirements**: Python == 3.12 (other versions might work but are not tested!)
 
 ```bash
 pip install --upgrade tidal-dl-ng
-# AND if you like to have the GUI as well
+# If you like to have the GUI as well use this command instead
 pip install --upgrade tidal-dl-ng[gui]
 ```
 
-You can use the command line (CLI) version to download media:
+## ⌨️ Usage
+
+You can use the command line (CLI) version to download media by URL:
 
 ```bash
 tidal-dl-ng dl https://tidal.com/browse/track/46755209
@@ -56,7 +60,16 @@ tidal-dl-ng dl https://tidal.com/browse/track/46755209
 tdn dl https://tidal.com/browse/track/46755209
 ```
 
-But also the GUI:
+Or by your favorites collections:
+
+```bash
+tidal-dl-ng dl_fav tracks
+tidal-dl-ng dl_fav artists
+tidal-dl-ng dl_fav albums
+tidal-dl-ng dl_fav videos
+```
+
+You can also use the GUI:
 
 ```bash
 tidal-dl-ng-gui
@@ -71,7 +84,7 @@ If you like to have the GUI version only as a binary, have a look at the
 
 ## 🧁 Features
 
-- Download Tracks, Videos, Albums, Playlists etc.
+- Download tracks, videos, albums, playlists, your favorites etc.
 - Multithreaded and multi-chunked downloads
 - Metadata for songs
 - Adjustable audio and video download quality.
@@ -105,11 +118,13 @@ The GUI is build with `PySide6` using the [Qt Designer](https://doc.qt.io/qt-6/q
 PYSIDE_DESIGNER_PLUGINS=tidal_dl_ng/ui pyside6-designer
 ```
 
-After all changes are saved you need to translate the Qt Designer `*.ui` file into Python code:
+After all changes are saved you need to translate the Qt Designer `*.ui` file into Python code, for instance:
 
 ```
 pyside6-uic tidal_dl_ng/ui/main.ui -o tidal_dl_ng/ui/main.py
 ```
+
+This needs to be done for each created / modified `*.ui` file accordingly.
 
 ### 🏗 Build the project
 
@@ -117,7 +132,11 @@ To build the project use this command:
 
 ```bash
 make install
+# OR
+make gui-macos
 ```
+
+See the `Makefile` for all available build commands.
 
 The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
 
