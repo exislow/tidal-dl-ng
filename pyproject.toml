@@ -32,7 +32,7 @@ dataclasses-json = "^0.6.7"
 pathvalidate = "^3.2.1"
 m3u8 = "^6.0.0"
 coloredlogs = "^15.0.1"
-pyside6 = {version = "6.7.0", optional = true}
+pyside6 = {version = "6.8.0.1", optional = true}
 pyqtdarktheme-fork = {version = "^2.3.2", optional = true}
 mpegdash = "^0.4.0"
 rich = "^13.9.4"
@@ -60,10 +60,10 @@ isort = { extras = ["colors"], version = "^5.13.2" }
 mypy-extensions = "^1.0.0"
 pydocstyle = "^6.3.0"
 pylint = "^3.3.1"
-pyinstaller = "^6.11.0"
 pillow = "^11.0.0"
 pytest-cov = "^6.0.0"
 black = "^24.10.0"
+nuitka = "^2.5.9"
 
 [tool.poetry.group.docs]
 optional = true
