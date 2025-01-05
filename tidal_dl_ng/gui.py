@@ -1,46 +1,47 @@
 # Compilation mode, support OS-specific options
-## nuitka-project-if: {OS} in ("Windows", "Linux", "Darwin", "FreeBSD"):
-##    nuitka-project: --onefile
-## nuitka-project-else:
-##    nuitka-project: --mode=standalone
-## WIN
-## --windows-console-mode=disable
-## --clang
-## --windows-icon-from-ico=ICON_PATH
-## --onefile-windows-splash-screen-image=SPLASH_SCREEN_IMAGE
-## macOS
-## --macos-create-app-bundle
-## --macos-app-icon=ICON_PATH
-## --macos-signed-app-name=com.exislow.TidalDlNg
-## --macos-app-name=MACOS_APP_NAME
-## --macos-app-mode=gui
-## --macos-sign-identity=auto
-## --macos-app-version=MACOS_APP_VERSION
-## LINUX
-## --linux-icon=ICON_PATH
+# nuitka-project-if: {OS} in ("Darwin"):
+#    nuitka-project: --macos-create-app-bundle
+#    nuitka-project: --macos-app-icon=tidal_dl_ng/ui/icon.icns
+#    nuitka-project: --macos-signed-app-name=com.exislow.TidalDlNg
+#    nuitka-project: --macos-app-mode=gui
+# nuitka-project-if: {OS} in ("Linux", "FreeBSD"):
+#    nuitka-project: --linux-icon=tidal_dl_ng/ui/icon.png
+# nuitka-project-if: {OS} in ("Windows"):
+#    nuitka-project: --windows-icon-from-ico=tidal_dl_ng/ui/icon.ico
+#    nuitka-project: --file-description="TIDAL media downloader next generation."
+
+# Debugging options, controlled via environment variable at compile time.
+# nuitka-project-if: {OS} == "Windows" and os.getenv("DEBUG_COMPILATION", "no") == "yes":
+#    nuitka-project: --windows-console-mode=hide
+# nuitka-project-else:
+#    nuitka-project: --windows-console-mode=disable
+# nuitka-project-if: os.getenv("DEBUG_COMPILATION", "no") == "yes":
+#    nuitka-project: --debug
+#    nuitka-project: --debugger
+#    nuitka-project: --experimental=allow-c-warnings
+#    nuitka-project: --no-debug-immortal-assumptions
+#    nuitka-project: --run
+# nuitka-project-else:
+#    nuitka-project: --assume-yes-for-downloads
+# nuitka-project-if: os.getenv("DEPLOYMENT", "no") == "yes":
+#    nuitka-project: --deployment
 
 # The PySide6 plugin covers qt-plugins
 # nuitka-project: --standalone
+# nuitka-project: --output-dir=dist
 # nuitka-project: --enable-plugin=pyside6
 # nuitka-project: --include-qt-plugins=qml
+# nuitka-project: --noinclude-dlls=libQt6Charts*
+# nuitka-project: --noinclude-dlls=libQt6Quick3D*
+# nuitka-project: --noinclude-dlls=libQt6Sensors*
+# nuitka-project: --noinclude-dlls=libQt6Test*
+# nuitka-project: --noinclude-dlls=libQt6WebEngine*
 # nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon.*=tidal_dl_ng/ui/
 # nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/default_album_image.png=tidal_dl_ng/ui/default_album_image.png
+# nuitka-project: --include-data-files=./pyproject.toml=pyproject.toml
+# nuitka-project: --force-stderr-spec="{TEMP}/tidal-dl-ng.err.log"
+# nuitka-project: --force-stdout-spec="{TEMP}/tidal-dl-ng.out.log"
 # nuitka-project: --company-name=exislow
-## nuitka-project: --product-dir=TIDAL-DL-NG
-# nuitka-project: --file-version=1
-# nuitka-project: --product-version=1
-# nuitka-project: --macos-create-app-bundle
-# nuitka-project: --macos-app-icon=tidal_dl_ng/ui/icon.icns
-# nuitka-project: --macos-signed-app-name=com.exislow.TidalDlNg
-# nuitka-project: --macos-app-name=TIDAL-DL-NG
-# nuitka-project: --macos-app-mode=gui
-## nuitka-project: --macos-sign-identity=auto
-# nuitka-project: --macos-app-version=1
-# nuitka-project: --debug
-# nuitka-project: --debugger
-# nuitka-project: --experimental=allow-c-warnings
-## nuitka-project: --no-debug-immortal-assumptions
-# nuitka-project: --run
 
 
 import math
