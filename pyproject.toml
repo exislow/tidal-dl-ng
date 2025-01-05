@@ -39,6 +39,7 @@ toml = "^0.10.2"
 typer = "^0.15.1"
 tidalapi = "^0.8.3"
 python-ffmpeg = "^2.0.12"
+pycryptodome = "^3.21.0"
 
 [tool.poetry.extras]
 gui = ["pyside6", "pyqtdarktheme-fork"]
