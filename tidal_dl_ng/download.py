@@ -198,7 +198,7 @@ class Download:
         return result_merge, tmp_path_file_decrypted
 
     def _segments_merge(self, path_file, dl_segment_results) -> bool:
-        result: bool
+        result: bool = True
 
         # Copy the content of all segments into one file.
         try:
@@ -212,9 +212,9 @@ class Download:
                     # Delete segment from HDD
                     dl_segment_result.path_segment.unlink()
 
-            result = True
         except Exception:
-            result = False
+            if dl_segment_result is not dl_segment_results[-1]:
+                result = False
 
         return result
 
