@@ -755,6 +755,8 @@ class Download:
                     # If it's a symlink write the relative file path to the actual track into the playlist file
                     if path_track.is_symlink():
                         media_file_target = path_track.resolve().relative_to(path_track.parent, walk_up=True)
+                    else:
+                        media_file_target = path_track.name
 
                     f.write(str(media_file_target) + os.linesep)
 
