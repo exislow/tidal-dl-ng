@@ -38,8 +38,6 @@ body:
         - macOS
         - Linux
         - Windows
-    validations:
-      required: true
   - type: input
     id: version-os
     attributes:
