@@ -23,6 +23,14 @@ body:
         - macOS
         - Linux
         - Windows
+  - type: input
+    id: version-os
+    attributes:
+      label: Version OS
+      description: What is the version of your operating system?
+      placeholder: Ubuntu 24.04.1 LTS / macOS 15.2 / Windows 10 22H2
+    validations:
+      required: true
   - type: textarea
     id: config
     attributes:

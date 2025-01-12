@@ -25,9 +25,17 @@ body:
   - type: dropdown
     id: os
     attributes:
-      label: What operating system are you seeing the problem on?
+      label: What operating system do you use?
       multiple: false
       options:
         - macOS
         - Linux
         - Windows
+  - type: input
+    id: version-os
+    attributes:
+      label: Version OS
+      description: What is the version of your operating system?
+      placeholder: Ubuntu 24.04.1 LTS / macOS 15.2 / Windows 10 22H2
+    validations:
+      required: true
