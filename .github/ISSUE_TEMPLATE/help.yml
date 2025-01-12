@@ -17,7 +17,7 @@ body:
   - type: dropdown
     id: os
     attributes:
-      label: What operating system are you seeing the problem on?
+      label: What operating system do you use?
       multiple: false
       options:
         - macOS
