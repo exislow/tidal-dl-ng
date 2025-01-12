@@ -9,10 +9,10 @@ body:
   - type: checkboxes
     id: search-done
     attributes:
-      label: Yes, I did use the search beforehand.
-      description: Search (here)[https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed]
+      label: You must use the search before you create an issue!
+      description: "**Search [here](https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed).**"
       options:
-        - label: I promise!
+        - label: I did use the search, I promise!
   - type: textarea
     id: what-happened
     attributes:
@@ -38,6 +38,8 @@ body:
         - macOS
         - Linux
         - Windows
+    validations:
+      required: true
   - type: input
     id: version-os
     attributes:

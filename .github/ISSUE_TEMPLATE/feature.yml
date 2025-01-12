@@ -22,3 +22,14 @@ body:
       placeholder: Write three sentences (!) or more and be as precise as possible.
     validations:
       required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: What operating system are you seeing the problem on?
+      multiple: false
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true

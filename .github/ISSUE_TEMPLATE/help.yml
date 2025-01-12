@@ -23,6 +23,8 @@ body:
         - macOS
         - Linux
         - Windows
+    validations:
+      required: true
   - type: textarea
     id: config
     attributes:
