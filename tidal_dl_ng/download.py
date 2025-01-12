@@ -260,7 +260,9 @@ class Download:
             result=result, url=url, path_segment=path_segment, id_segment=id_segment, error=error
         )
 
-    def extension_guess(self, quality_audio: Quality, is_video: bool) -> AudioExtensions | VideoExtensions:
+    def extension_guess(
+        self, quality_audio: Quality, metadata_tags: [str], is_video: bool
+    ) -> AudioExtensions | VideoExtensions:
         result: AudioExtensions | VideoExtensions
 
         if is_video:
@@ -268,7 +270,12 @@ class Download:
         else:
             result = (
                 AudioExtensions.FLAC
-                if self.settings.data.extract_flac and quality_audio in (Quality.hi_res_lossless, Quality.high_lossless)
+                if (
+                    self.settings.data.extract_flac
+                    and quality_audio in (Quality.hi_res_lossless, Quality.high_lossless)
+                )
+                or ("HIRES_LOSSLESS" not in metadata_tags and quality_audio not in (Quality.low_96k, Quality.low_320k))
+                or quality_audio == Quality.high_lossless
                 else AudioExtensions.M4A
             )
 
@@ -314,7 +321,9 @@ class Download:
             return False, ""
 
         # Create file name and path
-        file_extension_dummy: str = self.extension_guess(quality_audio, isinstance(media, Video))
+        file_extension_dummy: str = self.extension_guess(
+            quality_audio, metadata_tags=media.media_metadata_tags, is_video=isinstance(media, Video)
+        )
         file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
             pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension_dummy)

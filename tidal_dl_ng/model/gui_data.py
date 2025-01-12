@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from tidalapi.media import Quality
 
+from tidal_dl_ng.constants import QualityVideo
+
 try:
     from PySide6 import QtCore
 
@@ -42,5 +44,6 @@ class QueueDownloadItem:
     status: str
     name: str
     type_media: str
-    quality: Quality
+    quality_audio: Quality
+    quality_video: QualityVideo
     obj: object

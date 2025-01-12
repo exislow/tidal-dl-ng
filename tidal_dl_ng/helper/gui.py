@@ -1,9 +1,12 @@
 import re
+from typing import cast
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
 from tidalapi.media import Quality
+
+from tidal_dl_ng.constants import QualityVideo
 
 
 def get_table_data(
@@ -46,8 +49,25 @@ def get_queue_download_media(
 
 def get_queue_download_quality(
     item: QtWidgets.QTreeWidgetItem,
+    column: int,
+) -> str:
+    result: str = get_table_text(item, column)
+
+    return result
+
+
+def get_queue_download_quality_audio(
+    item: QtWidgets.QTreeWidgetItem,
 ) -> Quality:
-    result: Quality = get_table_text(item, 4)
+    result: Quality = cast(Quality, get_queue_download_quality(item, 4))
+
+    return result
+
+
+def get_queue_download_quality_video(
+    item: QtWidgets.QTreeWidgetItem,
+) -> QualityVideo:
+    result: QualityVideo = cast(QualityVideo, get_queue_download_quality(item, 5))
 
     return result
 
