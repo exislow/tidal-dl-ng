@@ -1,9 +1,7 @@
 name: Help
-description: File a question for help
+description: File a question for help.
 title: "[Help] "
 labels: ["help wanted"]
-assignees:
-  - exislow
 body:
   - type: markdown
     attributes:

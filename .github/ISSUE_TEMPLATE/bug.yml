@@ -1,14 +1,16 @@
 name: Bug Report
-description: File a bug report
+description: File a bug report.
 title: "[Bug] "
 labels: ["bug"]
-assignees:
-  - exislow
 body:
   - type: markdown
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report! You must use a clear title for this bug.
+  - type: checkboxes
+    id: search-done
+    label: Yes, I did use the search beforehand.
+    description: Search (here)[https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed]
   - type: textarea
     id: what-happened
     attributes:
@@ -18,7 +20,7 @@ body:
     validations:
       required: true
   - type: input
-    id: version
+    id: version-app
     attributes:
       label: Version App
       description: What version of our software are you running?
@@ -34,6 +36,14 @@ body:
         - macOS
         - Linux
         - Windows
+  - type: input
+    id: version-os
+    attributes:
+      label: Version OS
+      description: What is the version of your operating system?
+      placeholder: Ubuntu 24.04.1 LTS / macOS 15.2 / Windows 10 22H2
+    validations:
+      required: true
   - type: textarea
     id: logs
     attributes:
