@@ -1,6 +1,5 @@
 name: Bug Report
 description: File a bug report.
-title: "[Bug] "
 labels: ["bug"]
 body:
   - type: markdown
@@ -9,8 +8,11 @@ body:
         Thanks for taking the time to fill out this bug report! You must use a clear title for this bug.
   - type: checkboxes
     id: search-done
-    label: Yes, I did use the search beforehand.
-    description: Search (here)[https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed]
+    attributes:
+      label: Yes, I did use the search beforehand.
+      description: Search (here)[https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed]
+      options:
+        - label: I promise!
   - type: textarea
     id: what-happened
     attributes:

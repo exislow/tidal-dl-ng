@@ -1,6 +1,5 @@
 name: Help
 description: File a question for help.
-title: "[Help] "
 labels: ["help wanted"]
 body:
   - type: markdown
