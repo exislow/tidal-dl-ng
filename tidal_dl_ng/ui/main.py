@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.7.0
+## Created by: Qt User Interface Compiler version 6.8.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -110,9 +110,9 @@ class Ui_MainWindow:
         # if QT_CONFIG(accessibility)
         self.tr_lists_user.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
-        self.tr_lists_user.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tr_lists_user.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tr_lists_user.setProperty("showDropIndicator", False)
-        self.tr_lists_user.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tr_lists_user.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tr_lists_user.setIndentation(10)
         self.tr_lists_user.setUniformRowHeights(True)
         self.tr_lists_user.setSortingEnabled(True)
@@ -196,7 +196,7 @@ class Ui_MainWindow:
         self.cb_search_type.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_search_type.setCurrentText("")
-        self.cb_search_type.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cb_search_type.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.cb_search_type.setPlaceholderText("")
 
         self.lh_search.addWidget(self.cb_search_type)
@@ -226,11 +226,11 @@ class Ui_MainWindow:
 
         self.tr_results = QTreeView(self.w_central)
         self.tr_results.setObjectName("tr_results")
-        self.tr_results.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tr_results.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tr_results.setProperty("showDropIndicator", False)
         self.tr_results.setDragDropOverwriteMode(False)
         self.tr_results.setAlternatingRowColors(False)
-        self.tr_results.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.tr_results.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
         self.tr_results.setIndentation(10)
         self.tr_results.setSortingEnabled(True)
 
@@ -256,7 +256,9 @@ class Ui_MainWindow:
         self.l_quality_audio.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.l_quality_audio.setText("Audio")
-        self.l_quality_audio.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
+        self.l_quality_audio.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTrailing | Qt.AlignmentFlag.AlignVCenter
+        )
 
         self.lh_download.addWidget(self.l_quality_audio)
 
@@ -279,7 +281,7 @@ class Ui_MainWindow:
         self.cb_quality_audio.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_quality_audio.setCurrentText("")
-        self.cb_quality_audio.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cb_quality_audio.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.cb_quality_audio.setPlaceholderText("")
         self.cb_quality_audio.setFrame(True)
 
@@ -303,7 +305,9 @@ class Ui_MainWindow:
         self.l_quality_video.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.l_quality_video.setText("Video")
-        self.l_quality_video.setAlignment(Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter)
+        self.l_quality_video.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTrailing | Qt.AlignmentFlag.AlignVCenter
+        )
 
         self.lh_download.addWidget(self.l_quality_video)
 
@@ -326,7 +330,7 @@ class Ui_MainWindow:
         self.cb_quality_video.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
         self.cb_quality_video.setCurrentText("")
-        self.cb_quality_video.setSizeAdjustPolicy(QComboBox.AdjustToContentsOnFirstShow)
+        self.cb_quality_video.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
         self.cb_quality_video.setPlaceholderText("")
 
         self.lh_download.addWidget(self.cb_quality_video)
@@ -408,10 +412,10 @@ class Ui_MainWindow:
         self.l_pm_cover.setSizePolicy(sizePolicy3)
         self.l_pm_cover.setMaximumSize(QSize(280, 280))
         self.l_pm_cover.setBaseSize(QSize(0, 0))
-        self.l_pm_cover.setFrameShape(QFrame.NoFrame)
+        self.l_pm_cover.setFrameShape(QFrame.Shape.NoFrame)
         self.l_pm_cover.setPixmap(QPixmap("default_album_image.png"))
         self.l_pm_cover.setScaledContents(True)
-        self.l_pm_cover.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.l_pm_cover.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
         self.horizontalLayout_2.addWidget(self.l_pm_cover)
 
@@ -436,12 +440,12 @@ class Ui_MainWindow:
         __qtreewidgetitem4.setText(0, "\ud83e\uddd1\u200d\ud83d\udcbb\ufe0f")
         self.tr_queue_download.setHeaderItem(__qtreewidgetitem4)
         self.tr_queue_download.setObjectName("tr_queue_download")
-        self.tr_queue_download.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tr_queue_download.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.tr_queue_download.setTabKeyNavigation(False)
         self.tr_queue_download.setProperty("showDropIndicator", False)
         self.tr_queue_download.setDragDropOverwriteMode(False)
-        self.tr_queue_download.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.tr_queue_download.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.tr_queue_download.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.tr_queue_download.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.tr_queue_download.setRootIsDecorated(False)
         self.tr_queue_download.setItemsExpandable(False)
         self.tr_queue_download.setSortingEnabled(False)
@@ -533,7 +537,7 @@ class Ui_MainWindow:
         # if QT_CONFIG(accessibility)
         self.statusbar.setAccessibleDescription("")
         # endif // QT_CONFIG(accessibility)
-        self.statusbar.setLayoutDirection(Qt.LeftToRight)
+        self.statusbar.setLayoutDirection(Qt.LayoutDirection.LeftToRight)
         MainWindow.setStatusBar(self.statusbar)
 
         self.menubar.addAction(self.m_file.menuAction())
@@ -575,7 +579,8 @@ class Ui_MainWindow:
         self.l_pm_cover.setText("")
         self.l_h_queue_download.setText(QCoreApplication.translate("MainWindow", "Download Queue", None))
         ___qtreewidgetitem4 = self.tr_queue_download.headerItem()
-        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Quality", None))
+        ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "Quality Video", None))
+        ___qtreewidgetitem4.setText(4, QCoreApplication.translate("MainWindow", "Quality Audio", None))
         ___qtreewidgetitem4.setText(3, QCoreApplication.translate("MainWindow", "Type", None))
         ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Name", None))
         ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "obj", None))

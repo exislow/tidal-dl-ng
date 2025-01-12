@@ -49,6 +49,7 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
+from helper.gui import get_queue_download_quality_audio, get_queue_download_quality_video
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -58,7 +59,6 @@ from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
     get_queue_download_media,
-    get_queue_download_quality,
     get_results_media_item,
     get_user_list_media_item,
     set_queue_download_media,
@@ -697,7 +697,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     ) -> QueueDownloadItem | bool:
         result: QueueDownloadItem | False
         name: str = ""
-        quality: Quality | QualityVideo | str = ""
+        quality_audio: Quality = self.settings.data.quality_audio
+        quality_video: QualityVideo = self.settings.data.quality_video
         explicit: str = ""
 
         # Check if item is available on TIDAL.
@@ -713,31 +714,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             name = f"{name_builder_artist(media)} - {name_builder_title(media)}{explicit}"
         elif isinstance(media, Playlist | Artist):
             name = media.name
-            quality = self.settings.data.quality_audio
         elif isinstance(media, Album):
             name = f"{name_builder_artist(media)} - {media.name}{explicit}"
         elif isinstance(media, Mix):
             name = media.title
-            quality = self.settings.data.quality_audio
 
         # Determine actual quality.
         if isinstance(media, Track | Album):
-            quality_highest: str = quality_audio_highest(media)
+            quality_highest: Quality = quality_audio_highest(media)
 
             if (
                 self.settings.data.quality_audio == quality_highest
                 or self.settings.data.quality_audio == Quality.hi_res_lossless
             ):
-                quality = quality_highest
-            else:
-                quality = self.settings.data.quality_audio
-        elif isinstance(media, Video):
-            quality = self.settings.data.quality_video
+                quality_audio = quality_highest
 
         if name:
             result = QueueDownloadItem(
                 name=name,
-                quality=quality,
+                quality_audio=quality_audio,
+                quality_video=quality_video,
                 type_media=type(media).__name__,
                 status=QueueDownloadStatus.Waiting,
                 obj=media,
@@ -956,7 +952,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         set_queue_download_media(child, queue_dl_item.obj)
         child.setText(2, queue_dl_item.name)
         child.setText(3, queue_dl_item.type_media)
-        child.setText(4, queue_dl_item.quality)
+        child.setText(4, queue_dl_item.quality_audio)
+        child.setText(5, queue_dl_item.quality_video)
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
@@ -969,12 +966,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 result: QueueDownloadStatus
                 item: QtWidgets.QTreeWidgetItem = items[0]
                 media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
-                tmp_quality: str = get_queue_download_quality(item)
-                quality: Quality | QualityVideo | None = tmp_quality if tmp_quality else None
+                quality_audio: Quality = get_queue_download_quality_audio(item)
+                quality_video: QualityVideo = get_queue_download_quality_video(item)
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
-                    result = self.on_queue_download(media, quality=quality)
+                    result = self.on_queue_download(media, quality_audio=quality_audio, quality_video=quality_video)
 
                     if result == QueueDownloadStatus.Finished:
                         self.s_queue_download_item_finished.emit(item)
@@ -1002,7 +999,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         item.setText(0, status)
 
     def on_queue_download(
-        self, media: Track | Album | Playlist | Video | Mix | Artist, quality: Quality | QualityVideo | None = None
+        self,
+        media: Track | Album | Playlist | Video | Mix | Artist,
+        quality_audio: Quality | None = None,
+        quality_video: QualityVideo | None = None,
     ) -> QueueDownloadStatus:
         result: QueueDownloadStatus
         items_media: [Track | Album | Playlist | Video | Mix | Artist]
@@ -1015,7 +1015,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
         for item_media in items_media:
-            result = self.download(item_media, self.dl, delay_track=download_delay, quality=quality)
+            result = self.download(
+                item_media,
+                self.dl,
+                delay_track=download_delay,
+                quality_audio=quality_audio,
+                quality_video=quality_video,
+            )
 
         return result
 
@@ -1024,26 +1030,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media: Track | Album | Playlist | Video | Mix | Artist,
         dl: Download,
         delay_track: bool = False,
-        quality: Quality | QualityVideo | None = None,
+        quality_audio: Quality | None = None,
+        quality_video: QualityVideo | None = None,
     ) -> QueueDownloadStatus:
         result_dl: bool
         path_file: str
         result: QueueDownloadStatus
-        quality_audio: Quality | None
-        quality_video: QualityVideo | None
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
 
         file_template = get_format_template(media, self.settings)
 
         if isinstance(media, Track | Video):
-            if isinstance(media, Track):
-                quality_audio = quality
-                quality_video = None
-            else:
-                quality_audio = None
-                quality_video = quality
-
             result_dl, path_file = dl.item(
                 media=media,
                 file_template=file_template,
@@ -1052,13 +1050,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
         elif isinstance(media, Album | Playlist | Mix):
-            if isinstance(media, Album):
-                quality_audio = quality
-                quality_video = None
-            else:
-                quality_audio = None
-                quality_video = None
-
             dl.items(
                 media=media,
                 file_template=file_template,
