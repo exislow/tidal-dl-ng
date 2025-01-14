@@ -49,7 +49,6 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from helper.gui import get_queue_download_quality_audio, get_queue_download_quality_video
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -59,6 +58,8 @@ from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
     get_queue_download_media,
+    get_queue_download_quality_audio,
+    get_queue_download_quality_video,
     get_results_media_item,
     get_user_list_media_item,
     set_queue_download_media,
