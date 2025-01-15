@@ -54,3 +54,43 @@ def endSession():
         return None
     del tidal.session
     del tidal
+
+def logout():
+    """Delete session and your refresh token"""
+    global tidal
+    if tidal is None:
+        print("Maybe you haven't started a session.")
+    else:
+        tidal.logout()
+
+def download(uri,
+             typeName: Literal["artist", "album", "track"],
+             folder: Path,
+             fn_print=print
+             ) -> Optional[bool]:
+    if tidal is None:
+        fn_print("Maybe you haven't started a session.")
+        return None
+    global settings
+
+    dl = Download(tidal.session, folder.absolute().as_posix(), auxLogger) # type: ignore # loggers aren't class Callable
+    match typeName:
+        case "track":
+            template = tidal.data.format_track # type: ignore
+            logger.info(f"Downloading song {uri}")
+            dl.item(template, Track(tidal.session, uri))
+            return True
+        case "album":
+            template = tidal.data.format_album # type: ignore
+            logger.info(f"Downloading songs from album {uri}")
+            dl.items(template, Album(tidal.session, uri))
+            return True
+        case "artist":
+            template = tidal.data.format_album # type: ignore
+            albums = getChildren(uri, "artist")
+            if isinstance(albums, list):
+                for album in albums:
+                    logger.info(f"Downloading album {album.name}")
+                    dl.items(template, album)
+                return True
+    return False
