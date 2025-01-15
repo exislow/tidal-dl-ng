@@ -94,3 +94,24 @@ def download(uri,
                     dl.items(template, album)
                 return True
     return False
+
+
+def getChildren(uri, typeName: Literal["artist", "album", "playlist", "mix"], includeVideos=False) -> Optional[List]:
+    if tidal is None:
+        print("Maybe you haven't started a session.")
+        return None
+    children: Optional[List] = None
+    match typeName:
+        case "artist": 
+            item = Artist(tidal.session, uri)
+            children = items_results_all(item, includeVideos) # returns albums
+        case "album": 
+            item = Album(tidal.session, uri)
+            children = items_results_all(item, includeVideos) # returns tracks+videos or just tracks
+        case "playlist": 
+            item = Playlist(tidal.session, uri)
+            children = items_results_all(item, includeVideos) # returns tracks+videos or just tracks
+        case "mix": 
+            item = Mix(tidal.session, uri)
+            children = items_results_all(item, includeVideos) # returns tracks
+    return children
