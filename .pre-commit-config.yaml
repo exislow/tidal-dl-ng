@@ -1,7 +1,7 @@
 default_language_version:
   python: python3.12
 
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
