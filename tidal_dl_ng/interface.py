@@ -95,6 +95,75 @@ def download(uri,
                 return True
     return False
 
+def search(terms: str, 
+           typeName: Literal["artist", "album", "track"],
+           extensiveSearch=False,
+           monitored=False,
+           fn_print=print) -> Optional[List[Artist] | List[Album] | List[Track]]:
+    
+    if tidal is None:
+        fn_print("You're not logged in!")
+        return None
+
+    if not monitored and extensiveSearch is True:
+        # Basic restriction
+        global charCount, lastSearch
+        auxLogger.info("Checking against human writing speed")
+        expectedTime = lastSearch + charCount/5 + random() # based on 60 words per minute
+        auxLogger.debug(f"{time()} expecting {expectedTime}")
+        while expectedTime > time():
+            sleep(0.1)
+        charCount = len(terms)
+    # exhaustive search is essentially just search_results_all with a lower limit
+    if extensiveSearch:
+        itemLimit = 150 # You probably won't need 150 artists/albums to find the correct one
+        # max is 300
+        results: SearchResults = tidal.session.search(terms, [f".{typeName.capitalize()}"], limit=itemLimit)
+    else:
+        results: SearchResults = tidal.session.search(terms, [f".{typeName.capitalize()}"]) # limit=50
+    lastSearch = time()
+    key = typeName + "s"
+    return results[key]
+
+def searchOne(terms: str, 
+           typeName: Literal["artist", "album", "track"], 
+           extensiveSearch=False, 
+           verifyMeta: Optional[Callable[[Any, Union[Artist, Album, Track], Literal["artist", "album", "track"]], bool]] = None, 
+           metadata: Optional[Any]=None, 
+           monitored=False,
+           fn_print=print) -> Union[Artist, Album, Track, None]:
+    """Search for an artist, album, or track.
+    :param terms: what to search
+    :param typeName: which to search for
+    :param exhaustiveSearch: keeps searching until it finds a match or reaches the last page
+    :param verifyMeta: Optional user provided function to double-check it's the correct item
+    :param metadata: user provided data structure to be passed to their verifyMeta function
+    :param monitored: whether the user wants the responsibility of managing the api limit"""
+    # Be sure to verify the session expiration time
+    
+    results = search(terms, typeName, extensiveSearch, monitored, fn_print)
+    if results is None:
+        return None
+    items: List[tuple] = []
+    
+    for result in results:
+        longEnough = len(terms) > 5
+        if longEnough:
+            closeness = SequenceMatcher(None, result.name.lower(), terms.lower()).ratio() # type: ignore # name is not optional
+            # *should* still work if you include the artist name,
+            # unless it's the name of a different item
+            items.append( (closeness, result) )
+        else:
+            if result == terms:
+                items.append( (1, result) )
+    matches = [item[1] for item in sorted(items, key=lambda item: item[0], reverse=True)] # sort top matching
+    if verifyMeta is not None:
+        # Check first 10
+        amount = min(len(matches), 10)
+        for item in matches[:amount]: # slice from 0 to 10 or the lowest amount
+            if verifyMeta(metadata, item, typeName):
+                return item
+    return matches[0]
 
 def getChildren(uri, typeName: Literal["artist", "album", "playlist", "mix"], includeVideos=False) -> Optional[List]:
     if tidal is None:
