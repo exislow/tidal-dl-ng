@@ -1,4 +1,4 @@
--default_language_version:
+default_language_version:
   python: python3.12
 
 default_stages: [pre-commit, pre-push]
