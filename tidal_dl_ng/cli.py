@@ -2,7 +2,10 @@
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Optional
-
+import re
+import spotipy
+import tidalapi
+from spotipy.oauth2 import SpotifyClientCredentials
 import typer
 from rich.live import Live
 from rich.panel import Panel
@@ -57,7 +60,9 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
     # Create initial objects.
     settings: Settings = Settings()
-    progress: Progress = Progress(
+    
+    # Create a single persistent progress display
+    progress = Progress(
         "{task.description}",
         SpinnerColumn(),
         BarColumn(),
@@ -65,8 +70,9 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         refresh_per_second=20,
         auto_refresh=True,
         expand=True,
-        transient=False,  # Prevent progress from disappearing
+        transient=False  # Prevent progress from disappearing
     )
+        
     fn_logger = LoggerWrapped(progress.print)
     dl = Download(
         session=ctx.obj[CTX_TIDAL].session,
@@ -75,15 +81,18 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         fn_logger=fn_logger,
         progress=progress,
     )
-    progress_table = Table.grid()
 
-    # Style Progress display.
-    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
+    progress_table = Table.grid()
+    progress_table.add_row(
+        Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2))
+    )
 
     urls_pos_last = len(urls) - 1
 
-    # Use a single Live display for both progress and table
-    with Live(progress_table, refresh_per_second=20):
+    # Start the progress display
+    progress.start()
+    
+    try:
         for item in urls:
             media_type: MediaType | bool = False
 
@@ -94,7 +103,6 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                 file_template = get_format_template(media_type, settings)
             else:
                 print(f"It seems like that you have supplied an invalid URL: {item}")
-
                 continue
 
             # Download media.
@@ -122,11 +130,11 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                         video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
                         download_delay=settings.data.download_delay,
                     )
-
-    # Clear and stop progress display
-    progress.refresh()
-    progress.stop()
-    print("\nDownload completed!")
+    finally:
+        # Clear and stop progress display
+        progress.refresh()
+        progress.stop()
+        print("\nDownloads completed!")
 
     return True
 
@@ -343,6 +351,215 @@ def _download_fav_factory(ctx: typer.Context, func_name_favorites: str) -> bool:
 
     return _download(ctx, media_urls, try_login=False)
 
+
+def _validate_spotify_credentials(settings: Settings) -> None:
+    """Validate that Spotify API credentials are configured.
+    
+    :param settings: The application settings.
+    :type settings: Settings
+    :raises typer.Exit: If credentials are not configured.
+    """
+    if not settings.data.spotify_client_id or not settings.data.spotify_client_secret:
+        print("Please set Spotify API credentials in config using:")
+        print("tidal-dl-ng cfg spotify_client_id YOUR_CLIENT_ID")
+        print("tidal-dl-ng cfg spotify_client_secret YOUR_CLIENT_SECRET")
+        raise typer.Exit(1)
+
+
+def _extract_spotify_id(spotify_url: str) -> tuple[str, str]:
+    """Extract ID and type from a Spotify URL.
+    
+    :param spotify_url: The Spotify URL to parse.
+    :type spotify_url: str
+    :return: A tuple containing the content type and ID.
+    :rtype: tuple[str, str]
+    :raises typer.Exit: If the URL is invalid.
+    """
+    playlist_match = re.search(r'playlist/([a-zA-Z0-9]+)', spotify_url)
+    album_match = re.search(r'album/([a-zA-Z0-9]+)', spotify_url)
+    track_match = re.search(r'track/([a-zA-Z0-9]+)', spotify_url)
+    
+    if playlist_match:
+        return "playlist", playlist_match.group(1)
+    elif album_match:
+        return "album", album_match.group(1)
+    elif track_match:
+        return "track", track_match.group(1)
+    else:
+        print("Invalid Spotify URL. Please provide a valid Spotify playlist, album, or track URL.")
+        raise typer.Exit(1)
+
+
+def _fetch_spotify_tracks(sp: spotipy.Spotify, content_type: str, content_id: str) -> list:
+    """Fetch tracks from Spotify based on content type and ID.
+    
+    :param sp: The Spotify client.
+    :type sp: spotipy.Spotify
+    :param content_type: The type of content ('playlist', 'album', or 'track').
+    :type content_type: str
+    :param content_id: The Spotify ID of the content.
+    :type content_id: str
+    :return: A list of tracks.
+    :rtype: list
+    """
+    tracks = []
+    
+    if content_type == "playlist":
+        print(f"Fetching Spotify playlist: {content_id}")
+        
+        # Get all playlist tracks with pagination
+        results = sp.playlist_tracks(content_id)
+        tracks.extend(results['items'])
+        
+        while results['next']:
+            results = sp.next(results)
+            tracks.extend(results['items'])
+    elif content_type == "album":
+        print(f"Fetching Spotify album: {content_id}")
+        
+        # Get album information
+        album = sp.album(content_id)
+        
+        # Get all album tracks with pagination
+        results = sp.album_tracks(content_id)
+        
+        # Convert album tracks to the same format as playlist tracks
+        for track in results['items']:
+            tracks.append({'track': track})
+        
+        # Handle pagination for albums with more than 50 tracks
+        while results['next']:
+            results = sp.next(results)
+            for track in results['items']:
+                tracks.append({'track': track})
+    elif content_type == "track":
+        print(f"Fetching Spotify track: {content_id}")
+        
+        # Get track information
+        track = sp.track(content_id)
+        
+        # Add the track to the list in the same format as playlist tracks
+        tracks.append({'track': track})
+                
+    return tracks
+
+
+def _search_tracks_on_tidal(ctx: typer.Context, tracks: list) -> tuple[list, list]:
+    """Search for Spotify tracks on TIDAL.
+    
+    :param ctx: The typer context.
+    :type ctx: typer.Context
+    :param tracks: The list of Spotify tracks.
+    :type tracks: list
+    :return: A tuple containing lists of found URLs and not found tracks.
+    :rtype: tuple[list, list]
+    """
+    urls = []
+    not_found = []
+    
+    for track in tracks:
+        # Handle different track structures between playlist and album responses
+        if 'track' in track:
+            # Playlist track structure
+            track_info = track['track']
+        else:
+            # Album track structure (already at the track level)
+            track_info = track
+            
+        artist = track_info['artists'][0]['name']
+        title = track_info['name']
+        
+        # Extract ISRC if available
+        isrc = None
+        if 'external_ids' in track_info and 'isrc' in track_info['external_ids']:
+            isrc = track_info['external_ids']['isrc']
+        
+        # Call login method to validate the token
+        if not ctx.obj[CTX_TIDAL]:
+            ctx.invoke(login, ctx)
+        
+        # First try to find by ISRC if available
+        found_by_isrc = False
+        if isrc:
+            # Search on TIDAL using text search
+            results = ctx.obj[CTX_TIDAL].session.search(f"{artist} {title}", models=[tidalapi.media.Track])
+            if results and len(results['tracks']) > 0:
+                # Check if any of the results have a matching ISRC
+                for tidal_track in results['tracks']:
+                    if hasattr(tidal_track, 'isrc') and tidal_track.isrc == isrc:
+                        track_url = tidal_track.share_url
+                        urls.append(track_url)
+                        found_by_isrc = True
+                        print(f"Found exact match by ISRC for: {artist} - {title}")
+                        break
+        
+        # If not found by ISRC, fall back to text search
+        if not isrc or not found_by_isrc:
+            # Search on TIDAL
+            results = ctx.obj[CTX_TIDAL].session.search(f"{artist} {title}", models=[tidalapi.media.Track])
+            if results and len(results['tracks']) > 0:
+                track_url = results['tracks'][0].share_url
+                urls.append(track_url)
+            else:
+                not_found.append(f"{artist} - {title}")
+                
+    return urls, not_found
+
+
+@app.command(name="spotify")
+def download_spotify(
+    ctx: typer.Context,
+    spotify_url: Annotated[str, typer.Argument(help="Spotify URL (playlist, album, or track)")],  # noqa: UP007
+) -> bool:
+    """Download tracks from a Spotify playlist, album, or individual track by searching for them on TIDAL.
+    
+    The matching process first attempts to find tracks by ISRC (International Standard
+    Recording Code) for exact matching between services. If no match is found by ISRC
+    or if the ISRC is not available, it falls back to text search using artist and title.
+    
+    Requires Spotify API credentials to be configured:
+    1. Create an app at https://developer.spotify.com/dashboard
+    2. Set the client ID: tidal-dl-ng cfg spotify_client_id YOUR_CLIENT_ID
+    3. Set the client secret: tidal-dl-ng cfg spotify_client_secret YOUR_CLIENT_SECRET
+    """
+    settings = Settings()
+    
+    # Validate Spotify credentials
+    _validate_spotify_credentials(settings)
+
+    # Initialize Spotify client
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+        client_id=settings.data.spotify_client_id,
+        client_secret=settings.data.spotify_client_secret
+    ))
+
+    # Extract ID and type from URL
+    content_type, content_id = _extract_spotify_id(spotify_url)
+    
+    # Fetch tracks from Spotify
+    tracks = _fetch_spotify_tracks(sp, content_type, content_id)
+    total_tracks = len(tracks)
+    
+    # Search for tracks on TIDAL
+    urls, not_found = _search_tracks_on_tidal(ctx, tracks)
+    
+    # Print summary of found tracks
+    if urls:
+        print(f"\nFound {len(urls)} of {total_tracks} tracks on TIDAL")
+    else:
+        print("\nNo tracks found to download")
+        
+    # Print not found tracks
+    if not_found:
+        print("\nSongs not found on TIDAL:")
+        for song in not_found:
+            print(song)
+    
+    # Use the existing download function if we have URLs
+    if urls:
+        return _download(ctx, urls, try_login=False)
+    else:
+        return False
 
 @app.command()
 def gui(ctx: typer.Context):
