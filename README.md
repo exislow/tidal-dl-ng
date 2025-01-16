@@ -42,6 +42,8 @@ If you like this projects and want to support it, feel free to buy me a coffee �
 
 ## 💻 Installation / Upgrade
 
+
+### Using pip
 **Requirements**: Python == 3.12 (other versions might work but are not tested!)
 
 ```bash
@@ -50,8 +52,19 @@ pip install --upgrade tidal-dl-ng
 pip install --upgrade tidal-dl-ng[gui]
 ```
 
+### Using Docker
+**Requirements**: Docker == 27.5.0 (other verions might work but are not tested!)
+All you need are the ```Dockerfile``` and the ```settings.json``` files from this repository and be in the same directory as the two files.
+To build the image using ```docker build``` command: 
+```bash
+docker build -t <container-image-name> .
+```
+You can give any name you want to the container.
+
+
 ## ⌨️ Usage
 
+### 🐍 Using pip
 You can use the command line (CLI) version to download media by URL:
 
 ```bash
@@ -81,6 +94,19 @@ tidal-dl-ng gui
 
 If you like to have the GUI version only as a binary, have a look at the
 [release page](https://github.com/exislow/tidal-dl-ng/releases) and download the correct version for your platform.
+
+### 🐋 Using the Docker image
+Simply create a music folder to mount to the container you will create, then run :
+```bash
+docker run -v "/path/to/host/music/folder:/home/appuser/music" -v tidal-dl-volume:/home/appuser/.config/tidal_dl_ng/ -it <container-image-name>:latest <command>
+```
+This command will also create a Docker volume to store your ```settings.json``` as well as your credentials when connected to Tidal.
+The ```<command>``` is where you use tidal-dl-ng as described in the previous section when using pip.
+
+⚠️ The folder from the host that you map in the container must exist, if Docker creates it it might be owned by ```root``` and tidal-dl-ng **will not have the rights** to write in this folder ⚠️
+
+💡 You can also run a bash shell if you want to tinker in the container. Nano and ffmpeg are installed and the ffmpeg path is preconfigured in the ```settings.json```.
+Currently, the Docker image does not support the GUI version.
 
 ## 🧁 Features
 
