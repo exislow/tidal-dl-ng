@@ -16,19 +16,17 @@ RUN pip install --upgrade tidal-dl-ng
 # Creating a user appuser to group users
 RUN useradd -m -u 1000 -g users appuser 
 
-# Getting ownership of user's home folder
-RUN chown appuser:users -R /home/appuser/ && chmod -R 755 /home/appuser
-ADD settings.json /home/appuser/.config/tidal_dl_ng/settings.json
-RUN chown appuser:users /home/appuser/.config/tidal_dl_ng/settings.json 
-RUN chmod 775 /home/appuser/.config/tidal_dl_ng/settings.json
+# Creating .config and msuci folders and getting ownership of appuser's home folder
+RUN mkdir -p /home/appuser/.config/tidal_dl_ng/
+RUN mkdir -p /home/appuser/music
+RUN chown appuser:users -R /home/appuser/ && chmod -R 755 /home/appuser/
+
 # As appuser :
 USER appuser
 
-# Creating config folder for tidal-dl-ng and music folder 
-RUN mkdir -p /home/appuser/.config/tidal_dl_ng/
-RUN mkdir -p /home/appuser/music
-# RUN chown appuser:users -R /home/appuser/music && chmod -R 755 /home/appuser/music
-
+# Configuring ffmpeg and deownload path
+RUN tidal-dl-ng cfg path_binary_ffmpeg /usr/bin/ffmpeg
+RUN tidal-dl-ng cfg download_base_path /home/appuser/music
 
 # Working directory is appuser's home
 WORKDIR /home/appuser/
