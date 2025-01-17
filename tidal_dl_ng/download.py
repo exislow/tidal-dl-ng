@@ -322,7 +322,9 @@ class Download:
 
         # Create file name and path
         file_extension_dummy: str = self.extension_guess(
-            quality_audio, metadata_tags=media.media_metadata_tags, is_video=isinstance(media, Video)
+            quality_audio,
+            metadata_tags=[] if isinstance(media, Video) else media.media_metadata_tags,
+            is_video=isinstance(media, Video),
         )
         file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
         path_media_dst: pathlib.Path = (
