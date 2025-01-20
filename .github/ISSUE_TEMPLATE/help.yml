@@ -6,6 +6,13 @@ body:
     attributes:
       value: |
         If no other issue template fits please use this.
+  - type: checkboxes
+    id: search-done
+    attributes:
+      label: You must use the search before you create an issue!
+      description: "**Search [here](https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed).** Otherwise this issue gets closed without any comment. Please keep in mind that everyone's time is very precious."
+      options:
+        - label: I did use the search, I promise!
   - type: textarea
     id: help
     attributes:

@@ -6,6 +6,13 @@ body:
     attributes:
       value: |
         We appreciate your feedback on how to improve this project. Please be sure to include as much details & any images if possible! Otherwise this issue gets rejected and closed.
+  - type: checkboxes
+    id: search-done
+    attributes:
+      label: You must use the search before you create an issue!
+      description: "**Search [here](https://github.com/exislow/tidal-dl-ng/issues?q=is%3Aissue+is%3Aopen%2Cclosed).** Otherwise this issue gets closed without any comment. Please keep in mind that everyone's time is very precious."
+      options:
+        - label: I did use the search, I promise!
   - type: textarea
     id: situation
     attributes:
