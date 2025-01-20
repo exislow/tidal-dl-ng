@@ -7,8 +7,8 @@ WORKDIR /app
 # Updating repos
 RUN apt update 
 
-# Installing nano just in case one need to edit something in the container, installing ffmpeg for tidal-dl-ng
-RUN apt install -y nano ffmpeg
+# Installing installing ffmpeg for tidal-dl-ng
+RUN apt install -y ffmpeg
 
 #Installing tidal-dl-ng from pip
 RUN pip install --upgrade tidal-dl-ng
