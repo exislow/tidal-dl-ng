@@ -21,6 +21,7 @@ env:
   ARCH_MACOS_X64: "macos-x64"
   ARCH_MACOS_ARM64: "macos-arm64"
   ARCH_LINUX_X64: "linux-x64"
+  ARCH_LINUX_ARM64: "linux-arm64"
   ARCH_WINDOWS_X64: "windows-x64"
 
 jobs:
@@ -70,6 +71,7 @@ jobs:
       ARCH_MACOS_X64: ${{ env.ARCH_MACOS_X64 }}
       ARCH_MACOS_ARM64: ${{ env.ARCH_MACOS_ARM64 }}
       ARCH_LINUX_X64: ${{ env.ARCH_LINUX_X64 }}
+      ARCH_LINUX_ARM64: ${{ env.ARCH_LINUX_ARM64 }}
       ARCH_WINDOWS_X64: ${{ env.ARCH_WINDOWS_X64 }}
     steps:
       - name: Compute outputs
@@ -79,6 +81,7 @@ jobs:
           echo "ARCH_MACOS_X64=${{ env.ARCH_MACOS_X64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_MACOS_ARM64=${{ env.ARCH_MACOS_ARM64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_LINUX_X64=${{ env.ARCH_LINUX_X64 }}" >> $GITHUB_OUTPUT
+          echo "ARCH_LINUX_ARM64=${{ env.ARCH_LINUX_ARM64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_WINDOWS_X64=${{ env.ARCH_WINDOWS_X64 }}" >> $GITHUB_OUTPUT
   build-gui-and-upload-assets:
     needs: ["publish", "compute"]
@@ -115,6 +118,15 @@ jobs:
               poetry run make gui-linux APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd ..
+          - os: "ubuntu-22.04-arm"
+            TARGET: "ubuntu-22.04-arm"
+            OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_ARM64}}
+            CMD_BUILD: >
+              source $VENV &&
+              poetry run make gui-linux APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
           - os: "windows-2019"
             TARGET: "windows-2019"
