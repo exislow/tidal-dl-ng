@@ -1,6 +1,8 @@
-[tool.poetry]
+[project]
 name = "tidal-dl-ng"
-authors = ["Robert Honz <cen.sored@gmail.com>"]
+authors = [
+  {name = "Robert Honz",email = "<cen.sored@gmail.com>"}
+]
 version = "0.24.6"
 description = "TIDAL Medial Downloader Next Generation!"
 repository = "https://github.com/exislow/tidal-dl-ng"
@@ -17,7 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
 ]
 
-[tool.poetry.scripts]
+[project.scripts]
 tidal-dl-ng = "tidal_dl_ng.cli:app"
 tidal-dl-ng-gui = "tidal_dl_ng.gui:gui_activate"
 tdn = "tidal_dl_ng.cli:app"
@@ -41,7 +43,7 @@ tidalapi = "^0.8.3"
 python-ffmpeg = "^2.0.12"
 pycryptodome = "^3.21.0"
 
-[tool.poetry.extras]
+[project.optional-dependencies]
 gui = ["pyside6", "pyqtdarktheme-fork"]
 
 [tool.poetry.group.dev]
@@ -75,7 +77,7 @@ mkdocstrings = { extras = ["python"], version = "^0.27.0" }
 griffe = "^1.5.1"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
