@@ -18,6 +18,8 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
 ]
+requires-python = ">=3.12,<3.13"
+dynamic = ["dependencies"]
 
 [project.scripts]
 tidal-dl-ng = "tidal_dl_ng.cli:app"
@@ -26,7 +28,6 @@ tdn = "tidal_dl_ng.cli:app"
 tdng = "tidal_dl_ng.gui:gui_activate"
 
 [tool.poetry.dependencies]
-python = ">=3.12,<3.13"
 requests = "~2.32.3"
 mutagen = "^1.47.0"
 dataclasses-json = "^0.6.7"
