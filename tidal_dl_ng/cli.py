@@ -2,7 +2,10 @@
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Optional
-
+import re
+import spotipy
+import tidalapi
+from spotipy.oauth2 import SpotifyClientCredentials
 import typer
 from rich.live import Live
 from rich.panel import Panel
@@ -57,12 +60,19 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
     # Create initial objects.
     settings: Settings = Settings()
-    progress: Progress = Progress(
+    
+    # Create a single persistent progress display
+    progress = Progress(
         "{task.description}",
         SpinnerColumn(),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        refresh_per_second=20,
+        auto_refresh=True,
+        expand=True,
+        transient=False  # Prevent progress from disappearing
     )
+        
     fn_logger = LoggerWrapped(progress.print)
     dl = Download(
         session=ctx.obj[CTX_TIDAL].session,
@@ -71,28 +81,29 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         fn_logger=fn_logger,
         progress=progress,
     )
-    progress_table = Table.grid()
 
-    # Style Progress display.
-    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
+    progress_table = Table.grid()
+    progress_table.add_row(
+        Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2))
+    )
 
     urls_pos_last = len(urls) - 1
 
-    for item in urls:
-        media_type: MediaType | bool = False
+    # Use a single Live display for both progress and table
+    with progress:
+        progress.start()
+        for item in urls:
+            media_type: MediaType | bool = False
 
-        # Extract media name and id from link.
-        if "http" in item:
-            media_type = get_tidal_media_type(item)
-            item_id = get_tidal_media_id(item)
-            file_template = get_format_template(media_type, settings)
-        else:
-            print(f"It seems like that you have supplied an invalid URL: {item}")
+            # Extract media name and id from link.
+            if "http" in item:
+                media_type = get_tidal_media_type(item)
+                item_id = get_tidal_media_id(item)
+                file_template = get_format_template(media_type, settings)
+            else:
+                print(f"It seems like that you have supplied an invalid URL: {item}")
+                continue
 
-            continue
-
-        # Create Live display for Progress.
-        with Live(progress_table, refresh_per_second=10):
             # Download media.
             if media_type in [MediaType.TRACK, MediaType.VIDEO]:
                 download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
@@ -119,8 +130,10 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                         download_delay=settings.data.download_delay,
                     )
 
-    # Stop Progress display.
+    # Clear and stop progress display
+    progress.refresh()
     progress.stop()
+    print("\nDownloads completed!")
 
     return True
 
@@ -187,6 +200,12 @@ def settings_management(
 
             console = Console()
             console.print(table)
+            
+            # Show Spotify credential help if not configured
+            if not settings.data.spotify_client_id or not settings.data.spotify_client_secret:
+                console.print("\n[yellow]Spotify playlist import requires API credentials to be configured:[/yellow]")
+                console.print("1. Create an app at https://developer.spotify.com/dashboard")
+                console.print("2. Configure your client ID and secret in the settings")
 
 
 @app.command(name="login")
@@ -337,6 +356,127 @@ def _download_fav_factory(ctx: typer.Context, func_name_favorites: str) -> bool:
 
     return _download(ctx, media_urls, try_login=False)
 
+
+@app.command(name="spotify")
+def download_spotify(
+    ctx: typer.Context,
+    playlist_url: Annotated[str, typer.Argument(help="Spotify playlist URL")],  # noqa: UP007
+) -> bool:
+    """Download tracks from a Spotify playlist by searching for them on TIDAL.
+    
+    Requires Spotify API credentials to be configured:
+    1. Create an app at https://developer.spotify.com/dashboard
+    2. Set the client ID: tidal-dl-ng cfg spotify_client_id YOUR_CLIENT_ID
+    3. Set the client secret: tidal-dl-ng cfg spotify_client_secret YOUR_CLIENT_SECRET
+    """
+    settings = Settings()
+    
+    if not settings.data.spotify_client_id or not settings.data.spotify_client_secret:
+        print("Please set Spotify API credentials in config using:")
+        print("tidal-dl-ng cfg spotify_client_id YOUR_CLIENT_ID")
+        print("tidal-dl-ng cfg spotify_client_secret YOUR_CLIENT_SECRET")
+        raise typer.Exit(1)
+
+    # Extract playlist ID from URL
+    playlist_id_match = re.search(r'playlist/([a-zA-Z0-9]+)', playlist_url)
+    if not playlist_id_match:
+        print("Invalid Spotify playlist URL")
+        raise typer.Exit(1)
+    
+    playlist_id = playlist_id_match.group(1)
+
+    # Initialize Spotify client
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
+        client_id=settings.data.spotify_client_id,
+        client_secret=settings.data.spotify_client_secret
+    ))
+
+    # Get all playlist tracks with pagination
+    tracks = []
+    results = sp.playlist_tracks(playlist_id)
+    tracks.extend(results['items'])
+    
+    while results['next']:
+        results = sp.next(results)
+        tracks.extend(results['items'])
+    
+    total_tracks = len(tracks)
+    
+    # Build search queries for TIDAL
+    urls = []
+    not_found = []
+    
+    # First silently search for all tracks on TIDAL
+    for track in tracks:
+        track_info = track['track']
+        artist = track_info['artists'][0]['name']
+        title = track_info['name']
+        
+        # Call login method to validate the token
+        if not ctx.obj[CTX_TIDAL]:
+            ctx.invoke(login, ctx)
+        
+        # Search on TIDAL
+        results = ctx.obj[CTX_TIDAL].session.search(f"{artist} {title}", models=[tidalapi.media.Track])
+        if results and len(results['tracks']) > 0:
+            track_url = results['tracks'][0].share_url
+            urls.append(track_url)
+        else:
+            not_found.append(f"{artist} - {title}")
+
+    # Download all found tracks with a single progress bar
+    success = False
+    if urls:
+        print(f"\nFound {len(urls)} of {total_tracks} tracks on TIDAL")
+        
+        # Create progress display for downloads
+        progress = Progress(
+            "{task.description}",
+            SpinnerColumn(),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            refresh_per_second=20,
+        )
+        
+        settings = Settings()
+        fn_logger = LoggerWrapped(progress.print)
+        dl = Download(
+            session=ctx.obj[CTX_TIDAL].session,
+            skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
+            path_base=settings.data.download_base_path,
+            fn_logger=fn_logger,
+            progress=progress,
+        )
+        
+        with progress:
+            task = progress.add_task(f"[cyan]Downloading playlist tracks...", total=len(urls))
+            
+            for url in urls:
+                media_type = get_tidal_media_type(url)
+                item_id = get_tidal_media_id(url)
+                file_template = get_format_template(media_type, settings)
+                
+                # Use the main download object but with silent logger
+                dl.fn_logger = LoggerWrapped(lambda x: None)
+                dl.item(
+                    media_id=item_id,
+                    media_type=media_type,
+                    file_template=file_template,
+                    download_delay=False
+                )
+                progress.advance(task)
+                
+            success = True
+    else:
+        print("\nNo tracks found to download")
+        
+    # Print not found tracks
+    if not_found:
+        print("\nSongs not found on TIDAL:")
+        for song in not_found:
+            print(song)
+            
+    return success
 
 @app.command()
 def gui(ctx: typer.Context):
