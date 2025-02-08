@@ -34,14 +34,13 @@ RUN apt install -y ffmpeg
 RUN pip install --upgrade tidal-dl-ng
 
 # Creating a user appuser belonging to group users along with its home directory
-RUN useradd -d ${HOME_PATH} -u 1000 -g ${GROUP_NAME} ${USER_NAME} 
-
-# Creating .config and music folders and getting ownership of appuser's home folder
-RUN mkdir -p ${MUSIC_PATH}
-RUN chown ${USER_NAME}:${GROUP_NAME} -R ${HOME_PATH} && chmod -R 755 ${HOME_PATH}
+RUN useradd -m -u ${UID} -g ${GROUP_NAME} ${USER_NAME} 
 
 # As appuser :
-USER appuser
+USER ${USER_NAME}
+
+# Creating music folder
+RUN mkdir -p ${MUSIC_PATH}
 
 # Configuring ffmpeg and deownload path fir tidal-dl-ng
 RUN tidal-dl-ng cfg path_binary_ffmpeg $(which ffmpeg)
