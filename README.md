@@ -99,7 +99,7 @@ If you like to have the GUI version only as a binary, have a look at the
 ### 🐋 Using the Docker image
 Simply create a music and config folders to mount to the container you will create, then run :
 ```bash
-docker run -v "/path/to/host/music/folder/:/home/appuser/music" -v /path/to/host/config/dir/:/home/appuser/.config/tidal_dl_ng/ -it <container-image-name>:latest tdn <command>
+docker run -v "/path/to/host/music/folder/:/home/appuser/music" -v "/path/to/host/config/dir/:/home/appuser/.config/tidal_dl_ng/" -it <container-image-name>:latest tdn <command>
 ```
 This command will also create two files to store your ```settings.json``` as well as your ```token.json``` when connected to Tidal.
 
