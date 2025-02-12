@@ -97,10 +97,15 @@ If you like to have the GUI version only as a binary, have a look at the
 [release page](https://github.com/exislow/tidal-dl-ng/releases) and download the correct version for your platform.
 
 ### 🐋 Using the Docker image
+
 Simply create a music and config folders to mount to the container you will create, then run :
+
 ```bash
+
 docker run -v "/path/to/host/music/folder/:/home/appuser/music" -v "/path/to/host/config/dir/:/home/appuser/.config/tidal_dl_ng/" -it <container-image-name>:latest tdn <command>
+
 ```
+
 This command will also create two files to store your ```settings.json``` as well as your ```token.json``` when connected to Tidal.
 
 ⚠️ The folder from the host that you map in the container must exist beforehand since if Docker creates it, it might be owned by ```root``` and tidal-dl-ng **will not have the rights** to write in this folder ⚠️

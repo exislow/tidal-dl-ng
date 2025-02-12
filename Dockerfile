@@ -33,16 +33,16 @@ RUN apt install -y ffmpeg
 # Installing tidal-dl-ng from pip
 RUN pip install --upgrade tidal-dl-ng
 
-# Creating a user appuser belonging to group users along with its home directory
+# Creating a user named USER_NAME belonging to group GROUP_NAME along with its home directory
 RUN useradd -m -u ${UID} -g ${GROUP_NAME} ${USER_NAME} 
 
-# As appuser :
+# As USER_NAME :
 USER ${USER_NAME}
 
 # Creating music folder
 RUN mkdir -p ${MUSIC_PATH}
 
-# Configuring ffmpeg and deownload path fir tidal-dl-ng
+# Configuring ffmpeg and download path for tidal-dl-ng
 RUN tidal-dl-ng cfg path_binary_ffmpeg $(which ffmpeg)
 RUN tidal-dl-ng cfg download_base_path ${MUSIC_PATH}
 
