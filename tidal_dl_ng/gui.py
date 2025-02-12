@@ -48,7 +48,9 @@ import math
 import sys
 import time
 from collections.abc import Callable, Sequence
+from functools import partial
 
+from PySide6.QtGui import QAction
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -142,6 +144,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Generation!")
+        self.tr_results_headers_ctx_items = [
+            "✅#",
+            "✅obj",
+            "✅Artist",
+            "✅Title",
+            "✅Album",
+            "✅Duration",
+            "✅Quality",
+            "✅Date Added",
+        ]
 
         # Logging redirect.
         XStream.stdout().messageWritten.connect(self._log_output)
@@ -304,6 +316,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
+        tree.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.header().customContextMenuRequested.connect(self.menu_context_tree_headers)
+
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
         labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date Added"]
 
@@ -444,6 +459,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         menu.exec(self.tr_results.mapToGlobal(point))
 
+    def menu_context_tree_headers(self):
+        menu = QtWidgets.QMenu()
+        for m in self.tr_results_headers_ctx_items:
+            action = QAction(m, self)
+            action.triggered.connect(partial(self._toggle_header_section_hidden, m))
+            menu.addAction(action)
+
+        menu.exec(QtGui.QCursor.pos())
+
+    def _toggle_header_section_hidden(self, item: str):
+        index = self.tr_results_headers_ctx_items.index(item)
+        is_visible = "✅" in item
+        new_label = item.replace("✅" if is_visible else "❌", "❌" if is_visible else "✅")
+        self.tr_results_headers_ctx_items[index] = new_label
+        self.tr_results.header().setSectionHidden(index, is_visible)
+
     def thread_download_list_media(self, point: QtCore.QPoint):
         self.thread_it(self.on_download_list_media, point)
 
@@ -452,7 +483,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_copy_url_share(self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None):
         if isinstance(tree_target, QtWidgets.QTreeWidget):
-
             item: QtWidgets.QTreeWidgetItem = tree_target.itemAt(point)
             media: Album | Artist | Mix | Playlist = get_user_list_media_item(item)
         else:
