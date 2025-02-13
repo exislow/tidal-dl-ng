@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
+from tidalapi.media import SearchType
 
 from tidal_dl_ng.constants import CoverDimensions, QualityVideo
 
@@ -44,6 +45,7 @@ class Settings:
     downloads_concurrent_max: int = 3
     symlink_to_track: bool = False
     playlist_create: bool = False
+    search_type: SearchType = SearchType.default
 
 
 @dataclass_json
@@ -97,6 +99,7 @@ class HelpSettings:
         "accordingly."
     )
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
+    search_type: str = "Search for tracks by artist, album or track name."
 
 
 @dataclass_json

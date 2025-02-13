@@ -7,6 +7,7 @@ from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Quality as QualityAudio
+from tidalapi.media import SearchType
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings
@@ -169,6 +170,7 @@ class DialogPreferences(QtWidgets.QDialog):
             ("quality_audio", QualityAudio),
             ("quality_video", QualityVideo),
             ("metadata_cover_dimension", CoverDimensions),
+            ("search_type", SearchType),
         ]
 
     def _init_checkboxes(self):

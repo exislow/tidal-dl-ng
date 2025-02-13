@@ -1,12 +1,12 @@
 ################################################################################
 ## Form generated from reading UI file 'dialog_settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.8.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, Qt
+from PySide6.QtCore import QCoreApplication, QMetaObject, QRect, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QSizePolicy,
     QSpinBox,
     QVBoxLayout,
+    QWidget,
 )
 
 
@@ -27,7 +28,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 800)
+        DialogSettings.resize(959, 800)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -40,6 +41,55 @@ class Ui_DialogSettings:
         self.lv_main = QVBoxLayout()
         self.lv_main.setObjectName("lv_main")
         self.lv_main.setContentsMargins(12, 12, 12, 12)
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+        self.gb_numbers = QGroupBox(DialogSettings)
+        self.gb_numbers.setObjectName("gb_numbers")
+        self.verticalLayout_8 = QVBoxLayout(self.gb_numbers)
+        self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.horizontalLayout_9 = QHBoxLayout()
+        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
+        self.l_album_track_num_pad_min = QLabel(self.gb_numbers)
+        self.l_album_track_num_pad_min.setObjectName("l_album_track_num_pad_min")
+
+        self.horizontalLayout_9.addWidget(self.l_album_track_num_pad_min)
+
+        self.l_icon_album_track_num_pad_min = QLabel(self.gb_numbers)
+        self.l_icon_album_track_num_pad_min.setObjectName("l_icon_album_track_num_pad_min")
+
+        self.horizontalLayout_9.addWidget(self.l_icon_album_track_num_pad_min)
+
+        self.sb_album_track_num_pad_min = QSpinBox(self.gb_numbers)
+        self.sb_album_track_num_pad_min.setObjectName("sb_album_track_num_pad_min")
+        self.sb_album_track_num_pad_min.setMaximum(4)
+
+        self.horizontalLayout_9.addWidget(self.sb_album_track_num_pad_min)
+
+        self.verticalLayout_8.addLayout(self.horizontalLayout_9)
+
+        self.horizontalLayout_11 = QHBoxLayout()
+        self.horizontalLayout_11.setObjectName("horizontalLayout_11")
+        self.l_downloads_concurrent_max = QLabel(self.gb_numbers)
+        self.l_downloads_concurrent_max.setObjectName("l_downloads_concurrent_max")
+
+        self.horizontalLayout_11.addWidget(self.l_downloads_concurrent_max)
+
+        self.l_icon_downloads_concurrent_max = QLabel(self.gb_numbers)
+        self.l_icon_downloads_concurrent_max.setObjectName("l_icon_downloads_concurrent_max")
+
+        self.horizontalLayout_11.addWidget(self.l_icon_downloads_concurrent_max)
+
+        self.sb_downloads_concurrent_max = QSpinBox(self.gb_numbers)
+        self.sb_downloads_concurrent_max.setObjectName("sb_downloads_concurrent_max")
+        self.sb_downloads_concurrent_max.setMinimum(1)
+        self.sb_downloads_concurrent_max.setMaximum(5)
+
+        self.horizontalLayout_11.addWidget(self.sb_downloads_concurrent_max)
+
+        self.verticalLayout_8.addLayout(self.horizontalLayout_11)
+
+        self.horizontalLayout_13.addWidget(self.gb_numbers)
+
         self.gb_flags = QGroupBox(DialogSettings)
         self.gb_flags.setObjectName("gb_flags")
         sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -194,7 +244,9 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.horizontalLayout_12)
 
-        self.lv_main.addWidget(self.gb_flags)
+        self.horizontalLayout_13.addWidget(self.gb_flags)
+
+        self.lv_main.addLayout(self.horizontalLayout_13)
 
         self.gb_choices = QGroupBox(DialogSettings)
         self.gb_choices.setObjectName("gb_choices")
@@ -290,53 +342,6 @@ class Ui_DialogSettings:
         self.lv_choices.addLayout(self.lh_choices_cover_dimension)
 
         self.lv_main.addWidget(self.gb_choices)
-
-        self.gb_numbers = QGroupBox(DialogSettings)
-        self.gb_numbers.setObjectName("gb_numbers")
-        self.verticalLayout_8 = QVBoxLayout(self.gb_numbers)
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.horizontalLayout_9 = QHBoxLayout()
-        self.horizontalLayout_9.setObjectName("horizontalLayout_9")
-        self.l_album_track_num_pad_min = QLabel(self.gb_numbers)
-        self.l_album_track_num_pad_min.setObjectName("l_album_track_num_pad_min")
-
-        self.horizontalLayout_9.addWidget(self.l_album_track_num_pad_min)
-
-        self.l_icon_album_track_num_pad_min = QLabel(self.gb_numbers)
-        self.l_icon_album_track_num_pad_min.setObjectName("l_icon_album_track_num_pad_min")
-
-        self.horizontalLayout_9.addWidget(self.l_icon_album_track_num_pad_min)
-
-        self.sb_album_track_num_pad_min = QSpinBox(self.gb_numbers)
-        self.sb_album_track_num_pad_min.setObjectName("sb_album_track_num_pad_min")
-        self.sb_album_track_num_pad_min.setMaximum(4)
-
-        self.horizontalLayout_9.addWidget(self.sb_album_track_num_pad_min)
-
-        self.verticalLayout_8.addLayout(self.horizontalLayout_9)
-
-        self.horizontalLayout_11 = QHBoxLayout()
-        self.horizontalLayout_11.setObjectName("horizontalLayout_11")
-        self.l_downloads_concurrent_max = QLabel(self.gb_numbers)
-        self.l_downloads_concurrent_max.setObjectName("l_downloads_concurrent_max")
-
-        self.horizontalLayout_11.addWidget(self.l_downloads_concurrent_max)
-
-        self.l_icon_downloads_concurrent_max = QLabel(self.gb_numbers)
-        self.l_icon_downloads_concurrent_max.setObjectName("l_icon_downloads_concurrent_max")
-
-        self.horizontalLayout_11.addWidget(self.l_icon_downloads_concurrent_max)
-
-        self.sb_downloads_concurrent_max = QSpinBox(self.gb_numbers)
-        self.sb_downloads_concurrent_max.setObjectName("sb_downloads_concurrent_max")
-        self.sb_downloads_concurrent_max.setMinimum(1)
-        self.sb_downloads_concurrent_max.setMaximum(5)
-
-        self.horizontalLayout_11.addWidget(self.sb_downloads_concurrent_max)
-
-        self.verticalLayout_8.addLayout(self.horizontalLayout_11)
-
-        self.lv_main.addWidget(self.gb_numbers)
 
         self.gb_path = QGroupBox(DialogSettings)
         self.gb_path.setObjectName("gb_path")
@@ -564,6 +569,41 @@ class Ui_DialogSettings:
 
         self.lv_main.addWidget(self.gb_path)
 
+        self.verticalLayout_3 = QVBoxLayout()
+        self.verticalLayout_3.setObjectName("verticalLayout_3")
+        self.gb_u_settings = QGroupBox(DialogSettings)
+        self.gb_u_settings.setObjectName("gb_u_settings")
+        self.layoutWidget = QWidget(self.gb_u_settings)
+        self.layoutWidget.setObjectName("layoutWidget")
+        self.layoutWidget.setGeometry(QRect(10, 20, 295, 26))
+        self.lh_default_search_type = QHBoxLayout(self.layoutWidget)
+        self.lh_default_search_type.setObjectName("lh_default_search_type")
+        self.lh_default_search_type.setContentsMargins(0, 0, 0, 0)
+        self.l_search_type = QLabel(self.layoutWidget)
+        self.l_search_type.setObjectName("l_search_type")
+        sizePolicy4.setHeightForWidth(self.l_search_type.sizePolicy().hasHeightForWidth())
+        self.l_search_type.setSizePolicy(sizePolicy4)
+
+        self.lh_default_search_type.addWidget(self.l_search_type)
+
+        self.l_icon_search_type = QLabel(self.layoutWidget)
+        self.l_icon_search_type.setObjectName("l_icon_search_type")
+        sizePolicy4.setHeightForWidth(self.l_icon_search_type.sizePolicy().hasHeightForWidth())
+        self.l_icon_search_type.setSizePolicy(sizePolicy4)
+
+        self.lh_default_search_type.addWidget(self.l_icon_search_type)
+
+        self.c_search_type = QComboBox(self.layoutWidget)
+        self.c_search_type.setObjectName("c_search_type")
+
+        self.lh_default_search_type.addWidget(self.c_search_type)
+
+        self.lh_default_search_type.setStretch(2, 50)
+
+        self.verticalLayout_3.addWidget(self.gb_u_settings)
+
+        self.lv_main.addLayout(self.verticalLayout_3)
+
         self.bb_dialog = QDialogButtonBox(DialogSettings)
         self.bb_dialog.setObjectName("bb_dialog")
         self.bb_dialog.setOrientation(Qt.Orientation.Horizontal)
@@ -577,12 +617,19 @@ class Ui_DialogSettings:
         self.bb_dialog.accepted.connect(DialogSettings.accept)
         self.bb_dialog.rejected.connect(DialogSettings.reject)
 
+        self.c_search_type.setCurrentIndex(-1)
+
         QMetaObject.connectSlotsByName(DialogSettings)
 
     # setupUi
 
     def retranslateUi(self, DialogSettings):
         DialogSettings.setWindowTitle(QCoreApplication.translate("DialogSettings", "Preferences", None))
+        self.gb_numbers.setTitle(QCoreApplication.translate("DialogSettings", "Numbers", None))
+        self.l_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.gb_flags.setTitle(QCoreApplication.translate("DialogSettings", "Flags", None))
         self.cb_video_download.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_video_convert_mp4.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
@@ -605,11 +652,6 @@ class Ui_DialogSettings:
         self.l_quality_video.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_metadata_cover_dimension.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_metadata_cover_dimension.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.gb_numbers.setTitle(QCoreApplication.translate("DialogSettings", "Numbers", None))
-        self.l_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.l_icon_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.l_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
-        self.l_icon_downloads_concurrent_max.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.gb_path.setTitle(QCoreApplication.translate("DialogSettings", "Path", None))
         self.l_icon_download_base_path.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_download_base_path.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
@@ -627,5 +669,8 @@ class Ui_DialogSettings:
         self.l_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.pb_download_base_path.setText(QCoreApplication.translate("DialogSettings", "...", None))
         self.pb_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "...", None))
+        self.gb_u_settings.setTitle(QCoreApplication.translate("DialogSettings", "UI Settings", None))
+        self.l_search_type.setText(QCoreApplication.translate("DialogSettings", "Default Search Type", None))
+        self.l_icon_search_type.setText(QCoreApplication.translate("DialogSettings", "Default Search Type", None))
 
     # retranslateUi

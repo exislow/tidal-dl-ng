@@ -37,6 +37,14 @@ class CoverDimensions(StrEnum):
     Px1280: str = "1280"
 
 
+class SearchTypes(StrEnum):
+    Track: str = "Track"
+    Video: str = "Video"
+    Playlist: str = "Playlist"
+    Album: str = "Album"
+    Artist: str = "Artist"
+
+
 class TidalLists(StrEnum):
     Playlists: str = "Playlists"
     Favorites: str = "Favorites"

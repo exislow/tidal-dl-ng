@@ -268,7 +268,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if item:
                 ui_target.addItem(item.__name__, item)
 
-        self.cb_search_type.setCurrentIndex(2)
+        search_type = self.settings.data.search_type.capitalize()
+        self.cb_search_type.setCurrentIndex(self.cb_search_type.findText(search_type))
+        # self.cb_search_type.setCurrentIndex(2)
+
+    def _save_cb_search_type(self):
+        search_type = self.cb_search_type.currentText()
+        self.settings.data.search_type = search_type
+        self.settings.save()
 
     def handle_filter_activated(self):
         header: FilterHeader = self.tr_results.header()
@@ -757,6 +764,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_search.clicked.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
+        self.cb_search_type.currentIndexChanged.connect(lambda: self._save_cb_search_type())
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
         self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
         self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
