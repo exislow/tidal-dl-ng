@@ -10,7 +10,7 @@ from tidalapi import Quality as QualityAudio
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SearchTypes
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.meta import ReleaseLatest
@@ -169,6 +169,7 @@ class DialogPreferences(QtWidgets.QDialog):
             ("quality_audio", QualityAudio),
             ("quality_video", QualityVideo),
             ("metadata_cover_dimension", CoverDimensions),
+            ("search_type", SearchTypes),
         ]
 
     def _init_checkboxes(self):
