@@ -2,9 +2,8 @@ from dataclasses import dataclass
 
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
-from tidalapi.media import SearchType
 
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SearchTypes
 
 
 @dataclass_json
@@ -45,7 +44,7 @@ class Settings:
     downloads_concurrent_max: int = 3
     symlink_to_track: bool = False
     playlist_create: bool = False
-    search_type: SearchType = SearchType.default
+    search_type: SearchTypes = SearchTypes.Track
 
 
 @dataclass_json
