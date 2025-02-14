@@ -745,7 +745,7 @@ class Download:
         # For each dir, which contains tracks
         for dir_scoped in dirs_scoped:
             # Sanitize final playlist name to fit into OS boundaries.
-            path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
+            path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list.replace("/", "") + PLAYLIST_EXTENSION)
             path_playlist = pathlib.Path(path_file_sanitize(path_playlist, adapt=True))
 
             self.fn_logger.debug(f"Playlist: Creating {path_playlist}")
