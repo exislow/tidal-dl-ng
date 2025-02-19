@@ -172,6 +172,9 @@ def format_str_media(
                 if isinstance(media, Track | Video):
                     num_volumes: int = media.album.num_volumes if hasattr(media, "album") else 1
                     result = "" if num_volumes == 1 else f"CD{media.volume_num!s}"
+            case "isrc":
+                if isinstance(media, Track):
+                    result = media.isrc
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
