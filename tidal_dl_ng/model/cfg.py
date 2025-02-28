@@ -45,6 +45,8 @@ class Settings:
     symlink_to_track: bool = False
     playlist_create: bool = False
     metadata_replay_gain: bool = True
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
 
 
 @dataclass_json
@@ -99,6 +101,8 @@ class HelpSettings:
     )
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
     metadata_replay_gain: str = "Replay gain information will be written to metadata."
+    spotify_client_id: str = "Spotify API client ID for importing Spotify playlists. Create an app at https://developer.spotify.com/dashboard"
+    spotify_client_secret: str = "Spotify API client secret for importing Spotify playlists. Create an app at https://developer.spotify.com/dashboard"
 
 
 @dataclass_json

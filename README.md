@@ -23,15 +23,17 @@ $ tidal-dl-ng --help
 │ --help     -h        Show this message and exit.                             │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
-│ cfg    Print or set an option. If no arguments are given, all options will   │
-│        be listed. If only one argument is given, the value will be printed   │
-│        for this option. To set a value for an option simply pass the value   │
-│        as the second argument                                                │
+│ cfg     Print or set an option. If no arguments are given, all options will  │
+│         be listed. If only one argument is given, the value will be printed  │
+│         for this option. To set a value for an option simply pass the value  │
+│         as the second argument                                               │
 │ dl                                                                           │
-│ dl_fav Download from a favorites collection.                                 │
+│ dl_fav  Download from a favorites collection.                                │
 │ gui                                                                          │
 │ login                                                                        │
 │ logout                                                                       │
+│ spotify Download tracks from a Spotify playlist, album, or track by          │
+│         searching for them on TIDAL.                                         │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ```
 
@@ -69,7 +71,13 @@ tidal-dl-ng dl_fav albums
 tidal-dl-ng dl_fav videos
 ```
 
-You can also use the GUI:
+You can also import content from Spotify (see the Spotify Import section below for details):
+
+```bash
+tidal-dl-ng spotify https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+```
+
+And you can use the GUI:
 
 ```bash
 tidal-dl-ng-gui
@@ -85,6 +93,7 @@ If you like to have the GUI version only as a binary, have a look at the
 ## 🧁 Features
 
 - Download tracks, videos, albums, playlists, your favorites etc.
+- Import Spotify playlists, albums, and tracks with ISRC-based track matching
 - Multithreaded and multi-chunked downloads
 - Metadata for songs
 - Adjustable audio and video download quality.
@@ -92,6 +101,41 @@ If you like to have the GUI version only as a binary, have a look at the
 - Lyrics and album art / cover download
 - Creates playlist files
 - Can symlink tracks instead of having several copies, if added to different playlist
+
+## 🎵 Spotify Import
+
+You can import playlists, albums, and individual tracks from Spotify and download them from TIDAL:
+
+```bash
+# Import a playlist
+tidal-dl-ng spotify https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+# Import an album
+tidal-dl-ng spotify https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3
+# Import a single track
+tidal-dl-ng spotify https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT
+```
+
+### Setting up Spotify API access
+
+To use the Spotify import feature, you need to set up Spotify API credentials:
+
+1. Go to the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard/) and log in with your Spotify account
+2. Click "Create app"
+3. Fill in the required fields:
+   - App name: (any name, e.g., "TIDAL Downloader")
+   - App description: (any description)
+   - Redirect URI: http://localhost:8888/callback (this is not actually used but required)
+   - Select the appropriate checkboxes and click "Save"
+4. After creating the app, you'll see your Client ID on the dashboard
+5. Click "Show client secret" to reveal your Client Secret
+6. Configure these credentials in tidal-dl-ng:
+
+```bash
+tidal-dl-ng cfg spotify_client_id YOUR_CLIENT_ID
+tidal-dl-ng cfg spotify_client_secret YOUR_CLIENT_SECRET
+```
+
+Once configured, you can import content from Spotify. The import process first attempts to match tracks by ISRC (International Standard Recording Code) for exact matching between services, then falls back to text search if needed.
 
 ## ▶️ Getting started with development
 
