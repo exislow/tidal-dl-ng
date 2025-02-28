@@ -144,6 +144,32 @@ To finalize the set-up for publishing to PyPi or Artifactory, see [here](https:/
 For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
 
+## ❓ FAQ
+
+### macOS Error Message: File/App is damaged and cannot be opened. You should move it to Trash..
+
+If you download an (unsigned) app from any source other than those that Apple seems suited, the application gets an extended attribute "com.apple.Quarantine". This triggers the message: "<application> is damaged and can't be opened. You should move it to the Bin."
+
+Remove the attribute and you can launch the application. [Source 1](https://discussions.apple.com/thread/253714860?sortBy=rank) [Source 2](https://www.reddit.com/r/macsysadmin/comments/13vu7f3/app_is_damaged_and_cant_be_opened_error_on_ventura/)
+
+```
+$ sudo xattr -dr com.apple.quarantine /Applications/TIDAL-Downloader-NG.app/
+```
+
+Why is this app unsigned? Only developer enrolled in the paid Apple developer program are allowed to sign (legal) apps. Without this subscription app signing is not possible.
+
+Gatekeeper really annoys you, and you like to disable it completely? Follow this [link](https://iboysoft.com/tips/how-to-disable-gatekeeper-macos-sequoia.html)
+
+### My (Windows) antivirus app XYZ says the GUI version of this app is harmful.
+
+Short answer: It is a lie. Get rid of your antivirus app.
+
+Long answer: See [here](https://github.com/exislow/tidal-dl-ng/issues/231)
+
+### I get an error when `extract_flac` is enabled.
+
+Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the help of this particular option until you get it right what path to put for `path_binary_ffmpeg`.
+
 ## ‼️ Disclaimer
 
 - For educational purposes only. I am not liable and responsible for any damage that happens.
