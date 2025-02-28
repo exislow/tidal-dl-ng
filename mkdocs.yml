@@ -1,6 +1,7 @@
 site_name: tidal-dl-ng
 repo_url: https://github.com/exislow/tidal-dl-ng
 site_url: https://exislow.github.io/tidal-dl-ng
+home_page: https://github.com/exislow/tidal-dl-ng
 site_description: TIDAL Medial Downloader Next Generation!
 site_author: Robert Honz
 edit_uri: edit/main/docs/
