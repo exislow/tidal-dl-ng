@@ -144,11 +144,16 @@ class Download:
             progress_total: int = urls_count
             block_size: int | None = None
         elif urls_count == 1:
-            # Get file size and compute progress steps
-            r = requests.head(urls[0], timeout=REQUESTS_TIMEOUT_SEC)
-            total_size_in_bytes: int = int(r.headers.get("content-length", 0))
-            block_size: int | None = 1048576
-            progress_total: float = total_size_in_bytes / block_size
+            try:
+                # Get file size and compute progress steps
+                r = requests.head(urls[0], timeout=REQUESTS_TIMEOUT_SEC)
+                total_size_in_bytes: int = int(r.headers.get("content-length", 0))
+                block_size: int | None = 1048576
+                progress_total: float = total_size_in_bytes / block_size
+            except:
+                raise
+            finally:
+                r.close()
         else:
             raise ValueError
 
@@ -236,27 +241,27 @@ class Download:
         error: HTTPError | None = None
 
         # Retry download on failed segments, with an exponential delay between retries
-        s = requests.Session()
-        retries = Retry(total=5, backoff_factor=1)  # , status_forcelist=[ 502, 503, 504 ])
+        with requests.Session() as s:
+            retries = Retry(total=5, backoff_factor=1)  # , status_forcelist=[ 502, 503, 504 ])
 
-        s.mount("https://", HTTPAdapter(max_retries=retries))
+            s.mount("https://", HTTPAdapter(max_retries=retries))
 
-        try:
-            # Create the request object with stream=True, so the content won't be loaded into memory at once.
-            r = s.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
+            try:
+                # Create the request object with stream=True, so the content won't be loaded into memory at once.
+                r = s.get(url, stream=True, timeout=REQUESTS_TIMEOUT_SEC)
 
-            r.raise_for_status()
+                r.raise_for_status()
 
-            # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
-            with path_segment.open("wb") as f:
-                for data in r.iter_content(chunk_size=block_size):
-                    f.write(data)
-                    # Advance progress bar.
-                    self.progress.advance(p_task)
+                # Write the content to disk. If `chunk_size` is set to `None` the whole file will be written at once.
+                with path_segment.open("wb") as f:
+                    for data in r.iter_content(chunk_size=block_size):
+                        f.write(data)
+                        # Advance progress bar.
+                        self.progress.advance(p_task)
 
-            result = True
-        except Exception:
-            self.progress.advance(p_task)
+                result = True
+            except Exception:
+                self.progress.advance(p_task)
 
         # To send the progress to the GUI, we need to emit the percentage.
         if not progress_to_stdout:
@@ -585,10 +590,13 @@ class Download:
 
         if url:
             try:
-                result = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC).content
+                response: requests.Response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+                result = response.content
             except Exception as e:
                 # TODO: Implement propper logging.
                 print(e)
+            finally:
+                response.close()
         elif path_file:
             try:
                 with open(path_file, "rb") as f:
