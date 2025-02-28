@@ -338,7 +338,7 @@ class Download:
         ).absolute()
 
         # Sanitize final path_file to fit into OS boundaries.
-        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
+        path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
 
         # Compute if and how downloads need to be skipped.
         skip_download: bool = False
@@ -352,7 +352,7 @@ class Download:
                 path_media_track_dir: pathlib.Path = (
                     pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
                 ).absolute()
-                path_media_track_dir = pathlib.Path(path_file_sanitize(str(path_media_track_dir), adapt=True))
+                path_media_track_dir = pathlib.Path(path_file_sanitize(path_media_track_dir, adapt=True))
                 file_exists_track_dir: bool = check_file_exists(path_media_track_dir, extension_ignore=False)
                 file_exists_playlist_dir: bool = (
                     not file_exists_track_dir and skip_file and not path_media_dst.is_symlink()
@@ -404,7 +404,7 @@ class Download:
 
             # Compute file name, sanitize once again and create destination directory
             path_media_dst = path_media_dst.with_suffix(file_extension)
-            path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
+            path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
             os.makedirs(path_media_dst.parent, exist_ok=True)
 
             if not skip_download:
@@ -493,7 +493,7 @@ class Download:
         path_media_dst: pathlib.Path = (
             pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)
         ).absolute()
-        path_media_dst = pathlib.Path(path_file_sanitize(str(path_media_dst), adapt=True))
+        path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
 
         os.makedirs(path_media_dst.parent, exist_ok=True)
 
