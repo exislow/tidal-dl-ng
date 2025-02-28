@@ -4,6 +4,10 @@ import pathlib
 import posixpath
 import re
 import sys
+from collections.abc import Generator
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
 from urllib.parse import unquote, urlsplit
 
 from pathvalidate import sanitize_filename, sanitize_filepath
@@ -12,7 +16,7 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.media import AudioExtensions
 
 from tidal_dl_ng import __name_display__
-from tidal_dl_ng.constants import FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, MediaType
+from tidal_dl_ng.constants import FILENAME_LENGTH_MAX, FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, MediaType
 from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_artist, name_builder_title
 
 
@@ -203,82 +207,95 @@ def get_format_template(
     return result
 
 
-def path_file_sanitize(path_file: str, adapt: bool = False, uniquify: bool = False) -> (bool, str):
-    # Split into path and filename
-    pathname, filename = os.path.split(path_file)
-    file_extension: str = pathlib.Path(path_file).suffix
+def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = True) -> pathlib.Path:
+    sanitized_path_file: pathlib.Path = pathlib.Path(path_file.root)
+    # Get each directory name separately (first value in tuple; second value is for the file suffix).
+    to_sanitize: [(str, str)] = []
+    receding_is_first: bool = True
 
-    # Sanitize path
+    for i in receding_path(path_file):
+        if receding_is_first:
+            receding_is_first = False
+
+            to_sanitize.append((i.stem, i.suffix))
+        else:
+            to_sanitize.append((i.name, ""))
+
+    to_sanitize.reverse()
+
+    for name, suffix in to_sanitize:
+        # Sanitize names: We need first top make sure that none file / directory name has bad chars or is longer than 255 chars.
+        try:
+            # sanitize_filename can shorten the file name actually
+            filename_sanitized: str = sanitize_filename(
+                name + suffix, replacement_text=" ", validate_after_sanitize=True, platform="auto"
+            )
+
+            # Check if the file extension was removed by shortening the filename length
+            if not filename_sanitized.endswith(suffix):
+                # Add the original file extension
+                file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
+                filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
+        except ValidationError as e:
+            if adapt:
+                # TODO: Implement proper exception handling and logging.
+                # Hacky stuff, since the sanitizing function does not shorten the filename (filename too long)
+                if str(e).startswith("[PV1101]"):
+                    byte_ct: int = len(name.encode(sys.getfilesystemencoding())) - FILENAME_LENGTH_MAX
+                    filename_sanitized = (
+                        name[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(suffix)]
+                        + FILENAME_SANITIZE_PLACEHOLDER
+                        + suffix
+                    )
+                else:
+                    raise
+            else:
+                raise
+        finally:
+            sanitized_path_file = sanitized_path_file / filename_sanitized
+
+    # Sanitize the whole path. The whole path with filename is not allowed to be longer then the max path length depending on the OS.
     try:
-        pathname_sanitized: str = sanitize_filepath(
-            pathname, replacement_text=" ", validate_after_sanitize=True, platform="auto"
+        sanitized_path_file: str = sanitize_filepath(
+            sanitized_path_file, replacement_text=" ", validate_after_sanitize=True, platform="auto"
         )
-    except ValidationError:
+    except ValidationError as e:
         # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
-            pathname_sanitized: str = str(pathlib.Path.home())
+            if str(e).startswith("[PV1101]"):
+                sanitized_path_file = pathlib.Path.home() / sanitized_path_file.name
+            else:
+                raise
         else:
             raise
 
-    # Sanitize filename
-    try:
-        filename_sanitized: str = sanitize_filename(
-            filename, replacement_text=" ", validate_after_sanitize=True, platform="auto"
-        )
-
-        # Check if the file extension was removed by shortening the filename length
-        if not filename_sanitized.endswith(file_extension):
-            # Add the original file extension
-            file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + file_extension
-            filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
-    except ValidationError as e:
-        # TODO: Implement proper exception handling and logging.
-        # Hacky stuff, since the sanitizing function does not shorten the filename somehow (bug?)
-        # TODO: Remove after pathvalidate update.
-        # If filename too long
-        if e.description.startswith("[PV1101]"):
-            byte_ct: int = len(filename.encode("utf-8")) - 255
-            filename_sanitized = (
-                filename[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(file_extension)]
-                + FILENAME_SANITIZE_PLACEHOLDER
-                + file_extension
-            )
-        else:
-            print(e)
-
-    # Join path and filename
-    result: str = os.path.join(pathname_sanitized, filename_sanitized)
-
     # Uniquify
     if uniquify:
-        unique_suffix: str = file_unique_suffix(result)
+        unique_suffix: str = file_unique_suffix(sanitized_path_file)
 
         if unique_suffix:
-            file_suffix = unique_suffix + file_extension
+            file_suffix = unique_suffix + sanitized_path_file.suffix
             # For most OS filename has a character limit of 255.
-            filename_sanitized = (
-                filename_sanitized[: -len(file_suffix)] + file_suffix
-                if len(filename_sanitized + unique_suffix) > 255
-                else filename_sanitized[: -len(file_extension)] + file_suffix
+            sanitized_path_file = (
+                sanitized_path_file.parent / (str(sanitized_path_file.stem)[: -len(file_suffix)] + file_suffix)
+                if len(str(sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)))
+                > FILENAME_LENGTH_MAX
+                else sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)
             )
 
-            # Join path and filename
-            result = os.path.join(pathname_sanitized, filename_sanitized)
-
-    return result
+    return sanitized_path_file
 
 
-def file_unique_suffix(path_file: str, seperator: str = "_") -> str:
+def file_unique_suffix(path_file: pathlib.Path, seperator: str = "_") -> str:
     threshold_zfill: int = len(str(UNIQUIFY_THRESHOLD))
     count: int = 0
-    path_file_tmp: str = path_file
+    path_file_tmp: pathlib.Path = deepcopy(path_file)
     unique_suffix: str = ""
 
     while check_file_exists(path_file_tmp) and count < UNIQUIFY_THRESHOLD:
         count += 1
         unique_suffix = seperator + str(count).zfill(threshold_zfill)
-        filename, file_extension = os.path.splitext(path_file_tmp)
-        path_file_tmp = filename + unique_suffix + file_extension
+        path_file_tmp = path_file.parent / (path_file.stem + unique_suffix + path_file.suffix)
 
     return unique_suffix
 
@@ -325,3 +342,10 @@ def url_to_filename(url: str) -> str:
         raise ValueError  # reject '%2f' or 'dir%5Cbasename.ext' on Windows
 
     return basename
+
+
+def receding_path(p: pathlib.Path) -> Generator[Path | Any, Any, None]:
+    while str(p) != p.root:
+        yield p
+
+        p = p.parent
