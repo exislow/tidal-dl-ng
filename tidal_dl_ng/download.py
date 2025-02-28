@@ -31,7 +31,13 @@ from tidal_dl_ng.constants import (
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
-from tidal_dl_ng.helper.path import check_file_exists, format_path_media, path_file_sanitize, url_to_filename
+from tidal_dl_ng.helper.path import (
+    check_file_exists,
+    format_path_media,
+    path_file_sanitize,
+    sanitize_filename,
+    url_to_filename,
+)
 from tidal_dl_ng.helper.tidal import (
     instantiate_media,
     items_results_all,
@@ -654,7 +660,7 @@ class Download:
             track_replay_gain=media_stream.track_replay_gain,
             track_peak_amplitude=media_stream.track_peak_amplitude,
             url_share=track.share_url if track.share_url else "",
-            replay_gain_write=self.settings.data.metadata_replay_gain
+            replay_gain_write=self.settings.data.metadata_replay_gain,
         )
 
         m.save()
@@ -747,7 +753,7 @@ class Download:
         # For each dir, which contains tracks
         for dir_scoped in dirs_scoped:
             # Sanitize final playlist name to fit into OS boundaries.
-            path_playlist = dir_scoped / (PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
+            path_playlist = dir_scoped / sanitize_filename(PLAYLIST_PREFIX + name_list + PLAYLIST_EXTENSION)
             path_playlist = pathlib.Path(path_file_sanitize(path_playlist, adapt=True))
 
             self.fn_logger.debug(f"Playlist: Creating {path_playlist}")
