@@ -41,7 +41,7 @@ class Metadata:
         discnumber: int = 0,
         totaltrack: int = 0,
         totaldisc: int = 0,
-        composer: str = None,
+        composer: str = "",
         isrc: str = "",
         albumartist: str = "",
         date: str = "",
@@ -52,7 +52,7 @@ class Metadata:
         track_replay_gain: float = 1.0,
         track_peak_amplitude: float = 1.0,
         url_share: str = "",
-        replay_gain_write: bool = True
+        replay_gain_write: bool = True,
     ):
         self.path_file = path_file
         self.title = title
