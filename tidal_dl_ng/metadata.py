@@ -10,14 +10,14 @@ class Metadata:
     title: str
     album: str
     albumartist: str
-    artists: [str]
+    artists: str
     copy_right: str
     tracknumber: int
     discnumber: int
     totaldisc: int
     totaltrack: int
     date: str
-    composer: [str]
+    composer: str
     isrc: str
     lyrics: str
     path_cover: str
@@ -27,6 +27,7 @@ class Metadata:
     track_replay_gain: float
     track_peak_amplitude: float
     url_share: str
+    replay_gain_write: bool
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -40,7 +41,7 @@ class Metadata:
         discnumber: int = 0,
         totaltrack: int = 0,
         totaldisc: int = 0,
-        composer: list[str] | None = None,
+        composer: str = None,
         isrc: str = "",
         albumartist: str = "",
         date: str = "",
@@ -51,6 +52,7 @@ class Metadata:
         track_replay_gain: float = 1.0,
         track_peak_amplitude: float = 1.0,
         url_share: str = "",
+        replay_gain_write: bool = True
     ):
         self.path_file = path_file
         self.title = title
@@ -72,7 +74,8 @@ class Metadata:
         self.track_replay_gain = track_replay_gain
         self.track_peak_amplitude = track_peak_amplitude
         self.url_share = url_share
-        self.m: mutagen.mp4.MP4 | mutagen.flac.FLAC | mutagen.mp3.MP3 = mutagen.File(self.path_file)
+        self.replay_gain_write = replay_gain_write
+        self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
         result: bool = False
@@ -123,14 +126,16 @@ class Metadata:
         self.m.tags["DISCNUMBER"] = str(self.discnumber)
         self.m.tags["DISCTOTAL"] = str(self.totaldisc)
         self.m.tags["DATE"] = self.date
-        self.m.tags["COMPOSER"] = ", ".join(self.composer) if self.composer else ""
+        self.m.tags["COMPOSER"] = self.composer
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
-        self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
-        self.m.tags["REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude)
-        self.m.tags["REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain)
-        self.m.tags["REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude)
         self.m.tags["URL"] = self.url_share
+
+        if self.replay_gain_write:
+            self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
+            self.m.tags["REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude)
+            self.m.tags["REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain)
+            self.m.tags["REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude)
 
     def set_mp3(self):
         # ID3 Frame (tags) overview: https://exiftool.org/TagNames/ID3.html / https://id3.org/id3v2.3.0
@@ -143,14 +148,16 @@ class Metadata:
         self.m.tags.add(TRCK(encoding=3, text=str(self.tracknumber)))
         self.m.tags.add(TRCK(encoding=3, text=self.discnumber))
         self.m.tags.add(TDRC(encoding=3, text=self.date))
-        self.m.tags.add(TCOM(encoding=3, text=", ".join(self.composer) if self.composer else ""))
+        self.m.tags.add(TCOM(encoding=3, text=self.composer))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
         self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
-        self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
-        self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_PEAK", text=str(self.album_peak_amplitude)))
-        self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_GAIN", text=str(self.track_replay_gain)))
-        self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_PEAK", text=str(self.track_peak_amplitude)))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
+
+        if self.replay_gain_write:
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_PEAK", text=str(self.album_peak_amplitude)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_GAIN", text=str(self.track_replay_gain)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_PEAK", text=str(self.track_peak_amplitude)))
 
     def set_mp4(self):
         self.m.tags["\xa9nam"] = self.title
@@ -162,11 +169,13 @@ class Metadata:
         self.m.tags["disk"] = [[self.discnumber, self.totaldisc]]
         # self.m.tags['\xa9gen'] = self.genre
         self.m.tags["\xa9day"] = self.date
-        self.m.tags["\xa9wrt"] = ", ".join(self.composer) if self.composer else ""
+        self.m.tags["\xa9wrt"] = self.composer
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["isrc"] = self.isrc
         self.m.tags["url"] = self.url_share
-        self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
-        self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude).encode("utf-8")
-        self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain).encode("utf-8")
-        self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude).encode("utf-8")
+
+        if self.replay_gain_write:
+            self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
+            self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude).encode("utf-8")
+            self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain).encode("utf-8")
+            self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude).encode("utf-8")

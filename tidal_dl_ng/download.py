@@ -562,7 +562,7 @@ class Download:
         return self.write_to_tmp_file(dir_destination, mode="xb", content=image)
 
     def write_to_tmp_file(self, dir_destination: pathlib.Path, mode: str, content: str | bytes) -> str:
-        result: str = dir_destination / str(uuid4())
+        result: pathlib.Path = dir_destination / str(uuid4())
         encoding: str | None = "utf-8" if isinstance(content, str) else None
 
         try:
@@ -654,6 +654,7 @@ class Download:
             track_replay_gain=media_stream.track_replay_gain,
             track_peak_amplitude=media_stream.track_peak_amplitude,
             url_share=track.share_url if track.share_url else "",
+            replay_gain_write=self.settings.data.metadata_replay_gain
         )
 
         m.save()

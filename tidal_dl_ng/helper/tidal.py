@@ -33,7 +33,7 @@ def name_builder_title(media: Track | Video | Mix | Playlist | Album | Video) ->
     return result
 
 
-def name_builder_item(media: Track) -> str:
+def name_builder_item(media: Track | Video) -> str:
     return f"{name_builder_artist(media)} - {name_builder_title(media)}"
 
 
