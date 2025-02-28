@@ -62,6 +62,10 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         SpinnerColumn(),
         BarColumn(),
         TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        refresh_per_second=20,
+        auto_refresh=True,
+        expand=True,
+        transient=False,  # Prevent progress from disappearing
     )
     fn_logger = LoggerWrapped(progress.print)
     dl = Download(
@@ -78,21 +82,21 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
     urls_pos_last = len(urls) - 1
 
-    for item in urls:
-        media_type: MediaType | bool = False
+    # Use a single Live display for both progress and table
+    with Live(progress_table, refresh_per_second=20):
+        for item in urls:
+            media_type: MediaType | bool = False
 
-        # Extract media name and id from link.
-        if "http" in item:
-            media_type = get_tidal_media_type(item)
-            item_id = get_tidal_media_id(item)
-            file_template = get_format_template(media_type, settings)
-        else:
-            print(f"It seems like that you have supplied an invalid URL: {item}")
+            # Extract media name and id from link.
+            if "http" in item:
+                media_type = get_tidal_media_type(item)
+                item_id = get_tidal_media_id(item)
+                file_template = get_format_template(media_type, settings)
+            else:
+                print(f"It seems like that you have supplied an invalid URL: {item}")
 
-            continue
+                continue
 
-        # Create Live display for Progress.
-        with Live(progress_table, refresh_per_second=10):
             # Download media.
             if media_type in [MediaType.TRACK, MediaType.VIDEO]:
                 download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
@@ -119,8 +123,10 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                         download_delay=settings.data.download_delay,
                     )
 
-    # Stop Progress display.
+    # Clear and stop progress display
+    progress.refresh()
     progress.stop()
+    print("\nDownload completed!")
 
     return True
 
