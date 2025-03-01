@@ -73,6 +73,7 @@ class Download:
     fn_logger: Callable
     progress_gui: ProgressBars
     progress: Progress
+    progress_overall: Progress
 
     def __init__(
         self,
@@ -82,6 +83,7 @@ class Download:
         skip_existing: bool = False,
         progress_gui: ProgressBars = None,
         progress: Progress = None,
+        progress_overall: Progress = None,
     ):
         self.settings = Settings()
         self.session = session
@@ -89,6 +91,7 @@ class Download:
         self.fn_logger = fn_logger
         self.progress_gui = progress_gui
         self.progress = progress
+        self.progress_overall = progress_overall
         self.path_base = path_base
 
         if not self.settings.data.path_binary_ffmpeg and (
@@ -150,8 +153,6 @@ class Download:
                 total_size_in_bytes: int = int(r.headers.get("content-length", 0))
                 block_size: int | None = 1048576
                 progress_total: float = total_size_in_bytes / block_size
-            except:
-                raise
             finally:
                 r.close()
         else:
@@ -709,10 +710,12 @@ class Download:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
-            self.progress_gui.list_name.emit(list_media_name_short[:30])
+            self.progress_gui.list_name.emit(list_media_name_short)
+
+        progress: Progress = self.progress_overall if self.progress_overall else self.progress
 
         # Create the list progress task.
-        p_task1: TaskID = self.progress.add_task(
+        p_task1: TaskID = progress.add_task(
             f"[green]List '{list_media_name_short}'", total=len(items), visible=progress_stdout
         )
 
@@ -720,7 +723,7 @@ class Download:
         result_dirs: [pathlib.Path] = []
 
         # Iterate through list items
-        while not self.progress.finished:
+        while not progress.finished:
             with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
                 # Dispatch all download tasks to worker threads
                 l_futures: [any] = [
@@ -744,10 +747,10 @@ class Download:
                         result_dirs.append(result_path_file.parent)
 
                     # Advance progress bar.
-                    self.progress.advance(p_task1)
+                    progress.advance(p_task1)
 
                     if not progress_stdout:
-                        self.progress_gui.list_item.emit(self.progress.tasks[p_task1].percentage)
+                        self.progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
 
         # Create playlist file
         if self.settings.data.playlist_create:
