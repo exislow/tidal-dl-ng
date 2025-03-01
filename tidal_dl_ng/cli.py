@@ -4,9 +4,16 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
+from rich.console import Group
 from rich.live import Live
-from rich.panel import Panel
-from rich.progress import BarColumn, Console, Progress, SpinnerColumn, TextColumn
+from rich.progress import (
+    BarColumn,
+    Console,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+)
 from rich.table import Table
 
 from tidal_dl_ng import __version__
@@ -58,10 +65,20 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
     # Create initial objects.
     settings: Settings = Settings()
     progress: Progress = Progress(
-        "{task.description}",
+        TextColumn("[progress.description]{task.description}"),
         SpinnerColumn(),
         BarColumn(),
-        TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+        TaskProgressColumn(),
+        refresh_per_second=20,
+        auto_refresh=True,
+        expand=True,
+        transient=False,  # Prevent progress from disappearing
+    )
+    progress_overall = Progress(
+        TextColumn("[progress.description]{task.description}"),
+        SpinnerColumn(),
+        BarColumn(),
+        TaskProgressColumn(),
         refresh_per_second=20,
         auto_refresh=True,
         expand=True,
@@ -74,59 +91,69 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         path_base=settings.data.download_base_path,
         fn_logger=fn_logger,
         progress=progress,
+        progress_overall=progress_overall,
     )
+
     progress_table = Table.grid()
 
     # Style Progress display.
-    progress_table.add_row(Panel.fit(progress, title="Download Progress", border_style="green", padding=(2, 2)))
+    progress_table.add_row(progress)
+    progress_table.add_row(progress_overall)
+
+    progress_group = Group(
+        progress_table,
+    )
 
     urls_pos_last = len(urls) - 1
 
     # Use a single Live display for both progress and table
-    with Live(progress_table, refresh_per_second=20):
-        for item in urls:
-            media_type: MediaType | bool = False
+    with Live(progress_group, refresh_per_second=20, vertical_overflow="visible"):
+        try:
+            for item in urls:
+                media_type: MediaType | bool = False
 
-            # Extract media name and id from link.
-            if "http" in item:
-                media_type = get_tidal_media_type(item)
-                item_id = get_tidal_media_id(item)
-                file_template = get_format_template(media_type, settings)
-            else:
-                print(f"It seems like that you have supplied an invalid URL: {item}")
-
-                continue
-
-            # Download media.
-            if media_type in [MediaType.TRACK, MediaType.VIDEO]:
-                download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
-
-                dl.item(
-                    media_id=item_id, media_type=media_type, file_template=file_template, download_delay=download_delay
-                )
-            elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
-                item_ids: [int] = []
-
-                if media_type == MediaType.ARTIST:
-                    media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
-                    media_type = MediaType.ALBUM
-                    item_ids = item_ids + all_artist_album_ids(media)
+                # Extract media name and id from link.
+                if "http" in item:
+                    media_type = get_tidal_media_type(item)
+                    item_id = get_tidal_media_id(item)
+                    file_template = get_format_template(media_type, settings)
                 else:
-                    item_ids.append(item_id)
+                    print(f"It seems like that you have supplied an invalid URL: {item}")
 
-                for item_id in item_ids:
-                    dl.items(
+                    continue
+
+                # Download media.
+                if media_type in [MediaType.TRACK, MediaType.VIDEO]:
+                    download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
+
+                    dl.item(
                         media_id=item_id,
                         media_type=media_type,
                         file_template=file_template,
-                        video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
-                        download_delay=settings.data.download_delay,
+                        download_delay=download_delay,
                     )
+                elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
+                    item_ids: [int] = []
 
-    # Clear and stop progress display
-    progress.refresh()
-    progress.stop()
-    print("\nDownload completed!")
+                    if media_type == MediaType.ARTIST:
+                        media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+                        media_type = MediaType.ALBUM
+                        item_ids = item_ids + all_artist_album_ids(media)
+                    else:
+                        item_ids.append(item_id)
+
+                    for item_id in item_ids:
+                        dl.items(
+                            media_id=item_id,
+                            media_type=media_type,
+                            file_template=file_template,
+                            video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
+                            download_delay=settings.data.download_delay,
+                        )
+        finally:
+            # Clear and stop progress display
+            progress.refresh()
+            progress.stop()
 
     return True
 
