@@ -174,7 +174,7 @@ profile = "black"
 multi_line_output = 3
 indent = 4
 color_output = true
-known_third_party = ["Crypto", "PySide6", "coloredlogs", "dataclasses_json", "ffmpeg", "m3u8", "mutagen", "pathvalidate", "requests", "rich", "tidalapi", "toml", "typer"]
+known_third_party = ["Crypto", "PySide6", "coloredlogs", "config", "dataclasses_json", "ffmpeg", "m3u8", "mutagen", "pathvalidate", "requests", "rich", "tidalapi", "toml", "typer"]
 
 [tool.mypy]
 # https://mypy.readthedocs.io/en/latest/config_file.html#using-a-pyproject-toml-file

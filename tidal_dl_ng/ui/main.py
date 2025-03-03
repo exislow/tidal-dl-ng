@@ -7,7 +7,7 @@
 ################################################################################
 
 from PySide6.QtCore import QCoreApplication, QLocale, QMetaObject, QRect, QSize, Qt
-from PySide6.QtGui import QAction, QFont, QPixmap
+from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -455,11 +455,24 @@ class Ui_MainWindow:
 
         self.lv_queue_download.addWidget(self.tr_queue_download)
 
+        self.horizontalLayout_4 = QHBoxLayout()
+        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.pb_queue_download_remove = QPushButton(self.w_central)
         self.pb_queue_download_remove.setObjectName("pb_queue_download_remove")
         self.pb_queue_download_remove.setEnabled(True)
+        icon = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.EditClear))
+        self.pb_queue_download_remove.setIcon(icon)
 
-        self.lv_queue_download.addWidget(self.pb_queue_download_remove)
+        self.horizontalLayout_4.addWidget(self.pb_queue_download_remove)
+
+        self.pb_queue_download_toggle = QPushButton(self.w_central)
+        self.pb_queue_download_toggle.setObjectName("pb_queue_download_toggle")
+        icon1 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackStart))
+        self.pb_queue_download_toggle.setIcon(icon1)
+
+        self.horizontalLayout_4.addWidget(self.pb_queue_download_toggle)
+
+        self.lv_queue_download.addLayout(self.horizontalLayout_4)
 
         self.horizontalLayout_3 = QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
@@ -557,7 +570,7 @@ class Ui_MainWindow:
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", "MainWindow", None))
         self.a_version.setText(QCoreApplication.translate("MainWindow", "Version", None))
-        self.a_exit.setText(QCoreApplication.translate("MainWindow", "Exit", None))
+        self.a_exit.setText(QCoreApplication.translate("MainWindow", "Quit TIDAL-Downloader-NG", None))
         self.a_logout.setText(QCoreApplication.translate("MainWindow", "Logout", None))
         self.a_updates_check.setText(QCoreApplication.translate("MainWindow", "Check for Updates", None))
         ___qtreewidgetitem = self.tr_lists_user.headerItem()
@@ -585,6 +598,7 @@ class Ui_MainWindow:
         ___qtreewidgetitem4.setText(2, QCoreApplication.translate("MainWindow", "Name", None))
         ___qtreewidgetitem4.setText(1, QCoreApplication.translate("MainWindow", "obj", None))
         self.pb_queue_download_remove.setText(QCoreApplication.translate("MainWindow", "Remove", None))
+        self.pb_queue_download_toggle.setText(QCoreApplication.translate("MainWindow", "Queue", None))
         self.pb_queue_download_clear_finished.setText(QCoreApplication.translate("MainWindow", "Clear Finished", None))
         self.pb_queue_download_clear_all.setText(QCoreApplication.translate("MainWindow", "Clear All", None))
         self.m_file.setTitle(QCoreApplication.translate("MainWindow", "File", None))
