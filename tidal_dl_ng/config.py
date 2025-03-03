@@ -4,6 +4,7 @@ import shutil
 from collections.abc import Callable
 from json import JSONDecodeError
 from pathlib import Path
+from threading import Event
 from typing import Any
 
 import tidalapi
@@ -189,3 +190,11 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         del self.session
 
         return True
+
+
+class HandlingApp(metaclass=SingletonMeta):
+    event_abort: Event = Event()
+    event_run: Event = Event()
+
+    def __init__(self):
+        self.event_run.set()

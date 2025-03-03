@@ -49,6 +49,7 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
+from config import HandlingApp
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -161,6 +162,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._populate_search_types(self.cb_search_type, SearchTypes)
         self.apply_settings(self.settings)
         self._init_signals()
+        self._init_buttons()
         self.init_tidal(tidal)
 
         logger_gui.debug("All setup.")
@@ -218,6 +220,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             list_name=self.s_list_name,
         )
         progress: Progress = Progress()
+        handling_app: HandlingApp = HandlingApp()
         self.dl = Download(
             session=self.tidal.session,
             skip_existing=self.tidal.settings.data.skip_existing,
@@ -225,6 +228,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             fn_logger=logger_gui,
             progress_gui=data_pb,
             progress=progress,
+            event_abort=handling_app.event_abort,
+            event_run=handling_app.event_run,
         )
 
     def _init_progressbar(self):
@@ -751,6 +756,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_queue_download_clear_all.clicked.connect(self.on_queue_download_clear_all)
         self.pb_queue_download_clear_finished.clicked.connect(self.on_queue_download_clear_finished)
         self.pb_queue_download_remove.clicked.connect(self.on_queue_download_remove)
+        self.pb_queue_download_toggle.clicked.connect(self.on_pb_queue_download_toggle)
         self.l_search.returnPressed.connect(
             lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
@@ -776,7 +782,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_update_show.connect(self.on_version)
 
         # Menubar
-        self.a_exit.triggered.connect(sys.exit)
+        self.a_exit.triggered.connect(self.close)
         self.a_version.triggered.connect(self.on_version)
         self.a_preferences.triggered.connect(self.on_preferences)
         self.a_logout.triggered.connect(self.on_logout)
@@ -792,6 +798,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_queue_download_item_finished.connect(self.on_queue_download_item_finished)
         self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
         self.s_queue_download_item_skipped.connect(self.on_queue_download_item_skipped)
+
+    def _init_buttons(self):
+        self.pb_queue_download_run()
 
     def on_logout(self):
         result: bool = self.tidal.logout()
@@ -929,6 +938,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 else:
                     logger_gui.info("Cannot remove a currently downloading item from queue.")
 
+    def on_pb_queue_download_toggle(self) -> None:
+        """Toggle download status (pause / resume) accordingly.
+
+        :return: None
+        """
+        handling_app: HandlingApp = HandlingApp()
+
+        if handling_app.event_run.is_set():
+            self.pb_queue_download_pause()
+        else:
+            self.pb_queue_download_run()
+
+    def pb_queue_download_run(self):
+        handling_app: HandlingApp = HandlingApp()
+
+        handling_app.event_run.set()
+
+        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackStart))
+        self.pb_queue_download_toggle.setIcon(icon)
+        self.pb_queue_download_toggle.setStyleSheet("background-color: #218838; color: #fff")
+
+    def pb_queue_download_pause(self):
+        handling_app: HandlingApp = HandlingApp()
+
+        handling_app.event_run.clear()
+
+        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackPause))
+        self.pb_queue_download_toggle.setIcon(icon)
+        self.pb_queue_download_toggle.setStyleSheet("background-color: #e0a800; color: #212529")
+
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:
         items: [HumanProxyModel | None] = self.tr_results.selectionModel().selectedRows()
@@ -958,7 +997,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
-        while not self.shutdown:
+        handling_app: HandlingApp = HandlingApp()
+
+        while not handling_app.event_abort.is_set():
             items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
                 QueueDownloadStatus.Waiting, QtCore.Qt.MatchFlag.MatchExactly, column=0
             )
@@ -1107,6 +1148,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def closeEvent(self, event):
         self.shutdown = True
 
+        handling_app: HandlingApp = HandlingApp()
+        handling_app.event_abort.set()
+
         event.accept()
 
 
@@ -1114,7 +1158,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 def gui_activate(tidal: Tidal | None = None):
     # Set dark theme and create QT app.
     qdarktheme.enable_hi_dpi()
+
     app = QtWidgets.QApplication(sys.argv)
+
     # Fix for Windows: Tooltips have bright font color
     # https://github.com/5yutan5/PyQtDarkTheme/issues/239
     # qdarktheme.setup_theme()
@@ -1123,6 +1169,7 @@ def gui_activate(tidal: Tidal | None = None):
     # Create icon object and apply it to app window.
     pixmap: QtGui.QPixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
     icon: QtGui.QIcon = QtGui.QIcon(pixmap)
+
     app.setWindowIcon(icon)
 
     # This bit gets the taskbar icon working properly in Windows
@@ -1136,6 +1183,7 @@ def gui_activate(tidal: Tidal | None = None):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(my_app_id)
 
     window = MainWindow(tidal=tidal)
+
     window.show()
     # Check for updates
     window.s_update_check.emit(True)

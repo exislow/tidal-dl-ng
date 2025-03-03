@@ -1,9 +1,12 @@
 #!/usr/bin/env python
+import signal
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
+from config import HandlingApp
 from rich.console import Group
 from rich.live import Live
 from rich.progress import (
@@ -64,6 +67,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
     # Create initial objects.
     settings: Settings = Settings()
+    handling_app: HandlingApp = HandlingApp()
     progress: Progress = Progress(
         TextColumn("[progress.description]{task.description}"),
         SpinnerColumn(),
@@ -92,8 +96,9 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         fn_logger=fn_logger,
         progress=progress,
         progress_overall=progress_overall,
+        event_abort=handling_app.event_abort,
+        event_run=handling_app.event_run,
     )
-
     progress_table = Table.grid()
 
     # Style Progress display.
@@ -111,6 +116,10 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
         try:
             for item in urls:
                 media_type: MediaType | bool = False
+
+                # Exit loop if abort signal is set.
+                if handling_app.event_abort.is_set():
+                    return False
 
                 # Extract media name and id from link.
                 if "http" in item:
@@ -143,6 +152,10 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                         item_ids.append(item_id)
 
                     for item_id in item_ids:
+                        # Exit loop if abort signal is set.
+                        if handling_app.event_abort.is_set():
+                            return False
+
                         dl.items(
                             media_id=item_id,
                             media_type=media_type,
@@ -379,5 +392,21 @@ def gui(ctx: typer.Context):
     gui_activate(ctx.obj[CTX_TIDAL])
 
 
+def handle_sigint_term(signum, frame):
+    """Set app abort event, so threads can check it and shutdown.
+
+    :param signum:
+    :param frame:
+    :return:
+    """
+    handling_app: HandlingApp = HandlingApp()
+
+    handling_app.event_abort.set()
+
+
 if __name__ == "__main__":
+    # Catch CTRL+C
+    signal.signal(signal.SIGINT, handle_sigint_term)
+    signal.signal(signal.SIGTERM, handle_sigint_term)
+
     app()

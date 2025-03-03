@@ -650,14 +650,31 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="pb_queue_download_remove">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="text">
-           <string>Remove</string>
-          </property>
-         </widget>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QPushButton" name="pb_queue_download_remove">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="text">
+             <string>Remove</string>
+            </property>
+            <property name="icon">
+             <iconset theme="QIcon::ThemeIcon::EditClear"/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pb_queue_download_toggle">
+            <property name="text">
+             <string>Queue</string>
+            </property>
+            <property name="icon">
+             <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart"/>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -787,7 +804,7 @@
   </action>
   <action name="a_exit">
    <property name="text">
-    <string>Exit</string>
+    <string>Quit TIDAL-Downloader-NG</string>
    </property>
   </action>
   <action name="a_logout">

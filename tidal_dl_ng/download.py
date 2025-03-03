@@ -6,6 +6,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from concurrent import futures
+from threading import Event
 from uuid import uuid4
 
 import m3u8
@@ -74,6 +75,8 @@ class Download:
     progress_gui: ProgressBars
     progress: Progress
     progress_overall: Progress
+    event_abort: Event
+    event_run: Event
 
     def __init__(
         self,
@@ -84,6 +87,8 @@ class Download:
         progress_gui: ProgressBars = None,
         progress: Progress = None,
         progress_overall: Progress = None,
+        event_abort: Event = None,
+        event_run: Event = None,
     ):
         self.settings = Settings()
         self.session = session
@@ -93,6 +98,8 @@ class Download:
         self.progress = progress
         self.progress_overall = progress_overall
         self.path_base = path_base
+        self.event_abort = event_abort
+        self.event_run = event_run
 
         if not self.settings.data.path_binary_ffmpeg and (
             self.settings.data.video_convert_mp4 or self.settings.data.extract_flac
@@ -172,10 +179,11 @@ class Download:
                 max_workers=self.settings.data.downloads_simultaneous_per_track_max
             ) as executor:
                 # Dispatch all download tasks to worker threads
-                l_futures: [any] = [
+                l_futures: [futures.Future] = [
                     executor.submit(self._download_segment, url, path_base, block_size, p_task, progress_to_stdout)
                     for url in urls
                 ]
+
                 # Report results as they become available
                 for future in futures.as_completed(l_futures):
                     # Retrieve result
@@ -191,6 +199,14 @@ class Download:
                         # mark the whole thing as corrupt.
                         result_segments = False
                         self.fn_logger.error(f"Something went wrong while downloading {media_name}. File is corrupt!")
+
+                    # If app is terminated (CTRL+C)
+                    if self.event_abort.is_set():
+                        # Cancel all not yet started tasks
+                        for f in l_futures:
+                            f.cancel()
+
+                        return False, path_file
 
         tmp_path_file_decrypted: pathlib.Path = path_file
 
@@ -240,6 +256,15 @@ class Download:
         # CAUTION: This is a workaround, so BTS (LOW quality) track will work. They usually have only ONE link.
         id_segment: int = int(filename_stem) if filename_stem.isdecimal() else 0
         error: HTTPError | None = None
+
+        # If app is terminated (CTRL+C)
+        if self.event_abort.is_set():
+            return DownloadSegmentResult(
+                result=False, url=url, path_segment=path_segment, id_segment=id_segment, error=error
+            )
+
+        if not self.event_run.is_set():
+            self.event_run.wait()
 
         # Retry download on failed segments, with an exponential delay between retries
         with requests.Session() as s:
@@ -478,7 +503,7 @@ class Download:
 
         # Whether a file was downloaded or skipped and the download delay is enabled, wait until the next download.
         # Only use this, if you have a list of several Track items.
-        if download_delay and not skip_file:
+        if (download_delay and not skip_file) and not self.event_abort.is_set():
             time_sleep: float = round(
                 random.SystemRandom().uniform(
                     self.settings.data.download_delay_sec_min, self.settings.data.download_delay_sec_max
@@ -726,7 +751,7 @@ class Download:
         while not progress.finished:
             with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
                 # Dispatch all download tasks to worker threads
-                l_futures: [any] = [
+                l_futures: [futures.Future] = [
                     executor.submit(
                         self.item,
                         media=item_media,
@@ -738,6 +763,7 @@ class Download:
                     )
                     for item_media in items
                 ]
+
                 # Report results as they become available
                 for future in futures.as_completed(l_futures):
                     # Retrieve result
@@ -751,6 +777,15 @@ class Download:
 
                     if not progress_stdout:
                         self.progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
+
+                    # If app is terminated (CTRL+C)
+                    if self.event_abort.is_set():
+                        # Cancel all not yet started tasks
+                        for f in l_futures:
+                            f.cancel()
+
+                        # End method here.
+                        return
 
         # Create playlist file
         if self.settings.data.playlist_create:
