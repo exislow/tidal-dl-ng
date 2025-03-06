@@ -33,6 +33,8 @@ from tidal_dl_ng.helper.tidal import (
 from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
+from tidalapi.media import Quality
+
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False)
 dl_fav_group = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
@@ -134,12 +136,14 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                 # Download media.
                 if media_type in [MediaType.TRACK, MediaType.VIDEO]:
                     download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
-
+                    quality_audio = Quality(settings.data.quality_audio)
+                    
                     dl.item(
                         media_id=item_id,
                         media_type=media_type,
                         file_template=file_template,
                         download_delay=download_delay,
+                        quality_audio=quality_audio,
                     )
                 elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
                     item_ids: [int] = []
