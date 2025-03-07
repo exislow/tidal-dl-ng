@@ -208,82 +208,26 @@ def get_format_template(
 
 
 def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = True) -> pathlib.Path:
-    sanitized_path_file: pathlib.Path = pathlib.Path(path_file.root)
-    # Get each directory name separately (first value in tuple; second value is for the file suffix).
-    to_sanitize: [(str, str)] = []
-    receding_is_first: bool = True
+    path_parent = path_file.parent  # Keep the original directory structure
+    file_stem = path_file.stem  # Filename without extension
+    file_ext = path_file.suffix  # Keep the correct extension (.m4a, .flac)
 
-    for i in receding_path(path_file):
-        if receding_is_first:
-            receding_is_first = False
+    # Sanitize the filename (excluding the extension)
+    sanitized_filename = sanitize_filename(file_stem, replacement_text=" ", validate_after_sanitize=True, platform="auto")
 
-            to_sanitize.append((i.stem, i.suffix))
-        else:
-            to_sanitize.append((i.name, ""))
+    # Rebuild the sanitized path
+    sanitized_path = path_parent / f"{sanitized_filename}{file_ext}"
 
-    to_sanitize.reverse()
-
-    for name, suffix in to_sanitize:
-        # Sanitize names: We need first top make sure that none file / directory name has bad chars or is longer than 255 chars.
-        try:
-            # sanitize_filename can shorten the file name actually
-            filename_sanitized: str = sanitize_filename(
-                name + suffix, replacement_text=" ", validate_after_sanitize=True, platform="auto"
-            )
-
-            # Check if the file extension was removed by shortening the filename length
-            if not filename_sanitized.endswith(suffix):
-                # Add the original file extension
-                file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
-                filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
-        except ValidationError as e:
-            if adapt:
-                # TODO: Implement proper exception handling and logging.
-                # Hacky stuff, since the sanitizing function does not shorten the filename (filename too long)
-                if str(e).startswith("[PV1101]"):
-                    byte_ct: int = len(name.encode(sys.getfilesystemencoding())) - FILENAME_LENGTH_MAX
-                    filename_sanitized = (
-                        name[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(suffix)]
-                        + FILENAME_SANITIZE_PLACEHOLDER
-                        + suffix
-                    )
-                else:
-                    raise
-            else:
-                raise
-        finally:
-            sanitized_path_file = sanitized_path_file / filename_sanitized
-
-    # Sanitize the whole path. The whole path with filename is not allowed to be longer then the max path length depending on the OS.
+    # Ensure full path sanitization
     try:
-        sanitized_path_file: str = sanitize_filepath(
-            sanitized_path_file, replacement_text=" ", validate_after_sanitize=True, platform="auto"
-        )
+        sanitized_path = sanitize_filepath(sanitized_path, replacement_text=" ", validate_after_sanitize=True, platform="auto")
     except ValidationError as e:
-        # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
-            if str(e).startswith("[PV1101]"):
-                sanitized_path_file = pathlib.Path.home() / sanitized_path_file.name
-            else:
-                raise
+            sanitized_path = pathlib.Path.home() / sanitized_path.name  # Fallback to home directory
         else:
             raise
 
-    # Uniquify
-    if uniquify:
-        unique_suffix: str = file_unique_suffix(sanitized_path_file)
-
-        if unique_suffix:
-            file_suffix = unique_suffix + sanitized_path_file.suffix
-            # For most OS filename has a character limit of 255.
-            sanitized_path_file = (
-                sanitized_path_file.parent / (str(sanitized_path_file.stem)[: -len(file_suffix)] + file_suffix)
-                if len(str(sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)))
-                > FILENAME_LENGTH_MAX
-                else sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)
-            )
-
-    return sanitized_path_file
+    return sanitized_path
 
 
 def file_unique_suffix(path_file: pathlib.Path, seperator: str = "_") -> str:
