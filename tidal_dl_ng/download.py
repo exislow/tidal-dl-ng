@@ -375,7 +375,7 @@ class Download:
         skip_download: bool = False
 
         if self.skip_existing:
-            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=False)
+            skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
 
             if self.settings.data.symlink_to_track and not isinstance(media, Video):
                 # Compute symlink tracks path, sanitize and check if file exists
@@ -384,7 +384,7 @@ class Download:
                     pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
                 ).absolute()
                 path_media_track_dir = pathlib.Path(path_file_sanitize(path_media_track_dir, adapt=True))
-                file_exists_track_dir: bool = check_file_exists(path_media_track_dir, extension_ignore=False)
+                file_exists_track_dir: bool = check_file_exists(path_media_track_dir, extension_ignore=True)
                 file_exists_playlist_dir: bool = (
                     not file_exists_track_dir and skip_file and not path_media_dst.is_symlink()
                 )
@@ -531,7 +531,7 @@ class Download:
         # Move item and symlink it
         if path_media_dst != path_media_src:
             if self.skip_existing:
-                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=False)
+                skip_file: bool = check_file_exists(path_media_dst, extension_ignore=True)
                 skip_symlink: bool = path_media_src.is_symlink()
             else:
                 skip_file: bool = False
