@@ -49,7 +49,6 @@ import sys
 import time
 from collections.abc import Callable, Sequence
 
-from config import HandlingApp
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -94,7 +93,7 @@ from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
 from tidalapi.session import SearchTypes
 
-from tidal_dl_ng.config import Settings, Tidal
+from tidal_dl_ng.config import HandlingApp, Settings, Tidal
 from tidal_dl_ng.constants import FAVORITES, QualityVideo, QueueDownloadStatus, TidalLists
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.logger import XStream, logger_gui
