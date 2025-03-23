@@ -138,6 +138,8 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                         media_type=media_type,
                         file_template=file_template,
                         download_delay=download_delay,
+                        quality_audio=settings.data.quality_audio,
+                        quality_video=settings.data.quality_video
                     )
                 elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
                     item_ids: [int] = []
