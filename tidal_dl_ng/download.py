@@ -334,7 +334,9 @@ class Download:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
                 media = instantiate_media(self.session, media_type, media_id)
-            elif isinstance(media, Track) or isinstance(media, Video):  # Check if media is available not deactivated / removed from TIDAL.
+            elif isinstance(media, Track) or isinstance(
+                media, Video
+            ):  # Check if media is available not deactivated / removed from TIDAL.
                 if not media.available:
                     self.fn_logger.info(
                         f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"

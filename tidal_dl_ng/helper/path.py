@@ -277,8 +277,7 @@ def path_file_uniquify(path_file: pathlib.Path) -> pathlib.Path:
         # For most OS filename has a character limit of 255.
         path_file = (
             path_file.parent / (str(path_file.stem)[: -len(file_suffix)] + file_suffix)
-            if len(str(path_file.parent / (path_file.stem + unique_suffix)))
-               > FILENAME_LENGTH_MAX
+            if len(str(path_file.parent / (path_file.stem + unique_suffix))) > FILENAME_LENGTH_MAX
             else path_file.parent / (path_file.stem + unique_suffix)
         )
 
