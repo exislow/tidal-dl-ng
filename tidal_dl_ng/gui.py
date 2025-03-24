@@ -48,7 +48,10 @@ import math
 import sys
 import time
 from collections.abc import Callable, Sequence
+from copy import deepcopy
+from functools import partial
 
+from PySide6.QtGui import QAction
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
 
@@ -148,6 +151,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
+        # Default result tree list context menu items
+        self.tr_results_headers_ctx_items: list[str] = []
+        # Loads previously saved Result Tree Header from settings
+        self._load_rt_from_settings()
 
         self._init_threads()
         self._init_tree_results_model(self.model_tr_results)
@@ -318,6 +325,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Connect the contextmenu
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
+        # Connect Header visibility context menu
+        tree.header().setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.header().customContextMenuRequested.connect(self.menu_context_tree_headers)
+
+        hidden = []
+        labels_column: [str] = deepcopy(self.tr_results_headers_ctx_items)
+        for index, item in enumerate(labels_column):
+            if "obj" in item:
+                continue
+            if "❌" in item:
+                if "#" not in item:
+                    index += 1
+                hidden.append(index)
+                labels_column[index] = item.replace("❌", "")
+            elif "✅" in item:
+                if "#" not in item:
+                    index += 1
+                labels_column[index] = item.replace("✅", "")
+        for i in hidden:
+            tree.setColumnHidden(i, True)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
         labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date Added"]
@@ -325,6 +352,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
         model.setHorizontalHeaderLabels(labels_column)
+
+    def _load_rt_from_settings(self):
+        settings = self.settings.data
+        for i in settings.rt_header_ctx.split(","):
+            if "obj" in i:
+                continue
+            self.tr_results_headers_ctx_items.append(i)
+
+    def menu_context_tree_headers(self):
+        """
+        Adds context menu to the header of the result tree list
+        """
+        menu = QtWidgets.QMenu()
+        for m in self.tr_results_headers_ctx_items:
+            action = QAction(m, self)
+            action.triggered.connect(partial(self._toggle_header_section_hidden, m))
+            menu.addAction(action)
+
+        menu.exec(QtGui.QCursor.pos())
+
+    def _toggle_header_section_hidden(self, item: str):
+        """
+        Toggles result tree list columns visibility
+        Then save the changes to settings
+        """
+        index = self.tr_results_headers_ctx_items.index(item)
+        is_visible = "✅" in item
+        new_label = item.replace("✅" if is_visible else "❌", "❌" if is_visible else "✅")
+        self.tr_results_headers_ctx_items[index] = new_label
+        if "#" not in item:
+            index += 1
+
+        self.tr_results.header().setSectionHidden(index, is_visible)
+        updated_tr_results_headers_ctx_items = deepcopy(self.tr_results_headers_ctx_items)
+        updated_tr_results_headers_ctx_items.insert(1, "✅obj")
+        self.settings.data.rt_header_ctx = ""
+        self.settings.data.rt_header_ctx = ",".join(updated_tr_results_headers_ctx_items)
+        self.settings.save()
 
     def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
         tree.setColumnHidden(1, True)
