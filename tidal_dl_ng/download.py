@@ -334,10 +334,10 @@ class Download:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
                 media = instantiate_media(self.session, media_type, media_id)
-            elif isinstance(media, Track):  # Check if media is available not deactivated / removed from TIDAL.
+            elif isinstance(media, Track) or isinstance(media, Video):  # Check if media is available not deactivated / removed from TIDAL.
                 if not media.available:
                     self.fn_logger.info(
-                        f"This track is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
+                        f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
                     )
 
                     return False, ""
@@ -714,11 +714,22 @@ class Download:
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ):
-        # If no media instance is provided, we need to create the media instance.
-        if media_id and media_type:
-            media = instantiate_media(self.session, media_type, media_id)
-        elif not media:
-            raise MediaMissing
+        try:
+            if media_id and media_type:
+                # If no media instance is provided, we need to create the media instance.
+                # Throws `tidalapi.exceptions.ObjectNotFound` if item is not available anymore.
+                media = instantiate_media(self.session, media_type, media_id)
+            elif isinstance(media, Album):  # Check if media is available not deactivated / removed from TIDAL.
+                if not media.available:
+                    self.fn_logger.info(
+                        f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_title(media)}"
+                    )
+
+                    return
+            elif not media:
+                raise MediaMissing
+        except:
+            return
 
         # Create file name and path
         file_name_relative: str = format_path_media(file_template, media, self.settings.data.album_track_num_pad_min)
