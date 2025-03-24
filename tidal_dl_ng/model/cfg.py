@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo
+from tidal_dl_ng.constants import CoverDimensions, QualityVideo, SearchTypes
 
 
 @dataclass_json
@@ -45,6 +45,7 @@ class Settings:
     symlink_to_track: bool = False
     playlist_create: bool = False
     metadata_replay_gain: bool = True
+    search_type: SearchTypes = SearchTypes.Track
 
 
 @dataclass_json
@@ -99,6 +100,7 @@ class HelpSettings:
     )
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
     metadata_replay_gain: str = "Replay gain information will be written to metadata."
+    search_type: str = "Search for tracks by artist, album or track name."
 
 
 @dataclass_json
