@@ -205,9 +205,9 @@ def get_format_template(
 
 
 def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = True) -> pathlib.Path:
-    sanitized_path_file: pathlib.Path = pathlib.Path(path_file.root)
     # Get each directory name separately (first value in tuple; second value is for the file suffix).
     to_sanitize: [[str, str]] = path_split_parts_suffix(path_file)
+    sanitized_path_file: pathlib.Path = pathlib.Path(to_sanitize.pop(0)[0])
 
     for name, suffix in to_sanitize:
         # Sanitize names: We need first top make sure that none file / directory name has bad chars or is longer than 255 chars.
