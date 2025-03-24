@@ -39,10 +39,10 @@ pyqtdarktheme-fork = {version = "^2.3.2", optional = true}
 mpegdash = "^0.4.0"
 rich = "^13.9.4"
 toml = "^0.10.2"
-typer = "^0.15.1"
+typer = "^0.15.2"
 tidalapi = "^0.8.3"
 python-ffmpeg = "^2.0.12"
-pycryptodome = "^3.21.0"
+pycryptodome = "^3.22.0"
 
 [project.optional-dependencies]
 gui = ["pyside6", "pyqtdarktheme-fork"]
@@ -62,11 +62,11 @@ darglint = "^1.8.1"
 isort = { extras = ["colors"], version = "^5.13.2" }
 mypy-extensions = "^1.0.0"
 pydocstyle = "^6.3.0"
-pylint = "^3.3.1"
-pillow = "^11.0.0"
+pylint = "^3.3.6"
+pillow = "^11.1.0"
 pytest-cov = "^6.0.0"
-black = "^24.10.0"
-nuitka = "^2.5.9"
+black = "^25.1.0"
+nuitka = "^2.6.8"
 
 [tool.poetry.group.docs]
 optional = true
