@@ -22,14 +22,14 @@ runs:
         virtualenvs-create: true
         installer-parallel: true
 
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}
+    #    - name: Load cached venv
+    #      id: cached-poetry-dependencies
+    #      uses: actions/cache@v4
+    #      with:
+    #        path: .venv
+    #        key: venv-${{ runner.os }}-${{ inputs.python-version }}-${{ hashFiles('poetry.lock') }}
 
     - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      #      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --all-extras --with dev,docs
       shell: bash
