@@ -4,10 +4,7 @@ import pathlib
 import posixpath
 import re
 import sys
-from collections.abc import Generator
 from copy import deepcopy
-from pathlib import Path
-from typing import Any
 from urllib.parse import unquote, urlsplit
 
 from pathvalidate import sanitize_filename, sanitize_filepath
@@ -210,18 +207,7 @@ def get_format_template(
 def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = True) -> pathlib.Path:
     sanitized_path_file: pathlib.Path = pathlib.Path(path_file.root)
     # Get each directory name separately (first value in tuple; second value is for the file suffix).
-    to_sanitize: [(str, str)] = []
-    receding_is_first: bool = True
-
-    for i in receding_path(path_file):
-        if receding_is_first:
-            receding_is_first = False
-
-            to_sanitize.append((i.stem, i.suffix))
-        else:
-            to_sanitize.append((i.name, ""))
-
-    to_sanitize.reverse()
+    to_sanitize: [[str, str]] = path_split_parts_suffix(path_file)
 
     for name, suffix in to_sanitize:
         # Sanitize names: We need first top make sure that none file / directory name has bad chars or is longer than 255 chars.
@@ -256,7 +242,7 @@ def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: b
 
     # Sanitize the whole path. The whole path with filename is not allowed to be longer then the max path length depending on the OS.
     try:
-        sanitized_path_file: str = sanitize_filepath(
+        sanitized_path_file: pathlib.Path = sanitize_filepath(
             sanitized_path_file, replacement_text=" ", validate_after_sanitize=True, platform="auto"
         )
     except ValidationError as e:
@@ -344,8 +330,15 @@ def url_to_filename(url: str) -> str:
     return basename
 
 
-def receding_path(p: pathlib.Path) -> Generator[Path | Any, Any, None]:
-    while str(p) != p.root:
-        yield p
+def path_split_parts_suffix(p: pathlib.Path) -> [[str, str]]:
+    """Splits the path to file in parts and also splits the suffix from the file stem.
 
-        p = p.parent
+    :param p: Path to file which should be split in parts.
+    :type p: pathlib.Path
+    :return: List of tuples (Stem, Suffix) of each path part.
+    """
+    result: [[str, str]] = [[part, ""] for part in p.parts]
+    result[-1][0] = p.stem
+    result[-1][-1] = p.suffix
+
+    return result
