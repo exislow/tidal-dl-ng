@@ -204,7 +204,7 @@ def get_format_template(
     return result
 
 
-def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = True) -> pathlib.Path:
+def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = False) -> pathlib.Path:
     # Get each directory name separately (first value in tuple; second value is for the file suffix).
     to_sanitize: [[str, str]] = path_split_parts_suffix(path_file)
     sanitized_path_file: pathlib.Path = pathlib.Path(to_sanitize.pop(0)[0])
@@ -257,19 +257,32 @@ def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: b
 
     # Uniquify
     if uniquify:
-        unique_suffix: str = file_unique_suffix(sanitized_path_file)
-
-        if unique_suffix:
-            file_suffix = unique_suffix + sanitized_path_file.suffix
-            # For most OS filename has a character limit of 255.
-            sanitized_path_file = (
-                sanitized_path_file.parent / (str(sanitized_path_file.stem)[: -len(file_suffix)] + file_suffix)
-                if len(str(sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)))
-                > FILENAME_LENGTH_MAX
-                else sanitized_path_file.parent / (sanitized_path_file.stem + unique_suffix)
-            )
+        sanitized_path_file = path_file_uniquify(sanitized_path_file)
 
     return sanitized_path_file
+
+
+def path_file_uniquify(path_file: pathlib.Path) -> pathlib.Path:
+    """Checks whether the file exists, if so it tries to return an unique name suffix.
+
+    :param path_file: Path to file name which shall be unique.
+    :type path_file: pathlib.Path
+    :return: Unique file name with path for given input.
+    :rtype: pathlib.Path
+    """
+    unique_suffix: str = file_unique_suffix(path_file)
+
+    if unique_suffix:
+        file_suffix = unique_suffix + path_file.suffix
+        # For most OS filename has a character limit of 255.
+        path_file = (
+            path_file.parent / (str(path_file.stem)[: -len(file_suffix)] + file_suffix)
+            if len(str(path_file.parent / (path_file.stem + unique_suffix)))
+               > FILENAME_LENGTH_MAX
+            else path_file.parent / (path_file.stem + unique_suffix)
+        )
+
+    return path_file
 
 
 def file_unique_suffix(path_file: pathlib.Path, seperator: str = "_") -> str:
