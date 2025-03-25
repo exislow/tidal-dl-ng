@@ -343,7 +343,7 @@ class Download:
                     )
 
                     return False, ""
-                else:
+                elif isinstance(media, Track):
                     # Re-create media instance with full album information
                     media = self.session.track(media.id, with_album=True)
             elif not media:
