@@ -100,6 +100,8 @@ If you like to have the GUI version only as a binary, have a look at the
 Clone this repository and install the dependencies:
 
 ```bash
+# First, install Poetry. On some operating systems you need to use `pip` instead of `pipx`
+pipx install --upgrade poetry
 poetry install --all-extras --with dev,docs
 ```
 
@@ -131,9 +133,12 @@ This needs to be done for each created / modified `*.ui` file accordingly.
 To build the project use this command:
 
 ```bash
+# Install virtual environment and dependencies if not already done
 make install
-# OR
+# Build macOS GUI
 make gui-macos
+# Check build output
+ls dist/
 ```
 
 See the `Makefile` for all available build commands.

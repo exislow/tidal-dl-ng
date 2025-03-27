@@ -8,7 +8,7 @@ DMG_NAME="dmg"
 .PHONY: install
 install: ## Install the poetry environment and install the pre-commit hooks
 	@echo "🚀 Creating virtual environment using pyenv and poetry"
-	@poetry install
+	@poetry install --all-extras --with dev,docs
 	@poetry run pre-commit install
 	@poetry shell
 
