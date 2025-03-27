@@ -113,7 +113,6 @@ jobs:
             TARGET: "ubuntu-20.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
-              sudo apt install patchelf &&
               source $VENV &&
               poetry run make gui-linux APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
@@ -123,7 +122,6 @@ jobs:
             TARGET: "ubuntu-22.04-arm"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_ARM64}}
             CMD_BUILD: >
-              sudo apt install patchelf &&👷
               source $VENV &&
               poetry run make gui-linux APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
