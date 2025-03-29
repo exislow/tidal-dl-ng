@@ -205,61 +205,60 @@ def get_format_template(
 
 
 def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = False) -> pathlib.Path:
-    # Get each directory name separately (first value in tuple; second value is for the file suffix).
-    to_sanitize: [[str, str]] = path_split_parts_suffix(path_file)
-    sanitized_path_file: pathlib.Path = pathlib.Path(to_sanitize.pop(0)[0])
+    sanitized_filename: str = path_file.name
+    sanitized_path: pathlib.Path = path_file.parent
+    result: pathlib.Path
 
-    for name, suffix in to_sanitize:
-        # Sanitize names: We need first top make sure that none file / directory name has bad chars or is longer than 255 chars.
-        try:
-            # sanitize_filename can shorten the file name actually
-            filename_sanitized: str = sanitize_filename(
-                name + suffix, replacement_text=" ", validate_after_sanitize=True, platform="auto"
-            )
-
-            # Check if the file extension was removed by shortening the filename length
-            if not filename_sanitized.endswith(suffix):
-                # Add the original file extension
-                file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
-                filename_sanitized = filename_sanitized[: -len(file_suffix)] + file_suffix
-        except ValidationError as e:
-            if adapt:
-                # TODO: Implement proper exception handling and logging.
-                # Hacky stuff, since the sanitizing function does not shorten the filename (filename too long)
-                if str(e).startswith("[PV1101]"):
-                    byte_ct: int = len(name.encode(sys.getfilesystemencoding())) - FILENAME_LENGTH_MAX
-                    filename_sanitized = (
-                        name[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(suffix)]
-                        + FILENAME_SANITIZE_PLACEHOLDER
-                        + suffix
-                    )
-                else:
-                    raise
-            else:
-                raise
-        finally:
-            sanitized_path_file = sanitized_path_file / filename_sanitized
-
-    # Sanitize the whole path. The whole path with filename is not allowed to be longer then the max path length depending on the OS.
+    # Sanitize filename and make sure it does not exceed FILENAME_LENGTH_MAX
     try:
-        sanitized_path_file: pathlib.Path = sanitize_filepath(
-            sanitized_path_file, replacement_text=" ", validate_after_sanitize=True, platform="auto"
+        # sanitize_filename can shorten the file name actually
+        sanitized_filename = sanitize_filename(
+            sanitized_filename, replacement_text="_", validate_after_sanitize=True, platform="auto"
         )
+
+        # Check if the file extension was removed by shortening the filename length
+        if not sanitized_filename.endswith(path_file.suffix):
+            # Add the original file extension
+            file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
+            sanitized_filename = sanitized_filename[: -len(file_suffix)] + file_suffix
     except ValidationError as e:
-        # If adaption of path is allowed in case of an error set path to HOME.
         if adapt:
+            # TODO: Implement proper exception handling and logging.
+            # Hacky stuff, since the sanitizing function does not shorten the filename (filename too long)
             if str(e).startswith("[PV1101]"):
-                sanitized_path_file = pathlib.Path.home() / sanitized_path_file.name
+                byte_ct: int = len(sanitized_filename.encode(sys.getfilesystemencoding())) - FILENAME_LENGTH_MAX
+                sanitized_filename = (
+                    sanitized_filename[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(path_file.suffix)]
+                    + FILENAME_SANITIZE_PLACEHOLDER
+                    + path_file.suffix
+                )
             else:
                 raise
         else:
             raise
 
+    # Sanitize the path.
+    try:
+        sanitized_path: pathlib.Path = sanitize_filepath(
+            sanitized_path, replacement_text="_", validate_after_sanitize=True, platform="auto"
+        )
+    except ValidationError as e:
+        # If adaption of path is allowed in case of an error set path to HOME.
+        if adapt:
+            if str(e).startswith("[PV1101]"):
+                sanitized_path = pathlib.Path.home()
+            else:
+                raise
+        else:
+            raise
+
+    result = sanitized_path / sanitized_filename
+
     # Uniquify
     if uniquify:
-        sanitized_path_file = path_file_uniquify(sanitized_path_file)
+        result = path_file_uniquify(result)
 
-    return sanitized_path_file
+    return result
 
 
 def path_file_uniquify(path_file: pathlib.Path) -> pathlib.Path:
@@ -340,17 +339,3 @@ def url_to_filename(url: str) -> str:
         raise ValueError  # reject '%2f' or 'dir%5Cbasename.ext' on Windows
 
     return basename
-
-
-def path_split_parts_suffix(p: pathlib.Path) -> [[str, str]]:
-    """Splits the path to file in parts and also splits the suffix from the file stem.
-
-    :param p: Path to file which should be split in parts.
-    :type p: pathlib.Path
-    :return: List of tuples (Stem, Suffix) of each path part.
-    """
-    result: [[str, str]] = [[part, ""] for part in p.parts]
-    result[-1][0] = p.stem
-    result[-1][-1] = p.suffix
-
-    return result

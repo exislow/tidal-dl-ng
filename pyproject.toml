@@ -3,7 +3,7 @@ name = "tidal-dl-ng"
 authors = [
   {name = "Robert Honz",email = "<cen.sored@gmail.com>"}
 ]
-version = "0.25.4"
+version = "0.25.5"
 description = "TIDAL Medial Downloader Next Generation!"
 repository = "https://github.com/exislow/tidal-dl-ng"
 documentation = "https://exislow.github.io/tidal-dl-ng/"
@@ -66,7 +66,7 @@ pylint = "^3.3.6"
 pillow = "^11.1.0"
 pytest-cov = "^6.0.0"
 black = "^25.1.0"
-nuitka = "^2.6.8"
+nuitka = "^2.6.7"
 
 [tool.poetry.group.docs]
 optional = true
