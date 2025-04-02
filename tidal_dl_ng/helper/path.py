@@ -51,7 +51,11 @@ def path_file_settings() -> str:
 
 
 def format_path_media(
-    fmt_template: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, album_track_num_pad_min: int = 0
+    fmt_template: str,
+    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
+    album_track_num_pad_min: int = 0,
+    list_pos: int = 0,
+    list_total: int = 0,
 ) -> str:
     result = fmt_template
 
@@ -61,7 +65,7 @@ def format_path_media(
 
     for _matchNum, match in enumerate(matches, start=1):
         template_str = match.group()
-        result_fmt = format_str_media(match.group(1), media, album_track_num_pad_min)
+        result_fmt = format_str_media(match.group(1), media, album_track_num_pad_min, list_pos, list_total)
 
         if result_fmt != match.group(1):
             value = sanitize_filename(result_fmt)
@@ -71,7 +75,11 @@ def format_path_media(
 
 
 def format_str_media(
-    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, album_track_num_pad_min: int = 0
+    name: str,
+    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
+    album_track_num_pad_min: int = 0,
+    list_pos: int = 0,
+    list_total: int = 0,
 ) -> str:
     result: str = name
 
@@ -101,12 +109,11 @@ def format_str_media(
                     result = media.album.name
             case "album_track_num":
                 if isinstance(media, Track | Video):
-                    num_tracks: int = media.album.num_tracks if hasattr(media, "album") else 1
-                    count_digits: int = int(math.log10(num_tracks)) + 1
-                    count_digits_computed: int = (
-                        count_digits if count_digits > album_track_num_pad_min else album_track_num_pad_min
+                    result = calculate_number_padding(
+                        album_track_num_pad_min,
+                        media.track_num,
+                        media.album.num_tracks if hasattr(media, "album") else 1,
                     )
-                    result = str(media.track_num).zfill(count_digits_computed)
             case "album_num_tracks":
                 if isinstance(media, Track | Video):
                     result = str(media.album.num_tracks if hasattr(media, "album") else 1)
@@ -176,11 +183,28 @@ def format_str_media(
             case "isrc":
                 if isinstance(media, Track):
                     result = media.isrc
+            case "list_pos":
+                if isinstance(media, Track | Video):
+                    # TODO: Rename `album_track_num_pad_min` globally.
+                    result = calculate_number_padding(album_track_num_pad_min, list_pos, list_total)
     except Exception as e:
         # TODO: Implement better exception logging.
         print(e)
 
         pass
+
+    return result
+
+
+def calculate_number_padding(padding_minimum: int, item_position: int, items_max: int) -> str:
+    result: str
+
+    if items_max > 0:
+        count_digits: int = int(math.log10(items_max)) + 1
+        count_digits_computed: int = count_digits if count_digits > padding_minimum else padding_minimum
+        result = str(item_position).zfill(count_digits_computed)
+    else:
+        result = str(item_position)
 
     return result
 
