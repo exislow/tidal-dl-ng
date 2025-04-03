@@ -1,0 +1,63 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="50">
+            <item index="0" class="java.lang.String" itemvalue="protobuf" />
+            <item index="1" class="java.lang.String" itemvalue="tensorflow" />
+            <item index="2" class="java.lang.String" itemvalue="tensorboard" />
+            <item index="3" class="java.lang.String" itemvalue="optree" />
+            <item index="4" class="java.lang.String" itemvalue="keras" />
+            <item index="5" class="java.lang.String" itemvalue="ml-dtypes" />
+            <item index="6" class="java.lang.String" itemvalue="setuptools" />
+            <item index="7" class="java.lang.String" itemvalue="numpy" />
+            <item index="8" class="java.lang.String" itemvalue="Werkzeug" />
+            <item index="9" class="java.lang.String" itemvalue="aiodns" />
+            <item index="10" class="java.lang.String" itemvalue="nvidia-nvjitlink-cu12" />
+            <item index="11" class="java.lang.String" itemvalue="huggingface-hub" />
+            <item index="12" class="java.lang.String" itemvalue="ptyprocess" />
+            <item index="13" class="java.lang.String" itemvalue="nvidia-cuda-cupti-cu12" />
+            <item index="14" class="java.lang.String" itemvalue="nvidia-cufft-cu12" />
+            <item index="15" class="java.lang.String" itemvalue="nvidia-cusparse-cu12" />
+            <item index="16" class="java.lang.String" itemvalue="pycares" />
+            <item index="17" class="java.lang.String" itemvalue="redis-om" />
+            <item index="18" class="java.lang.String" itemvalue="Jinja2" />
+            <item index="19" class="java.lang.String" itemvalue="nvidia-nccl-cu12" />
+            <item index="20" class="java.lang.String" itemvalue="tf_keras" />
+            <item index="21" class="java.lang.String" itemvalue="frozenlist" />
+            <item index="22" class="java.lang.String" itemvalue="nvidia-cusolver-cu12" />
+            <item index="23" class="java.lang.String" itemvalue="nvidia-curand-cu12" />
+            <item index="24" class="java.lang.String" itemvalue="safetensors" />
+            <item index="25" class="java.lang.String" itemvalue="nvidia-cuda-runtime-cu12" />
+            <item index="26" class="java.lang.String" itemvalue="flash_attn" />
+            <item index="27" class="java.lang.String" itemvalue="tokenizers" />
+            <item index="28" class="java.lang.String" itemvalue="nvidia-cusparselt-cu12" />
+            <item index="29" class="java.lang.String" itemvalue="nvidia-cuda-nvrtc-cu12" />
+            <item index="30" class="java.lang.String" itemvalue="transformers" />
+            <item index="31" class="java.lang.String" itemvalue="triton" />
+            <item index="32" class="java.lang.String" itemvalue="aiohappyeyeballs" />
+            <item index="33" class="java.lang.String" itemvalue="ipython" />
+            <item index="34" class="java.lang.String" itemvalue="kucoin-universal-sdk" />
+            <item index="35" class="java.lang.String" itemvalue="nvidia-cudnn-cu12" />
+            <item index="36" class="java.lang.String" itemvalue="pexpect" />
+            <item index="37" class="java.lang.String" itemvalue="nvidia-cuda-nvcc-cu12" />
+            <item index="38" class="java.lang.String" itemvalue="tqdm" />
+            <item index="39" class="java.lang.String" itemvalue="ccxt" />
+            <item index="40" class="java.lang.String" itemvalue="nvidia-cublas-cu12" />
+            <item index="41" class="java.lang.String" itemvalue="regex" />
+            <item index="42" class="java.lang.String" itemvalue="nvidia-nvtx-cu12" />
+            <item index="43" class="java.lang.String" itemvalue="propcache" />
+            <item index="44" class="java.lang.String" itemvalue="ruff" />
+            <item index="45" class="java.lang.String" itemvalue="aiohttp" />
+            <item index="46" class="java.lang.String" itemvalue="multidict" />
+            <item index="47" class="java.lang.String" itemvalue="yarl" />
+            <item index="48" class="java.lang.String" itemvalue="einops" />
+            <item index="49" class="java.lang.String" itemvalue="aiosignal" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
