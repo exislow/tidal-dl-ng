@@ -52,6 +52,14 @@ class QueueDownloadStatus(StrEnum):
     Skipped: str = "↪️"
 
 
+class SearchTypes(StrEnum):
+    Track: str = "Track"
+    Video: str = "Video"
+    Playlist: str = "Playlist"
+    Album: str = "Album"
+    Artist: str = "Artist"
+
+
 FAVORITES: {} = {
     "fav_videos": {"name": "Videos", "function_name": "videos"},
     "fav_tracks": {"name": "Tracks", "function_name": "tracks"},
