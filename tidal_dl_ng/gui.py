@@ -360,6 +360,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_mixes)
                 name: str = item.title
                 info: str = item.sub_title
+            else:
+                continue
 
             twi_child.setText(0, name)
             set_user_list_media(twi_child, item)
