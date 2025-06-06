@@ -111,6 +111,7 @@ class Metadata:
             self.set_mp4()
 
         self._cover()
+        self.cleanup_tags()
         self.m.save()
 
         return True
@@ -172,10 +173,15 @@ class Metadata:
         self.m.tags["\xa9wrt"] = self.composer
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["isrc"] = self.isrc
-        self.m.tags["url"] = self.url_share
+        self.m.tags["\xa9url"] = self.url_share
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude).encode("utf-8")
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain).encode("utf-8")
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude).encode("utf-8")
+
+    def cleanup_tags(self):
+        for key, value in self.m.tags.items():
+            if value == "" or value == [""]:
+                del self.m.tags[key]
