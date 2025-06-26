@@ -3,7 +3,7 @@ name = "tidal-dl-ng"
 authors = [
   {name = "Robert Honz",email = "<cen.sored@gmail.com>"}
 ]
-version = "0.25.6"
+version = "0.25.7"
 description = "TIDAL Medial Downloader Next Generation!"
 repository = "https://github.com/exislow/tidal-dl-ng"
 documentation = "https://exislow.github.io/tidal-dl-ng/"
