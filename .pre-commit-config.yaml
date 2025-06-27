@@ -1,7 +1,7 @@
 default_language_version:
   python: python3.12
 
-default_stages: [commit, push]
+default_stages: [pre-commit, pre-push]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -39,11 +39,6 @@ repos:
   #        entry: poetry run pyupgrade --py310-plus
   #        types: [python]
   #        language: system
-
-  - repo: https://github.com/asottile/seed-isort-config
-    rev: v2.2.0
-    hooks:
-      - id: seed-isort-config
 
   # Disabled du to conflicts with black and I like the style of black more.
   #  - repo: local
