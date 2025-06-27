@@ -109,8 +109,8 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
-          - os: "ubuntu-20.04"
-            TARGET: "ubuntu-20.04"
+          - os: "ubuntu-22.04"
+            TARGET: "ubuntu-22.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
               source $VENV &&
@@ -127,8 +127,8 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
-          - os: "windows-2019"
-            TARGET: "windows-2019"
+          - os: "windows-2022"
+            TARGET: "windows-2022"
             OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_X64}}
             CMD_BUILD: >
               choco install zip make -y &&
