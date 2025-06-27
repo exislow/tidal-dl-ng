@@ -23,6 +23,7 @@ env:
   ARCH_LINUX_X64: "linux-x64"
   ARCH_LINUX_ARM64: "linux-arm64"
   ARCH_WINDOWS_X64: "windows-x64"
+  ARCH_WINDOWS_ARM64: "windows-arm"
 
 jobs:
   publish:
@@ -73,6 +74,7 @@ jobs:
       ARCH_LINUX_X64: ${{ env.ARCH_LINUX_X64 }}
       ARCH_LINUX_ARM64: ${{ env.ARCH_LINUX_ARM64 }}
       ARCH_WINDOWS_X64: ${{ env.ARCH_WINDOWS_X64 }}
+      ARCH_WINDOWS_ARM64: ${{ env.ARCH_WINDOWS_ARM64 }}
     steps:
       - name: Compute outputs
         run: |
@@ -83,6 +85,7 @@ jobs:
           echo "ARCH_LINUX_X64=${{ env.ARCH_LINUX_X64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_LINUX_ARM64=${{ env.ARCH_LINUX_ARM64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_WINDOWS_X64=${{ env.ARCH_WINDOWS_X64 }}" >> $GITHUB_OUTPUT
+          echo "ARCH_WINDOWS_ARM64=${{ env.ARCH_WINDOWS_ARM64 }}" >> $GITHUB_OUTPUT
   build-gui-and-upload-assets:
     needs: ["publish", "compute"]
     strategy:
@@ -136,6 +139,16 @@ jobs:
               poetry run make gui-windows APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd ..
+          - os: "windows-11-arm"
+            TARGET: "windows-11-arm"
+            OS_ARCH: ${{needs.compute.outputs.ARCH_WINDOWS_ARM64}}
+            CMD_BUILD: >
+              choco install zip make -y &&
+              source $VENV &&
+              poetry run make gui-windows APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              cd dist &&
+              zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_WINDOWS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
     runs-on: ${{ matrix.os }}
     steps:
