@@ -111,7 +111,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     dl: Download
     threadpool: QtCore.QThreadPool
     tray: QtWidgets.QSystemTrayIcon
-    spinner: QtWaitingSpinner
+    spinners: dict
     cover_url_current: str = ""
     shutdown: bool = False
     model_tr_results: QtGui.QStandardItemModel = QtGui.QStandardItemModel()
@@ -150,6 +150,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings = Settings()
 
         self._init_threads()
+        self._init_gui()
         self._init_tree_results_model(self.model_tr_results)
         self._init_tree_results(self.tr_results, self.model_tr_results)
         self._init_tree_lists(self.tr_lists_user)
@@ -165,6 +166,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.init_tidal(tidal)
 
         logger_gui.debug("All setup.")
+
+    def _init_gui(self):
+        self.spinners = {}
 
     def init_tidal(self, tidal: Tidal = None):
         result: bool = False
@@ -413,13 +417,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item["element"].setCurrentIndex(item["default_id"])
 
     def on_spinner_start(self, parent: QtWidgets.QWidget):
-        self.spinner = QtWaitingSpinner(parent, True, True)
-        self.spinner.setColor(QtGui.QColor(255, 255, 255))
-        self.spinner.start()
+        # Stop any existing spinner for this parent
+        if parent in self.spinners:
+            spinner = self.spinners[parent]
+
+            spinner.stop()
+            spinner.deleteLater()
+            del self.spinners[parent]
+
+        # Create and start a new spinner for this parent
+        spinner = QtWaitingSpinner(parent, True, True)
+
+        spinner.setColor(QtGui.QColor(255, 255, 255))
+        spinner.start()
+
+        self.spinners[parent] = spinner
 
     def on_spinner_stop(self):
-        self.spinner.stop()
-        self.spinner = None
+        # Stop all spinners
+        for spinner in list(self.spinners.values()):
+            spinner.stop()
+            spinner.deleteLater()
+
+        self.spinners.clear()
 
     def menu_context_tree_lists(self, point: QtCore.QPoint):
         # Infos about the node selected.
@@ -833,47 +853,71 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tidal.settings_apply()
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem):
+        self.thread_it(self.list_items_show, item)
+
+    def list_items_show(self, item: QtWidgets.QTreeWidgetItem):
         media_list: Album | Playlist | str = get_user_list_media_item(item)
 
         # Only if clicked item is not a top level item.
         if media_list:
-            if isinstance(media_list, str) and media_list.startswith("fav_"):
-                function_list = favorite_function_factory(self.tidal, media_list)
-
-                self.list_items_show_result(favorite_function=function_list)
-            else:
-                self.list_items_show_result(media_list)
-                self.cover_show(media_list)
+            # Show spinner while loading list
+            self.s_spinner_start.emit(self.tr_results)
+            try:
+                if isinstance(media_list, str) and media_list.startswith("fav_"):
+                    function_list = favorite_function_factory(self.tidal, media_list)
+                    self.list_items_show_result(favorite_function=function_list)
+                else:
+                    self.list_items_show_result(media_list)
+                    # Load cover asynchronously to avoid blocking the GUI
+                    self.thread_it(self.cover_show, media_list)
+            finally:
+                self.s_spinner_stop.emit()
 
     def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
         media: Track | Video | Album | Artist = get_results_media_item(
             index, self.proxy_tr_results, self.model_tr_results
         )
 
-        self.cover_show(media)
+        # Load cover asynchronously to avoid blocking the GUI
+        self.thread_it(self.cover_show, media)
 
     def on_queue_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
         media: Track | Video | Album | Artist | Mix | Playlist = get_queue_download_media(item)
 
-        self.cover_show(media)
+        # Load cover asynchronously to avoid blocking the GUI
+        self.thread_it(self.cover_show, media)
 
     def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist) -> None:
-        cover_url: str
+        cover_url: str = ""
+        # Show spinner in the cover label itself
+        parent_widget = self.l_pm_cover
 
+        # Show spinner while loading
+        self.s_spinner_start.emit(parent_widget)
         try:
-            cover_url = media.album.image()
-        except:
             try:
-                cover_url = media.image()
-            except:
-                logger_gui.info(f"No cover available (media ID: {media.id}).")
+                cover_url = media.album.image()
+            except Exception:
+                # Only call image() if it exists
+                if hasattr(media, "image") and callable(getattr(media, "image", None)):
+                    try:
+                        cover_url = media.image()
+                    except Exception:
+                        logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
+                else:
+                    logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
 
-        if cover_url and self.cover_url_current != cover_url:
-            self.cover_url_current = cover_url
-            data_cover: bytes = Download.cover_data(cover_url)
-            pixmap: QtGui.QPixmap = QtGui.QPixmap()
-            pixmap.loadFromData(data_cover)
-            self.l_pm_cover.setPixmap(pixmap)
+            if cover_url and self.cover_url_current != cover_url:
+                self.cover_url_current = cover_url
+                data_cover: bytes = Download.cover_data(cover_url)
+                pixmap: QtGui.QPixmap = QtGui.QPixmap()
+                pixmap.loadFromData(data_cover)
+                self.l_pm_cover.setPixmap(pixmap)
+            else:
+                path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
+                self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
+        finally:
+            self.s_spinner_stop.emit()
 
     def list_items_show_result(
         self,

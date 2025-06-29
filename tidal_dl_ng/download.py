@@ -761,9 +761,7 @@ class Download:
 
         is_album: bool = isinstance(media, Album)
         # TODO: Refactor strings to constants (also in cfg.py)
-        sort_by_track_num: bool = (
-            True if "album_track_num" in file_name_relative or "list_pos" in file_name_relative else False
-        )
+        sort_by_track_num: bool = bool("album_track_num" in file_name_relative or "list_pos" in file_name_relative)
         result_dirs: [pathlib.Path] = []
         list_total: int = len(items)
 
