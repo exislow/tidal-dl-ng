@@ -185,7 +185,7 @@ Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the
 
 Thanks to all, who have contributed to this project!
 
-Special thanks goes out to [@orbittwz](https://github.com/) for all his support in the issues section.
+Special thanks goes out to [@orbittwz](https://github.com/orbittwz) for all his support in the issues section.
 
 <a href="https://github.com/exislow/tidal-dl-ng/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=exislow/tidal-dl-ng" /></a>
 
