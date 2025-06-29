@@ -2,14 +2,13 @@
 import signal
 from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
-from rich.console import Group
+from rich.console import Console, Group
 from rich.live import Live
 from rich.progress import (
     BarColumn,
-    Console,
     Progress,
     SpinnerColumn,
     TaskProgressColumn,
@@ -174,16 +173,14 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 @app.callback()
 def callback_app(
     ctx: typer.Context,
-    version: Annotated[
-        Optional[bool], typer.Option("--version", "-v", callback=version_callback, is_eager=True)
-    ] = None,
+    version: Annotated[bool | None, typer.Option("--version", "-v", callback=version_callback, is_eager=True)] = None,
 ):
     ctx.obj = {"tidal": None}
 
 
 @app.command(name="cfg")
 def settings_management(
-    names: Annotated[Optional[list[str]], typer.Argument()] = None,
+    names: Annotated[list[str] | None, typer.Argument()] = None,
     editor: Annotated[
         bool, typer.Option("--editor", "-e", help="Open the settings file in your default editor.")
     ] = False,
@@ -262,9 +259,9 @@ def logout() -> bool:
 @app.command(name="dl")
 def download(
     ctx: typer.Context,
-    urls: Annotated[Optional[list[str]], typer.Argument()] = None,
+    urls: Annotated[list[str] | None, typer.Argument()] = None,
     file_urls: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--list",
             "-l",
