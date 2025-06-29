@@ -31,7 +31,7 @@ def metadata_project() -> ProjectInformation:
 
     if tmp_result:
         result = ProjectInformation(
-            version=tmp_result["project"]["version"], repository_url=tmp_result["project"]["repository"]
+            version=tmp_result["project"]["version"], repository_url=tmp_result["project"]["urls"]["repository"]
         )
     else:
         try:

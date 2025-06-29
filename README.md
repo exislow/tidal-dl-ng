@@ -7,7 +7,7 @@
 
 This tool allows to download songs and videos from TIDAL. Multithreaded and multi-chunked downloads are supported.
 
-⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This is a **false positive**. Please read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement ](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md) and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade). ⚠️
+⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This is a **false positive**. Please read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md) and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade).
 
 **A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
 
@@ -151,27 +151,27 @@ To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookie
 
 ## ❓ FAQ
 
-### macOS Error Message: File/App is damaged and cannot be opened. You should move it to Trash..
+### macOS Error Message: File/App is damaged and cannot be opened. You should move it to Trash
 
 If you download an (unsigned) app from any source other than those that Apple seems suited, the application gets an extended attribute "com.apple.Quarantine". This triggers the message: "<application> is damaged and can't be opened. You should move it to the Bin."
 
 Remove the attribute and you can launch the application. [Source 1](https://discussions.apple.com/thread/253714860?sortBy=rank) [Source 2](https://www.reddit.com/r/macsysadmin/comments/13vu7f3/app_is_damaged_and_cant_be_opened_error_on_ventura/)
 
 ```
-$ sudo xattr -dr com.apple.quarantine /Applications/TIDAL-Downloader-NG.app/
+sudo xattr -dr com.apple.quarantine /Applications/TIDAL-Downloader-NG.app/
 ```
 
 Why is this app unsigned? Only developer enrolled in the paid Apple developer program are allowed to sign (legal) apps. Without this subscription app signing is not possible.
 
 Gatekeeper really annoys you, and you like to disable it completely? Follow this [link](https://iboysoft.com/tips/how-to-disable-gatekeeper-macos-sequoia.html)
 
-### My (Windows) antivirus app XYZ says the GUI version of this app is harmful.
+### My (Windows) antivirus app XYZ says the GUI version of this app is harmful
 
 Short answer: It is a lie. Get rid of your antivirus app.
 
 Long answer: See [here](https://github.com/exislow/tidal-dl-ng/issues/231)
 
-### I get an error when `extract_flac` is enabled.
+### I get an error when `extract_flac` is enabled
 
 Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the help of this particular option until you get it right what path to put for `path_binary_ffmpeg`.
 
@@ -185,8 +185,10 @@ Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the
 
 Thanks to all, who have contributed to this project!
 
-This project is based on:
-
-- https://fpgmaas.github.io/cookiecutter-poetry/
+Special thanks goes out to [@orbittwz](https://github.com/) for all his support in the issues section.
 
 <a href="https://github.com/exislow/tidal-dl-ng/graphs/contributors"><img src="https://contributors-img.web.app/image?repo=exislow/tidal-dl-ng" /></a>
+
+This project is based on:
+
+- <https://fpgmaas.github.io/cookiecutter-poetry/>
