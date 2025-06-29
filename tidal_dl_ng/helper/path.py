@@ -92,6 +92,8 @@ def format_str_media(
                     elif hasattr(media, "artist"):
                         result = media.artist.name
             case "album_artist":
+                result = name_builder_album_artist(media, first_only=True)
+            case "album_artists":
                 result = name_builder_album_artist(media)
             case "track_title":
                 if isinstance(media, Track | Video):

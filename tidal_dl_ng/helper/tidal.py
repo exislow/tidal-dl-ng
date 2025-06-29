@@ -14,13 +14,16 @@ def name_builder_artist(media: Track | Video | Album) -> str:
     return ", ".join(artist.name for artist in media.artists)
 
 
-def name_builder_album_artist(media: Track | Album) -> str:
+def name_builder_album_artist(media: Track | Album, first_only: bool = False) -> str:
     artists_tmp: [str] = []
     artists: [Artist] = media.album.artists if isinstance(media, Track) else media.artists
 
     for artist in artists:
         if Role.main in artist.roles:
             artists_tmp.append(artist.name)
+
+        if first_only:
+            break
 
     return ", ".join(artists_tmp)
 
