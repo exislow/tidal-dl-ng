@@ -1170,6 +1170,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
 
     def on_tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
+        self.thread_it(self.tr_results_expanded, index)
+
+    def tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
         # If the child is a dummy the list_item has not been expanded before
         item: QtGui.QStandardItem = self.model_tr_results.itemFromIndex(self.proxy_tr_results.mapToSource(index))
         load_children: bool = not item.child(0, 0).isEnabled()
@@ -1180,7 +1183,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 index, self.proxy_tr_results, self.model_tr_results
             )
 
-            self.list_items_show_result(media_list=media_list, parent=item)
+            # Show spinner while loading children
+            self.s_spinner_start.emit(self.tr_results)
+            try:
+                self.list_items_show_result(media_list=media_list, parent=item)
+            finally:
+                self.s_spinner_stop.emit()
 
     def button_reload_status(self, status: bool):
         button_text: str = "Reloading..."
