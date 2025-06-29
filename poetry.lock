@@ -1167,13 +1167,13 @@ files = [
 
 [[package]]
 name = "nuitka"
-version = "2.7.10"
+version = "2.7.11"
 description = "Python compiler with full language support and CPython compatibility"
 optional = false
 python-versions = "*"
 groups = ["dev"]
 files = [
-    {file = "Nuitka-2.7.10.tar.gz", hash = "sha256:c510c44027bcd9890deb00586ea87b00dc787addace0722095f041b1414395fa"},
+    {file = "Nuitka-2.7.11.tar.gz", hash = "sha256:8009d7acb7d0467c96ecd02e4105fc488e0c12e5296cb49b0a9197de883c8123"},
 ]
 
 [package.dependencies]
@@ -2338,4 +2338,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "11c3d666e75e21252085d4c732539c3ecacaf5a2671b228ababa5beaca5ea78b"
+content-hash = "57c0352221bedbee53a72958d37b1f6b0efb1ce6272d9d77a1c2c4beaa6b1435"
