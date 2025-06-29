@@ -22,6 +22,12 @@ from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.helper.path import get_format_template, path_file_settings
 from tidal_dl_ng.helper.tidal import (
+    Album,
+    Artist,
+    Mix,
+    Playlist,
+    Track,
+    Video,
     all_artist_album_ids,
     get_tidal_media_id,
     get_tidal_media_type,
@@ -128,13 +134,20 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
                     continue
 
+                try:
+                    media: Track | Video | Album | Playlist | Mix | Artist = instantiate_media(
+                        ctx.obj[CTX_TIDAL].session, media_type, item_id
+                    )
+                except Exception:
+                    print(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
+                    continue
+
                 # Download media.
                 if media_type in [MediaType.TRACK, MediaType.VIDEO]:
                     download_delay: bool = bool(settings.data.download_delay and urls.index(item) < urls_pos_last)
 
                     dl.item(
-                        media_id=item_id,
-                        media_type=media_type,
+                        media=media,
                         file_template=file_template,
                         download_delay=download_delay,
                         quality_audio=settings.data.quality_audio,
@@ -144,7 +157,6 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
                     item_ids: [int] = []
 
                     if media_type == MediaType.ARTIST:
-                        media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
                         media_type = MediaType.ALBUM
                         item_ids = item_ids + all_artist_album_ids(media)
                     else:
