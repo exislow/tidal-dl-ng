@@ -618,6 +618,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         result = []
 
         for idx, item in enumerate(items):
+            if not item:
+                continue
+
             explicit: str = ""
             # Check if item is available on TIDAL.
             if hasattr(item, "available") and not item.available:
