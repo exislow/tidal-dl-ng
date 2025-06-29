@@ -93,6 +93,7 @@ gui-macos-dmg: gui ## Package GUI in a *.dmg file
                 --icon "$(APP_NAME).app" 175 120 \
                 --hide-extension "$(APP_NAME).app" \
                 --app-drop-link 425 120 \
+				--filesystem APFS \
                 "$(app_path_dist)/$(APP_NAME).dmg" \
                 "$(app_path_dist)/$(DMG_NAME)/"
 
