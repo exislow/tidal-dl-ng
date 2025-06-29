@@ -897,6 +897,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Show spinner while loading
         self.s_spinner_start.emit(parent_widget)
+
         try:
             try:
                 cover_url = media.album.image()
@@ -908,6 +909,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     except Exception:
                         logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
                 else:
+                    cover_url = None
+
                     logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
 
             if cover_url and self.cover_url_current != cover_url:
@@ -916,7 +919,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 pixmap: QtGui.QPixmap = QtGui.QPixmap()
                 pixmap.loadFromData(data_cover)
                 self.l_pm_cover.setPixmap(pixmap)
-            else:
+            elif not cover_url:
                 path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
                 self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
         finally:
@@ -1185,6 +1188,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             # Show spinner while loading children
             self.s_spinner_start.emit(self.tr_results)
+
             try:
                 self.list_items_show_result(media_list=media_list, parent=item)
             finally:
