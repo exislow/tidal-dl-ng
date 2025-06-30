@@ -12,6 +12,7 @@ from uuid import uuid4
 import m3u8
 import requests
 from ffmpeg import FFmpeg
+from pathvalidate import sanitize_filename
 from requests.adapters import HTTPAdapter, Retry
 from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
@@ -36,7 +37,6 @@ from tidal_dl_ng.helper.path import (
     check_file_exists,
     format_path_media,
     path_file_sanitize,
-    sanitize_filename,
     url_to_filename,
 )
 from tidal_dl_ng.helper.tidal import (
@@ -437,9 +437,12 @@ class Download:
             elif isinstance(media, Video):
                 file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
 
-            # Compute file name, sanitize once again and create destination directory
-            path_media_dst = path_media_dst.with_suffix(file_extension)
-            path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
+            # If file extension was guessed wrong in the beginning
+            if path_media_dst.suffix != file_extension:
+                # Compute file name, sanitize once again, because file extension could have been replaced after guessing it first and create destination directory
+                path_media_dst = path_media_dst.with_suffix(file_extension)
+                path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
+
             os.makedirs(path_media_dst.parent, exist_ok=True)
 
             if not skip_download:

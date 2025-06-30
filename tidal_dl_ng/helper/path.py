@@ -13,7 +13,13 @@ from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.media import AudioExtensions
 
 from tidal_dl_ng import __name_display__
-from tidal_dl_ng.constants import FILENAME_LENGTH_MAX, FILENAME_SANITIZE_PLACEHOLDER, UNIQUIFY_THRESHOLD, MediaType
+from tidal_dl_ng.constants import (
+    FILENAME_LENGTH_MAX,
+    FILENAME_SANITIZE_PLACEHOLDER,
+    FORMAT_TEMPLATE_EXPLICIT,
+    UNIQUIFY_THRESHOLD,
+    MediaType,
+)
 from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_artist, name_builder_title
 
 
@@ -68,7 +74,11 @@ def format_path_media(
         result_fmt = format_str_media(match.group(1), media, album_track_num_pad_min, list_pos, list_total)
 
         if result_fmt != match.group(1):
-            value = sanitize_filename(result_fmt)
+            # Sanitize here, in case of the filename has slashes or something, which will be recognized later as a directory separator.
+            # Do not sanitize if value is the FORMAT_TEMPLATE_EXPLICIT placeholder, since it has a leading whitespace which otherwise gets removed.
+            value = (
+                sanitize_filename(result_fmt) if result_fmt != FORMAT_TEMPLATE_EXPLICIT else FORMAT_TEMPLATE_EXPLICIT
+            )
             result = result.replace(template_str, value)
 
     return result
@@ -164,10 +174,10 @@ def format_str_media(
                     result = ", ".join(tag for tag in media.media_metadata_tags)
             case "track_explicit":
                 if isinstance(media, Track | Video):
-                    result = " (Explicit)" if media.explicit else ""
+                    result = FORMAT_TEMPLATE_EXPLICIT if media.explicit else ""
             case "album_explicit":
                 if isinstance(media, Album):
-                    result = " (Explicit)" if media.explicit else ""
+                    result = FORMAT_TEMPLATE_EXPLICIT if media.explicit else ""
             case "album_num_volumes":
                 if isinstance(media, Album):
                     result = str(media.num_volumes)
@@ -264,6 +274,19 @@ def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: b
             raise
 
     # Sanitize the path.
+    # First sanitize sanitize each part of the path. Each part of the path is not allowed to be longer then 'PC_NAME_MAX'.
+    sanitized_parts = []
+
+    for part in sanitized_path.parts:
+        if part in sanitized_path.root:
+            sanitized_parts.append(part)
+        else:
+            sanitized_parts.append(
+                sanitize_filename(part, replacement_text="_", validate_after_sanitize=True, platform="auto")
+            )
+    sanitized_path = pathlib.Path(*sanitized_parts)
+
+    # Then sanitize the whole path itself. The whole path is not allowed to be longer than 'PC_NAME_MAX'.
     try:
         sanitized_path: pathlib.Path = sanitize_filepath(
             sanitized_path, replacement_text="_", validate_after_sanitize=True, platform="auto"
