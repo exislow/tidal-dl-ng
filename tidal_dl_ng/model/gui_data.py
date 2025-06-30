@@ -31,12 +31,13 @@ class ResultItem:
     quality: str
     explicit: bool
     date_user_added: str
+    date_release: str
 
 
 @dataclass
 class StatusbarMessage:
     message: str
-    timout: int = 0
+    timeout: int = 0
 
 
 @dataclass
