@@ -12,6 +12,7 @@ CHUNK_SIZE: int = BLOCK_SIZE * BLOCKS
 PLAYLIST_EXTENSION: str = ".m3u"
 PLAYLIST_PREFIX: str = "_"
 FILENAME_LENGTH_MAX: int = 255
+FORMAT_TEMPLATE_EXPLICIT: str = " (Explicit)"
 
 
 class QualityVideo(StrEnum):
