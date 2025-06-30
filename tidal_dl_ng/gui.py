@@ -255,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_item.setValue(0)
 
     def on_statusbar_message(self, data: StatusbarMessage):
-        self.statusbar.showMessage(data.message, data.timout)
+        self.statusbar.showMessage(data.message, data.timeout)
 
     def _log_output(self, text):
         display_msg = coloredlogs.converter.convert(text)
@@ -313,7 +313,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
-        labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date Added"]
+        labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date"]
 
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
@@ -534,9 +534,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self.s_tr_results_add_top_level_item.emit(child)
 
-    def populate_tree_result_child(
-        self, item: [Track | Video | Mix | Album | Playlist], index_count_digits: int
-    ) -> Sequence[QtGui.QStandardItem]:
+    def populate_tree_result_child(self, item: ResultItem, index_count_digits: int) -> Sequence[QtGui.QStandardItem]:
         duration: str = ""
 
         # TODO: Duration needs to be calculated later to properly fill with zeros.
@@ -561,7 +559,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child_album: QtGui.QStandardItem = QtGui.QStandardItem(item.album)
         child_duration: QtGui.QStandardItem = QtGui.QStandardItem(duration)
         child_quality: QtGui.QStandardItem = QtGui.QStandardItem(item.quality)
-        child_date_added: QtGui.QStandardItem = QtGui.QStandardItem(item.date_user_added)
+        child_date: QtGui.QStandardItem = QtGui.QStandardItem(
+            item.date_user_added if item.date_user_added != "" else item.date_release
+        )
 
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
@@ -578,7 +578,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child_album,
             child_duration,
             child_quality,
-            child_date_added,
+            child_date,
         )
 
     def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
@@ -634,6 +634,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 explicit = " 🅴" if item.explicit else ""
 
             date_user_added: str = item.user_date_added.strftime("%Y-%m-%d_%H:%M") if item.user_date_added else ""
+            date_release: str = (
+                item.album.release_date.strftime("%Y-%m-%d_%H:%M")
+                if hasattr(item, "album") and item.album and item.album.release_date
+                else (
+                    item.release_date.strftime("%Y-%m-%d_%H:%M")
+                    if hasattr(item, "release_date") and item.release_date
+                    else ""
+                )
+            )
 
             if isinstance(item, Track):
                 result_item: ResultItem = ResultItem(
@@ -646,6 +655,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -660,6 +670,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality=item.video_quality,
                     explicit=bool(item.explicit),
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -674,6 +685,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality="",
                     explicit=False,
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -688,6 +700,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality=quality_audio_highest(item),
                     explicit=bool(item.explicit),
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -703,6 +716,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality="",
                     explicit=False,
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -717,6 +731,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     quality="",
                     explicit=False,
                     date_user_added=date_user_added,
+                    date_release=date_release,
                 )
 
                 result.append(result_item)
@@ -1157,7 +1172,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             result_dl = True
             path_file = "dummy"
 
-        self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timout=2000))
+        self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
 
         if result_dl and path_file:
             result = QueueDownloadStatus.Finished
