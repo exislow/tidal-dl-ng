@@ -371,6 +371,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             set_user_list_media(twi_child, item)
             twi_child.setText(2, info)
 
+        # Remove all children from favorites to avoid duplication
+        for i in reversed(range(twi_favorites.childCount())):
+            twi_favorites.removeChild(twi_favorites.child(i))
+
         # Populate static favorites
         for key, favorite in FAVORITES.items():
             twi_child = QtWidgets.QTreeWidgetItem(twi_favorites)
@@ -1196,6 +1200,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def button_reload_status(self, status: bool):
         button_text: str = "Reloading..."
+
         if status:
             button_text = "Reload"
 
