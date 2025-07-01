@@ -24,6 +24,11 @@ from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_art
 
 
 def path_home() -> str:
+    """Get the home directory path.
+
+    Returns:
+        str: The home directory path.
+    """
     if "XDG_CONFIG_HOME" in os.environ:
         return os.environ["XDG_CONFIG_HOME"]
     elif "HOME" in os.environ:
@@ -35,6 +40,11 @@ def path_home() -> str:
 
 
 def path_config_base() -> str:
+    """Get the base configuration path.
+
+    Returns:
+        str: The base configuration path.
+    """
     # https://wiki.archlinux.org/title/XDG_Base_Directory
     # X11 workaround: If user specified config path is set, do not point to "~/.config"
     path_user_custom: str = os.environ.get("XDG_CONFIG_HOME", "")
@@ -45,14 +55,29 @@ def path_config_base() -> str:
 
 
 def path_file_log() -> str:
+    """Get the path to the log file.
+
+    Returns:
+        str: The log file path.
+    """
     return os.path.join(path_config_base(), "app.log")
 
 
 def path_file_token() -> str:
+    """Get the path to the token file.
+
+    Returns:
+        str: The token file path.
+    """
     return os.path.join(path_config_base(), "token.json")
 
 
 def path_file_settings() -> str:
+    """Get the path to the settings file.
+
+    Returns:
+        str: The settings file path.
+    """
     return os.path.join(path_config_base(), "settings.json")
 
 
@@ -171,7 +196,7 @@ def format_str_media(
                     result = media.video_quality
             case "track_quality":
                 if isinstance(media, Track):
-                    result = ", ".join(tag for tag in media.media_metadata_tags)
+                    result = ", ".join(tag for tag in media.media_metadata_tags if tag is not None)
             case "track_explicit":
                 if isinstance(media, Track | Video):
                     result = FORMAT_TEMPLATE_EXPLICIT if media.explicit else ""
@@ -203,18 +228,25 @@ def format_str_media(
         # TODO: Implement better exception logging.
         print(e)
 
-        pass
-
     return result
 
 
 def calculate_number_padding(padding_minimum: int, item_position: int, items_max: int) -> str:
+    """Calculate the padded number string for an item.
+
+    Args:
+        padding_minimum (int): Minimum number of digits for padding.
+        item_position (int): The position of the item.
+        items_max (int): The maximum number of items.
+
+    Returns:
+        str: The padded number string.
+    """
     result: str
 
     if items_max > 0:
-        count_digits: int = int(math.log10(items_max)) + 1
-        count_digits_computed: int = count_digits if count_digits > padding_minimum else padding_minimum
-        result = str(item_position).zfill(count_digits_computed)
+        count_digits = max(int(math.log10(items_max)) + 1, padding_minimum)
+        result = str(item_position).zfill(count_digits)
     else:
         result = str(item_position)
 
@@ -224,6 +256,15 @@ def calculate_number_padding(padding_minimum: int, item_position: int, items_max
 def get_format_template(
     media: Track | Album | Playlist | UserPlaylist | Video | Mix | MediaType, settings
 ) -> str | bool:
+    """Get the format template for a given media type.
+
+    Args:
+        media (Track | Album | Playlist | UserPlaylist | Video | Mix | MediaType): The media object or type.
+        settings: The settings object containing format templates.
+
+    Returns:
+        str | bool: The format template string or False if not found.
+    """
     result = False
 
     if isinstance(media, Track) or media == MediaType.TRACK:
@@ -241,83 +282,59 @@ def get_format_template(
 
 
 def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: bool = False) -> pathlib.Path:
-    sanitized_filename: str = path_file.name
-    sanitized_path: pathlib.Path = path_file.parent
-    result: pathlib.Path
+    """Sanitize a file path to ensure it is valid and optionally make it unique.
 
-    # Sanitize filename and make sure it does not exceed FILENAME_LENGTH_MAX
-    try:
-        # sanitize_filename can shorten the file name actually
-        sanitized_filename = sanitize_filename(
-            sanitized_filename, replacement_text="_", validate_after_sanitize=True, platform="auto"
+    Args:
+        path_file (pathlib.Path): The file path to sanitize.
+        adapt (bool, optional): Whether to adapt the path in case of errors. Defaults to False.
+        uniquify (bool, optional): Whether to make the file name unique. Defaults to False.
+
+    Returns:
+        pathlib.Path: The sanitized file path.
+    """
+    sanitized_filename = sanitize_filename(
+        path_file.name, replacement_text="_", validate_after_sanitize=True, platform="auto"
+    )
+
+    if not sanitized_filename.endswith(path_file.suffix):
+        sanitized_filename = (
+            sanitized_filename[: -len(path_file.suffix)] + FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
         )
 
-        # Check if the file extension was removed by shortening the filename length
-        if not sanitized_filename.endswith(path_file.suffix):
-            # Add the original file extension
-            file_suffix: str = FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
-            sanitized_filename = sanitized_filename[: -len(file_suffix)] + file_suffix
-    except ValidationError as e:
-        if adapt:
-            # TODO: Implement proper exception handling and logging.
-            # Hacky stuff, since the sanitizing function does not shorten the filename (filename too long)
-            if str(e).startswith("[PV1101]"):
-                byte_ct: int = len(sanitized_filename.encode(sys.getfilesystemencoding())) - FILENAME_LENGTH_MAX
-                sanitized_filename = (
-                    sanitized_filename[: -byte_ct - len(FILENAME_SANITIZE_PLACEHOLDER) - len(path_file.suffix)]
-                    + FILENAME_SANITIZE_PLACEHOLDER
-                    + path_file.suffix
-                )
-            else:
-                raise
-        else:
-            raise
-
-    # Sanitize the path.
-    # First sanitize sanitize each part of the path. Each part of the path is not allowed to be longer then 'PC_NAME_MAX'.
-    sanitized_parts = []
-
-    for part in sanitized_path.parts:
-        if part in sanitized_path.anchor:
-            sanitized_parts.append(part)
-        else:
-            sanitized_parts.append(
+    sanitized_path = pathlib.Path(
+        *[
+            (
                 sanitize_filename(part, replacement_text="_", validate_after_sanitize=True, platform="auto")
+                if part not in path_file.anchor
+                else part
             )
+            for part in path_file.parent.parts
+        ]
+    )
 
-    sanitized_path = pathlib.Path(*sanitized_parts)
-
-    # Then sanitize the whole path itself. The whole path is not allowed to be longer than 'PC_NAME_MAX'.
     try:
-        sanitized_path: pathlib.Path = sanitize_filepath(
+        sanitized_path = sanitize_filepath(
             sanitized_path, replacement_text="_", validate_after_sanitize=True, platform="auto"
         )
     except ValidationError as e:
-        # If adaption of path is allowed in case of an error set path to HOME.
-        if adapt:
-            if str(e).startswith("[PV1101]"):
-                sanitized_path = pathlib.Path.home()
-            else:
-                raise
+        if adapt and str(e).startswith("[PV1101]"):
+            sanitized_path = pathlib.Path.home()
         else:
             raise
 
     result = sanitized_path / sanitized_filename
 
-    # Uniquify
-    if uniquify:
-        result = path_file_uniquify(result)
-
-    return result
+    return path_file_uniquify(result) if uniquify else result
 
 
 def path_file_uniquify(path_file: pathlib.Path) -> pathlib.Path:
-    """Checks whether the file exists, if so it tries to return an unique name suffix.
+    """Ensure a file path is unique by appending a suffix if necessary.
 
-    :param path_file: Path to file name which shall be unique.
-    :type path_file: pathlib.Path
-    :return: Unique file name with path for given input.
-    :rtype: pathlib.Path
+    Args:
+        path_file (pathlib.Path): The file path to uniquify.
+
+    Returns:
+        pathlib.Path: The unique file path.
     """
     unique_suffix: str = file_unique_suffix(path_file)
 
@@ -334,6 +351,15 @@ def path_file_uniquify(path_file: pathlib.Path) -> pathlib.Path:
 
 
 def file_unique_suffix(path_file: pathlib.Path, seperator: str = "_") -> str:
+    """Generate a unique suffix for a file path.
+
+    Args:
+        path_file (pathlib.Path): The file path to check for uniqueness.
+        seperator (str, optional): The separator to use for the suffix. Defaults to "_".
+
+    Returns:
+        str: The unique suffix, or an empty string if not needed.
+    """
     threshold_zfill: int = len(str(UNIQUIFY_THRESHOLD))
     count: int = 0
     path_file_tmp: pathlib.Path = deepcopy(path_file)
@@ -348,6 +374,15 @@ def file_unique_suffix(path_file: pathlib.Path, seperator: str = "_") -> str:
 
 
 def check_file_exists(path_file: pathlib.Path, extension_ignore: bool = False) -> bool:
+    """Check if a file exists.
+
+    Args:
+        path_file (pathlib.Path): The file path to check.
+        extension_ignore (bool, optional): Whether to ignore the file extension. Defaults to False.
+
+    Returns:
+        bool: True if the file exists, False otherwise.
+    """
     if extension_ignore:
         path_file_stem: str = pathlib.Path(path_file).stem
         path_parent: pathlib.Path = pathlib.Path(path_file).parent
@@ -358,12 +393,20 @@ def check_file_exists(path_file: pathlib.Path, extension_ignore: bool = False) -
     else:
         path_files: [str] = [path_file]
 
-    result = bool(sum([[True] if os.path.isfile(_file) else [] for _file in path_files], []))
+    result = any(os.path.isfile(_file) for _file in path_files)
 
     return result
 
 
 def resource_path(relative_path):
+    """Get the absolute path to a resource.
+
+    Args:
+        relative_path (str): The relative path to the resource.
+
+    Returns:
+        str: The absolute path to the resource.
+    """
     try:
         base_path = sys._MEIPASS
     except Exception:
@@ -373,14 +416,16 @@ def resource_path(relative_path):
 
 
 def url_to_filename(url: str) -> str:
-    """Return basename corresponding to url.
-    >>> print(url_to_filename('http://example.com/path/to/file%C3%80?opt=1'))
-    fileÀ
-    >>> print(url_to_filename('http://example.com/slash%2fname')) # '/' in name
-    Taken from https://gist.github.com/zed/c2168b9c52b032b5fb7d
-    Traceback (most recent call last):
-    ...
-    ValueError
+    """Convert a URL to a valid filename.
+
+    Args:
+        url (str): The URL to convert.
+
+    Returns:
+        str: The corresponding filename.
+
+    Raises:
+        ValueError: If the URL contains invalid characters for a filename.
     """
     urlpath: str = urlsplit(url).path
     basename: str = posixpath.basename(unquote(urlpath))
