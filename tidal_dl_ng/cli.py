@@ -83,7 +83,7 @@ def _handle_album_playlist_mix_artist(
     settings: Settings,
     media_type: MediaType,
     media: object,
-    item_id: int,
+    item_id: str,
     file_template: str,
 ) -> bool:
     """Handle downloading albums, playlists, mixes, or artist collections.
@@ -95,17 +95,17 @@ def _handle_album_playlist_mix_artist(
         settings (Settings): The Settings instance.
         media_type (MediaType): The type of media (album, playlist, mix, or artist).
         media: The media object to download.
-        item_id (int): The ID of the media item.
+        item_id (str): The ID of the media item.
         file_template (str): The file template for saving the media.
 
     Returns:
         bool: False if aborted, True otherwise.
     """
-    item_ids: list[int] = []
+    item_ids: list[str] = []
 
     if media_type == MediaType.ARTIST:
         media_type = MediaType.ALBUM
-        item_ids = item_ids + all_artist_album_ids(media)
+        item_ids += all_artist_album_ids(media)
     else:
         item_ids.append(item_id)
 
@@ -154,12 +154,23 @@ def _process_url(
         print(f"It seems like that you have supplied an invalid URL: {item}")
         return True
 
-    media_type: MediaType = get_tidal_media_type(item)
-    item_id: int = get_tidal_media_id(item)
-    file_template: str = get_format_template(media_type, settings)
+    media_type = get_tidal_media_type(item)
+    if not isinstance(media_type, MediaType):
+        print(f"Could not determine media type for: {item}")
+        return True
+
+    item_id = get_tidal_media_id(item)
+    if not isinstance(item_id, str):
+        print(f"Could not determine media id for: {item}")
+        return True
+
+    file_template = get_format_template(media_type, settings)
+    if not isinstance(file_template, str):
+        print(f"Could not determine file template for: {item}")
+        return True
 
     try:
-        media: object = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+        media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
     except Exception:
         print(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
         return True
@@ -264,7 +275,7 @@ def settings_management(
     editor: Annotated[
         bool, typer.Option("--editor", "-e", help="Open the settings file in your default editor.")
     ] = False,
-):
+) -> None:
     """Print or set an option, or open the settings file in an editor.
 
     Args:
@@ -287,12 +298,11 @@ def settings_management(
         if names:
             if names[0] not in d_settings:
                 print(f'Option "{names[0]}" is not valid!')
-            else:
-                if len(names) == 1:
-                    print(f'{names[0]}: "{d_settings[names[0]]}"')
-                elif len(names) > 1:
-                    settings.set_option(names[0], names[1])
-                    settings.save()
+            elif len(names) == 1:
+                print(f'{names[0]}: "{d_settings[names[0]]}"')
+            elif len(names) > 1:
+                settings.set_option(names[0], names[1])
+                settings.save()
         else:
             help_settings: dict = HelpSettings().to_dict()
             table = Table(title=f"Config: {path_file_settings()}")
@@ -300,7 +310,6 @@ def settings_management(
             table.add_column("Value", style="magenta")
             table.add_column("Description", style="green")
 
-            # Iterate over the attributes of the dataclass
             for key, value in sorted(d_settings.items()):
                 table.add_row(key, str(value), help_settings[key])
 
@@ -473,14 +482,9 @@ def _download_fav_factory(ctx: typer.Context, func_name_favorites: str) -> bool:
     Returns:
         bool: Download result.
     """
-    # Call login method to validate the token.
     ctx.invoke(login, ctx)
-
-    # Get the method from the module
     func_favorites: Callable = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
-    # Get favorite videos
-    media_urls: [str] = [media.share_url for media in func_favorites()]
-
+    media_urls: list[str] = [media.share_url for media in func_favorites()]
     return _download(ctx, media_urls, try_login=False)
 
 
