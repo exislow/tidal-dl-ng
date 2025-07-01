@@ -618,125 +618,161 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         return result
 
-    def search_result_to_model(self, items: [*SearchTypes]) -> [ResultItem]:
+    def search_result_to_model(self, items: list[SearchTypes]) -> list[ResultItem]:
+        """Convert search results to ResultItem models.
+
+        Args:
+            items (list[SearchTypes]): List of search result items.
+
+        Returns:
+            list[ResultItem]: List of ResultItem models.
+        """
         result = []
 
         for idx, item in enumerate(items):
-            if not item:
-                continue
+            result_item = self._to_result_item(idx, item)
 
-            explicit: str = ""
-            # Check if item is available on TIDAL.
-            if hasattr(item, "available") and not item.available:
-                continue
-
-            if isinstance(item, Track | Video | Album):
-                explicit = " 🅴" if item.explicit else ""
-
-            date_user_added: str = item.user_date_added.strftime("%Y-%m-%d_%H:%M") if item.user_date_added else ""
-            date_release: str = (
-                item.album.release_date.strftime("%Y-%m-%d_%H:%M")
-                if hasattr(item, "album") and item.album and item.album.release_date
-                else (
-                    item.release_date.strftime("%Y-%m-%d_%H:%M")
-                    if hasattr(item, "release_date") and item.release_date
-                    else ""
-                )
-            )
-
-            if isinstance(item, Track):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=name_builder_artist(item),
-                    title=f"{name_builder_title(item)}{explicit}",
-                    album=item.album.name,
-                    duration_sec=item.duration,
-                    obj=item,
-                    quality=quality_audio_highest(item),
-                    explicit=bool(item.explicit),
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
-                result.append(result_item)
-            elif isinstance(item, Video):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=name_builder_artist(item),
-                    title=f"{name_builder_title(item)}{explicit}",
-                    album=item.album.name if item.album else "",
-                    duration_sec=item.duration,
-                    obj=item,
-                    quality=item.video_quality,
-                    explicit=bool(item.explicit),
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
-                result.append(result_item)
-            elif isinstance(item, Playlist):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
-                    title=item.name,
-                    album="",
-                    duration_sec=item.duration,
-                    obj=item,
-                    quality="",
-                    explicit=False,
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
-                result.append(result_item)
-            elif isinstance(item, Album):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=name_builder_artist(item),
-                    title="",
-                    album=f"{item.name}{explicit}",
-                    duration_sec=item.duration,
-                    obj=item,
-                    quality=quality_audio_highest(item),
-                    explicit=bool(item.explicit),
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
-                result.append(result_item)
-            elif isinstance(item, Mix):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=item.sub_title,
-                    title=item.title,
-                    album="",
-                    # TODO: Calculate total duration.
-                    duration_sec=-1,
-                    obj=item,
-                    quality="",
-                    explicit=False,
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
-                result.append(result_item)
-            elif isinstance(item, Artist):
-                result_item: ResultItem = ResultItem(
-                    position=idx,
-                    artist=item.name,
-                    title="",
-                    album="",
-                    duration_sec=-1,
-                    obj=item,
-                    quality="",
-                    explicit=False,
-                    date_user_added=date_user_added,
-                    date_release=date_release,
-                )
-
+            if result_item is not None:
                 result.append(result_item)
 
         return result
+
+    def _to_result_item(self, idx: int, item) -> ResultItem | None:
+        """Helper to convert a single item to ResultItem, or None if not valid."""
+        if not item:
+            return None
+
+        if hasattr(item, "available") and not item.available:
+            return None
+
+        explicit: str = ""
+        if isinstance(item, Track | Video | Album):
+            explicit = " 🅴" if item.explicit else ""
+
+        date_user_added: str = (
+            item.user_date_added.strftime("%Y-%m-%d_%H:%M") if getattr(item, "user_date_added", None) else ""
+        )
+        date_release: str = self._get_date_release(item)
+
+        if isinstance(item, Track):
+            return self._result_item_from_track(idx, item, explicit, date_user_added, date_release)
+
+        if isinstance(item, Video):
+            return self._result_item_from_video(idx, item, explicit, date_user_added, date_release)
+
+        if isinstance(item, Playlist):
+            return self._result_item_from_playlist(idx, item, date_user_added, date_release)
+
+        if isinstance(item, Album):
+            return self._result_item_from_album(idx, item, explicit, date_user_added, date_release)
+
+        if isinstance(item, Mix):
+            return self._result_item_from_mix(idx, item, date_user_added, date_release)
+
+        if isinstance(item, Artist):
+            return self._result_item_from_artist(idx, item, date_user_added, date_release)
+
+        return None
+
+    def _get_date_release(self, item) -> str:
+        """Get the release date string for an item."""
+        if hasattr(item, "album") and item.album and getattr(item.album, "release_date", None):
+            return item.album.release_date.strftime("%Y-%m-%d_%H:%M")
+
+        if hasattr(item, "release_date") and item.release_date:
+            return item.release_date.strftime("%Y-%m-%d_%H:%M")
+
+        return ""
+
+    def _result_item_from_track(
+        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
+    ) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=name_builder_artist(item),
+            title=f"{name_builder_title(item)}{explicit}",
+            album=item.album.name,
+            duration_sec=item.duration,
+            obj=item,
+            quality=quality_audio_highest(item),
+            explicit=bool(item.explicit),
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
+
+    def _result_item_from_video(
+        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
+    ) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=name_builder_artist(item),
+            title=f"{name_builder_title(item)}{explicit}",
+            album=item.album.name if item.album else "",
+            duration_sec=item.duration,
+            obj=item,
+            quality=item.video_quality,
+            explicit=bool(item.explicit),
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
+
+    def _result_item_from_playlist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
+            title=item.name,
+            album="",
+            duration_sec=item.duration,
+            obj=item,
+            quality="",
+            explicit=False,
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
+
+    def _result_item_from_album(
+        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
+    ) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=name_builder_artist(item),
+            title="",
+            album=f"{item.name}{explicit}",
+            duration_sec=item.duration,
+            obj=item,
+            quality=quality_audio_highest(item),
+            explicit=bool(item.explicit),
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
+
+    def _result_item_from_mix(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=item.sub_title,
+            title=item.title,
+            album="",
+            duration_sec=-1,  # TODO: Calculate total duration.
+            obj=item,
+            quality="",
+            explicit=False,
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
+
+    def _result_item_from_artist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        return ResultItem(
+            position=idx,
+            artist=item.name,
+            title="",
+            album="",
+            duration_sec=-1,
+            obj=item,
+            quality="",
+            explicit=False,
+            date_user_added=date_user_added,
+            date_release=date_release,
+        )
 
     def media_to_queue_download_model(
         self, media: Artist | Track | Video | Album | Playlist | Mix
