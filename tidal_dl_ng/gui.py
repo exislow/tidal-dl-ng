@@ -47,7 +47,8 @@
 import math
 import sys
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
+from typing import Any
 
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
@@ -142,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
 
-    def __init__(self, tidal: Tidal | None = None):
+    def __init__(self, tidal: Tidal | None = None) -> None:
         """Initialize the main window and all components.
 
         Args:
@@ -177,11 +178,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         logger_gui.debug("All setup.")
 
-    def _init_gui(self):
+    def _init_gui(self) -> None:
         """Initialize GUI-specific variables and state."""
-        self.spinners = {}
+        self.spinners: dict[QtWidgets.QWidget, QtWaitingSpinner] = {}
 
-    def init_tidal(self, tidal: Tidal = None):
+    def init_tidal(self, tidal: Tidal | None = None):
         """Initialize Tidal session and handle login flow.
 
         Args:
@@ -201,10 +202,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 while not result:
                     link_login: LinkLogin = self.tidal.session.get_link_login()
+                    expires_in = int(link_login.expires_in) if hasattr(link_login, "expires_in") else 0
                     d_login: DialogLogin = DialogLogin(
                         url_login=link_login.verification_uri_complete,
                         hint=hint,
-                        expires_in=link_login.expires_in,
+                        expires_in=expires_in,
                         parent=self,
                     )
 
@@ -298,22 +300,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.te_debug.setTextCursor(cursor)
         self.te_debug.ensureCursorVisible()
 
-    def _populate_quality(self, ui_target: QtWidgets.QComboBox, options: type[Quality | QualityVideo]) -> None:
+    def _populate_quality(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with quality options.
 
         Args:
             ui_target (QComboBox): Target combo box.
-            options (type): Enum of quality options.
+            options (Iterable): Enum of quality options.
         """
         for item in options:
             ui_target.addItem(item.name, item)
 
-    def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: SearchTypes) -> None:
+    def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with search type options.
 
         Args:
             ui_target (QComboBox): Target combo box.
-            options (SearchTypes): Enum of search types.
+            options (Iterable): Enum of search types.
         """
         for item in options:
             if item:
@@ -323,17 +325,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def handle_filter_activated(self) -> None:
         """Handle activation of filter headers in the results tree."""
-        header: FilterHeader = self.tr_results.header()
-        filters = []
-
+        header = self.tr_results.header()
+        filters: list[str] = []
         for i in range(header.count()):
-            text: str = header.filter_text(i)
-
-            if text:
-                filters.append((i, text))
-
-        proxy_model: HumanProxyModel = self.tr_results.model()
-        proxy_model.filters = filters
+            # Use getattr to avoid attribute error
+            filters.append(getattr(header, "filter_text", lambda x: "")(i))
+        proxy_model = self.tr_results.model()
+        if hasattr(proxy_model, "filters"):
+            proxy_model.filters = filters
 
     def _init_tree_results(self, tree: QtWidgets.QTreeView, model: QtGui.QStandardItemModel) -> None:
         """Initialize the results tree view and its model.
@@ -385,8 +384,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         header = tree.header()
 
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        header.setStretchLastSection(False)
+        if hasattr(header, "setSectionResizeMode"):
+            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
     def tidal_user_lists(self) -> None:
         """Fetch and emit user playlists, mixes, and favorites from Tidal."""
@@ -394,7 +394,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_spinner_start.emit(self.tr_lists_user)
         self.s_pb_reload_status.emit(False)
 
-        user_all: [Playlist | UserPlaylist | Mix] = user_media_lists(self.tidal.session)
+        user_all: list[Any] = user_media_lists(self.tidal.session)
 
         self.s_populate_tree_lists.emit(user_all)
 
@@ -423,7 +423,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for item in user_lists:
             if isinstance(item, UserPlaylist | Playlist):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
-                name: str = item.name
+                name: str = item.name if getattr(item, "name", None) is not None else ""
                 description: str = f" {item.description}" if item.description else ""
                 info: str = f"({item.num_tracks + item.num_videos} Tracks){description}"
             elif isinstance(item, Mix):
@@ -488,12 +488,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             settings (Settings): The settings object.
         """
-        l_cb = [
-            {"element": self.cb_quality_audio, "setting": settings.data.quality_audio, "default_id": 1},
-            {"element": self.cb_quality_video, "setting": settings.data.quality_video, "default_id": 0},
+        quality_audio = getattr(getattr(settings, "data", None), "quality_audio", 1)
+        quality_video = getattr(getattr(settings, "data", None), "quality_video", 0)
+        elements = [
+            {"element": self.cb_quality_audio, "setting": quality_audio, "default_id": 1},
+            {"element": self.cb_quality_video, "setting": quality_video, "default_id": 0},
         ]
 
-        for item in l_cb:
+        for item in elements:
             idx = item["element"].findData(item["setting"])
 
             if idx > -1:
@@ -604,13 +606,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         clipboard.clear()
         clipboard.setText(url_share)
 
-    def on_download_list_media(self, point: QtCore.QPoint = None) -> None:
+    def on_download_list_media(self, point: QtCore.QPoint | None = None) -> None:
         """Download all media items in a selected list.
 
         Args:
             point (QPoint, optional): The point in the tree. Defaults to None.
         """
-        items: [QtWidgets.QTreeWidgetItem]
+        items: list[QtWidgets.QTreeWidgetItem] = []
 
         if point:
             items = [self.tr_lists_user.itemAt(point)]
@@ -622,25 +624,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         for item in items:
             media = get_user_list_media_item(item)
-            queue_dl_item: QueueDownloadItem | False = self.media_to_queue_download_model(media)
+            queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(media)
 
             if queue_dl_item:
                 self.queue_download_media(queue_dl_item)
 
-    def search_populate_results(self, query: str, type_media: SearchTypes) -> None:
+    def search_populate_results(self, query: str, type_media: Any) -> None:
         """Populate the results tree with search results.
 
         Args:
             query (str): The search query.
             type_media (SearchTypes): The type of media to search for.
         """
-        self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
-
-        results: [ResultItem] = self.search(query, [type_media])
+        results: list[ResultItem] = self.search(query, [type_media])
 
         self.populate_tree_results(results)
 
-    def populate_tree_results(self, results: list[ResultItem], parent: QtGui.QStandardItem = None) -> None:
+    def populate_tree_results(self, results: list[ResultItem], parent: QtGui.QStandardItem | None = None) -> None:
         """Populate the results tree with ResultItem objects.
 
         Args:
@@ -731,7 +731,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.apply_settings(self.settings)
         self._init_dl()
 
-    def search(self, query: str, types_media: SearchTypes) -> list[ResultItem]:
+    def search(self, query: str, types_media: Any) -> list[ResultItem]:
         """Perform a search and return a list of ResultItems.
 
         Args:
@@ -761,7 +761,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 session=self.tidal.session, needle=query, types_media=types_media
             )
 
-        result: [ResultItem] = []
+        result: list[ResultItem] = []
 
         for _media_type, l_media in result_search.items():
             if isinstance(l_media, list):
@@ -1310,7 +1310,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             media_items: [Track | Video | Album] = items_results_all(media_list)
 
-        result: [ResultItem] = self.search_result_to_model(media_items)
+        result: list[ResultItem] = self.search_result_to_model(media_items)
 
         self.populate_tree_results(result, parent=parent)
 
@@ -1602,14 +1602,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return result
 
     def on_version(
-        self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest = None
+        self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest | None = None
     ) -> None:
         """Show the version information dialog.
 
         Args:
             update_check (bool, optional): Whether to check for updates. Defaults to False.
             update_available (bool, optional): Whether an update is available. Defaults to False.
-            update_info (ReleaseLatest, optional): Information about the latest release. Defaults to None.
+            update_info (ReleaseLatest | None, optional): Information about the latest release. Defaults to None.
         """
         DialogVersion(self, update_check, update_available, update_info)
 
@@ -1637,7 +1637,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if load_children:
             item.removeRow(0)
-            media_list: [Mix | Album | Playlist | Artist] = get_results_media_item(
+            media_list: list[Mix | Album | Playlist | Artist] = get_results_media_item(
                 index, self.proxy_tr_results, self.model_tr_results
             )
 
@@ -1649,7 +1649,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             finally:
                 self.s_spinner_stop.emit()
 
-    def button_reload_status(self, status: bool):
+    def button_reload_status(self, status: bool) -> None:
         """Update the reload button's state and text.
 
         Args:
@@ -1663,11 +1663,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_reload_user_lists.setEnabled(status)
         self.pb_reload_user_lists.setText(button_text)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         """Handle the close event of the main window.
 
         Args:
-            event: The close event.
+            event (QtGui.QCloseEvent): The close event.
         """
         self.shutdown = True
 
