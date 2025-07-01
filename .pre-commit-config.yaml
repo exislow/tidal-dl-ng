@@ -31,14 +31,13 @@ repos:
       - id: end-of-file-fixer
         exclude: LICENSE
 
-  # Due to UP007 and Typer this stays disabled: https://github.com/tiangolo/typer/issues/533
-  #  - repo: local
-  #    hooks:
-  #      - id: pyupgrade
-  #        name: pyupgrade
-  #        entry: poetry run pyupgrade --py310-plus
-  #        types: [python]
-  #        language: system
+  - repo: local
+    hooks:
+      - id: pyupgrade
+        name: pyupgrade
+        entry: poetry run pyupgrade --py312-plus
+        types: [python]
+        language: system
 
   # Disabled du to conflicts with black and I like the style of black more.
   #  - repo: local

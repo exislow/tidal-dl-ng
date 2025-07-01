@@ -98,13 +98,7 @@ jobs:
             CMD_BUILD: >
               brew install create-dmg &&
               source $VENV &&
-              # Ugly workaround to allow AppleEvents access for the provisioner.
-              # See: https://github.com/actions/runner-images/issues/7531
-              sudo sqlite3 $HOME/Library/Application\ Support/com.apple.TCC/TCC.db "INSERT OR REPLACE INTO access VALUES('kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,3,1,NULL,NULL,0,'com.apple.finder',X'fade0c000000002c00000001000000060000000200000010636f6d2e6170706c652e66696e64657200000003',NULL,1592919552);" &&
-              sudo sqlite3 /Library/Application\ Support/com.apple.TCC/TCC.db "INSERT OR REPLACE INTO access VALUES('kTCCServiceAppleEvents','/usr/local/opt/runner/provisioner/provisioner',1,2,3,1,NULL,NULL,0,'com.apple.finder',X'fade0c000000002c00000001000000060000000200000010636f6d2e6170706c652e66696e64657200000003',NULL,1592919552);" &&
-              echo killing XProtect...; sudo pkill -9 XProtect >/dev/null || true &&
-              echo waiting ...; while pgrep XProtect; do sleep 3; done &&
-              poetry run make gui-macos-dmg APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-macos-dmg-intel APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
