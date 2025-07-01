@@ -19,8 +19,12 @@ applyTo: "**/*.py"
 
 ## Coding Guidelines
 
-- Use type annotations for function parameters, return types and variables.
+- Use type annotations / hints for function and method parameters, return types and variables. Follow PEP 484.
 - Use newest coding style which is supported by the used Python version.
+- Use blank lines to keep code organized and readable.
+- Follow PEP 492 – Coroutines with async and await syntax
+- Follow PEP 498 – Literal String Interpolation
+- Follow PEP 572 – Assignment Expressions
 
 ## Code Documentation
 
