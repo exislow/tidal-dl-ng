@@ -106,6 +106,11 @@ from tidal_dl_ng.worker import Worker
 
 # TODO: Make more use of Exceptions
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    """Main application window for TIDAL Downloader Next Generation.
+
+    Handles GUI setup, user interactions, and download logic.
+    """
+
     settings: Settings
     tidal: Tidal
     dl: Download
@@ -138,6 +143,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
 
     def __init__(self, tidal: Tidal | None = None):
+        """Initialize the main window and all components.
+
+        Args:
+            tidal (Tidal | None): Optional Tidal session object.
+        """
         super().__init__()
         self.setupUi(self)
         # self.setGeometry(50, 50, 500, 300)
@@ -168,9 +178,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         logger_gui.debug("All setup.")
 
     def _init_gui(self):
+        """Initialize GUI-specific variables and state."""
         self.spinners = {}
 
     def init_tidal(self, tidal: Tidal = None):
+        """Initialize Tidal session and handle login flow.
+
+        Args:
+            tidal (Tidal, optional): Existing Tidal session. Defaults to None.
+        """
         result: bool = False
 
         if tidal:
@@ -211,10 +227,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.thread_it(self.tidal_user_lists)
 
     def _init_threads(self):
+        """Initialize thread pool and start background workers."""
         self.threadpool = QtCore.QThreadPool()
         self.thread_it(self.watcher_queue_download)
 
     def _init_dl(self):
+        """Initialize Download object and related progress bars."""
         # Init `Download` object.
         data_pb: ProgressBars = ProgressBars(
             item=self.s_item_advance,
@@ -236,6 +254,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def _init_progressbar(self):
+        """Initialize and add progress bars to the status bar."""
         self.pb_list = QtWidgets.QProgressBar()
         self.pb_item = QtWidgets.QProgressBar()
         pbs = [self.pb_list, self.pb_item]
@@ -246,18 +265,30 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.statusbar.addPermanentWidget(pb)
 
     def _init_info(self):
+        """Set default album cover image in the GUI."""
         path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
 
         self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
 
     def on_progress_reset(self):
+        """Reset progress bars to zero."""
         self.pb_list.setValue(0)
         self.pb_item.setValue(0)
 
     def on_statusbar_message(self, data: StatusbarMessage):
+        """Show a message in the status bar.
+
+        Args:
+            data (StatusbarMessage): Message and timeout.
+        """
         self.statusbar.showMessage(data.message, data.timeout)
 
-    def _log_output(self, text):
+    def _log_output(self, text: str) -> None:
+        """Redirect log output to the debug text area.
+
+        Args:
+            text (str): Log message.
+        """
         display_msg = coloredlogs.converter.convert(text)
 
         cursor: QtGui.QTextCursor = self.te_debug.textCursor()
@@ -267,18 +298,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.te_debug.setTextCursor(cursor)
         self.te_debug.ensureCursorVisible()
 
-    def _populate_quality(self, ui_target: QtWidgets.QComboBox, options: type[Quality | QualityVideo]):
+    def _populate_quality(self, ui_target: QtWidgets.QComboBox, options: type[Quality | QualityVideo]) -> None:
+        """Populate a combo box with quality options.
+
+        Args:
+            ui_target (QComboBox): Target combo box.
+            options (type): Enum of quality options.
+        """
         for item in options:
             ui_target.addItem(item.name, item)
 
-    def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: SearchTypes):
+    def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: SearchTypes) -> None:
+        """Populate a combo box with search type options.
+
+        Args:
+            ui_target (QComboBox): Target combo box.
+            options (SearchTypes): Enum of search types.
+        """
         for item in options:
             if item:
                 ui_target.addItem(item.__name__, item)
 
         self.cb_search_type.setCurrentIndex(2)
 
-    def handle_filter_activated(self):
+    def handle_filter_activated(self) -> None:
+        """Handle activation of filter headers in the results tree."""
         header: FilterHeader = self.tr_results.header()
         filters = []
 
@@ -292,6 +336,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         proxy_model.filters = filters
 
     def _init_tree_results(self, tree: QtWidgets.QTreeView, model: QtGui.QStandardItemModel) -> None:
+        """Initialize the results tree view and its model.
+
+        Args:
+            tree (QTreeView): The tree view widget.
+            model (QStandardItemModel): The model for the tree.
+        """
         header: FilterHeader = FilterHeader(tree)
         self.proxy_tr_results: HumanProxyModel = HumanProxyModel(self)
 
@@ -313,13 +363,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
+        """Initialize the model for the results tree view.
+
+        Args:
+            model (QStandardItemModel): The model to initialize.
+        """
         labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date"]
 
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
         model.setHorizontalHeaderLabels(labels_column)
 
-    def _init_tree_queue(self, tree: QtWidgets.QTableWidget):
+    def _init_tree_queue(self, tree: QtWidgets.QTableWidget) -> None:
+        """Initialize the download queue table widget.
+
+        Args:
+            tree (QTableWidget): The table widget.
+        """
         tree.setColumnHidden(1, True)
         tree.setColumnWidth(2, 200)
 
@@ -328,7 +388,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         header.setStretchLastSection(False)
 
-    def tidal_user_lists(self):
+    def tidal_user_lists(self) -> None:
+        """Fetch and emit user playlists, mixes, and favorites from Tidal."""
         # Start loading spinner
         self.s_spinner_start.emit(self.tr_lists_user)
         self.s_pb_reload_status.emit(False)
@@ -337,7 +398,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.s_populate_tree_lists.emit(user_all)
 
-    def on_populate_tree_lists(self, user_lists: [Playlist | UserPlaylist | Mix]):
+    def on_populate_tree_lists(self, user_lists: list[Playlist | UserPlaylist | Mix]) -> None:
+        """Populate the user lists tree with playlists, mixes, and favorites.
+
+        Args:
+            user_lists (list): List of user playlists, mixes, and favorites.
+        """
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
         )[0]
@@ -389,7 +455,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_spinner_stop.emit()
         self.s_pb_reload_status.emit(True)
 
-    def _init_tree_lists(self, tree: QtWidgets.QTreeWidget):
+    def _init_tree_lists(self, tree: QtWidgets.QTreeWidget) -> None:
+        """Initialize the user lists tree widget.
+
+        Args:
+            tree (QTreeWidget): The tree widget.
+        """
         # Adjust Tree.
         tree.setColumnWidth(0, 200)
         tree.setColumnHidden(1, True)
@@ -400,13 +471,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_lists)
 
-    def on_update_check(self, on_startup: bool = True):
+    def on_update_check(self, on_startup: bool = True) -> None:
+        """Check for application updates and emit update signals.
+
+        Args:
+            on_startup (bool, optional): Whether this is called on startup. Defaults to True.
+        """
         is_available, info = update_available()
 
         if (on_startup and is_available) or not on_startup:
             self.s_update_show.emit(True, is_available, info)
 
-    def apply_settings(self, settings: Settings):
+    def apply_settings(self, settings: Settings) -> None:
+        """Apply user settings to the GUI.
+
+        Args:
+            settings (Settings): The settings object.
+        """
         l_cb = [
             {"element": self.cb_quality_audio, "setting": settings.data.quality_audio, "default_id": 1},
             {"element": self.cb_quality_video, "setting": settings.data.quality_video, "default_id": 0},
@@ -420,7 +501,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 item["element"].setCurrentIndex(item["default_id"])
 
-    def on_spinner_start(self, parent: QtWidgets.QWidget):
+    def on_spinner_start(self, parent: QtWidgets.QWidget) -> None:
+        """Start a loading spinner on the given parent widget.
+
+        Args:
+            parent (QWidget): The parent widget.
+        """
         # Stop any existing spinner for this parent
         if parent in self.spinners:
             spinner = self.spinners[parent]
@@ -437,7 +523,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.spinners[parent] = spinner
 
-    def on_spinner_stop(self):
+    def on_spinner_stop(self) -> None:
+        """Stop all active loading spinners."""
         # Stop all spinners
         for spinner in list(self.spinners.values()):
             spinner.stop()
@@ -445,7 +532,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.spinners.clear()
 
-    def menu_context_tree_lists(self, point: QtCore.QPoint):
+    def menu_context_tree_lists(self, point: QtCore.QPoint) -> None:
+        """Show context menu for user lists tree.
+
+        Args:
+            point (QPoint): The point where the menu is requested.
+        """
         # Infos about the node selected.
         index = self.tr_lists_user.indexAt(point)
 
@@ -460,7 +552,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
-    def menu_context_tree_results(self, point: QtCore.QPoint):
+    def menu_context_tree_results(self, point: QtCore.QPoint) -> None:
+        """Show context menu for results tree.
+
+        Args:
+            point (QPoint): The point where the menu is requested.
+        """
         # Infos about the node selected.
         index = self.tr_results.indexAt(point)
 
@@ -474,10 +571,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         menu.exec(self.tr_results.mapToGlobal(point))
 
-    def thread_download_list_media(self, point: QtCore.QPoint):
+    def thread_download_list_media(self, point: QtCore.QPoint) -> None:
+        """Start download of a list media item in a thread.
+
+        Args:
+            point (QPoint): The point in the tree.
+        """
         self.thread_it(self.on_download_list_media, point)
 
-    def on_copy_url_share(self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None):
+    def on_copy_url_share(
+        self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None
+    ) -> None:
+        """Copy the share URL of a media item to the clipboard.
+
+        Args:
+            tree_target (QTreeWidget | QTreeView): The tree widget.
+            point (QPoint, optional): The point in the tree. Defaults to None.
+        """
         if isinstance(tree_target, QtWidgets.QTreeWidget):
 
             item: QtWidgets.QTreeWidgetItem = tree_target.itemAt(point)
@@ -494,7 +604,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         clipboard.clear()
         clipboard.setText(url_share)
 
-    def on_download_list_media(self, point: QtCore.QPoint = None):
+    def on_download_list_media(self, point: QtCore.QPoint = None) -> None:
+        """Download all media items in a selected list.
+
+        Args:
+            point (QPoint, optional): The point in the tree. Defaults to None.
+        """
         items: [QtWidgets.QTreeWidgetItem]
 
         if point:
@@ -512,14 +627,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if queue_dl_item:
                 self.queue_download_media(queue_dl_item)
 
-    def search_populate_results(self, query: str, type_media: SearchTypes):
+    def search_populate_results(self, query: str, type_media: SearchTypes) -> None:
+        """Populate the results tree with search results.
+
+        Args:
+            query (str): The search query.
+            type_media (SearchTypes): The type of media to search for.
+        """
         self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
 
         results: [ResultItem] = self.search(query, [type_media])
 
         self.populate_tree_results(results)
 
-    def populate_tree_results(self, results: [ResultItem], parent: QtGui.QStandardItem = None):
+    def populate_tree_results(self, results: list[ResultItem], parent: QtGui.QStandardItem = None) -> None:
+        """Populate the results tree with ResultItem objects.
+
+        Args:
+            results (list[ResultItem]): The results to display.
+            parent (QStandardItem, optional): Parent item for nested results. Defaults to None.
+        """
         if not parent:
             self.model_tr_results.removeRows(0, self.model_tr_results.rowCount())
 
@@ -535,6 +662,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.s_tr_results_add_top_level_item.emit(child)
 
     def populate_tree_result_child(self, item: ResultItem, index_count_digits: int) -> Sequence[QtGui.QStandardItem]:
+        """Create a row of QStandardItems for a ResultItem.
+
+        Args:
+            item (ResultItem): The result item.
+            index_count_digits (int): Number of digits for index formatting.
+
+        Returns:
+            Sequence[QStandardItem]: The row of items.
+        """
         duration: str = ""
 
         # TODO: Duration needs to be calculated later to properly fill with zeros.
@@ -582,14 +718,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
+        """Add a top-level item to the results tree model.
+
+        Args:
+            item_child (Sequence[QStandardItem]): The row to add.
+        """
         self.model_tr_results.appendRow(item_child)
 
-    def on_settings_save(self):
+    def on_settings_save(self) -> None:
+        """Save settings and re-apply them to the GUI."""
         self.settings.save()
         self.apply_settings(self.settings)
         self._init_dl()
 
-    def search(self, query: str, types_media: SearchTypes) -> [ResultItem]:
+    def search(self, query: str, types_media: SearchTypes) -> list[ResultItem]:
+        """Perform a search and return a list of ResultItems.
+
+        Args:
+            query (str): The search query.
+            types_media (SearchTypes): The types of media to search for.
+
+        Returns:
+            list[ResultItem]: The search results.
+        """
         query = query.strip()
 
         # If a direct link was searched for, skip search and create the object from the link directly.
@@ -638,7 +789,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return result
 
     def _to_result_item(self, idx: int, item) -> ResultItem | None:
-        """Helper to convert a single item to ResultItem, or None if not valid."""
+        """Helper to convert a single item to ResultItem, or None if not valid.
+
+        Args:
+            idx (int): Index of the item.
+            item: The item to convert.
+
+        Returns:
+            ResultItem | None: The converted ResultItem or None if not valid.
+        """
         if not item:
             return None
 
@@ -675,7 +834,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         return None
 
     def _get_date_release(self, item) -> str:
-        """Get the release date string for an item."""
+        """Get the release date string for an item.
+
+        Args:
+            item: The item to extract the release date from.
+
+        Returns:
+            str: The formatted release date or empty string.
+        """
         if hasattr(item, "album") and item.album and getattr(item.album, "release_date", None):
             return item.album.release_date.strftime("%Y-%m-%d_%H:%M")
 
@@ -687,6 +853,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _result_item_from_track(
         self, idx: int, item, explicit: str, date_user_added: str, date_release: str
     ) -> ResultItem:
+        """Create a ResultItem from a Track.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Track item.
+            explicit (str): Explicit tag.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -703,6 +881,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _result_item_from_video(
         self, idx: int, item, explicit: str, date_user_added: str, date_release: str
     ) -> ResultItem:
+        """Create a ResultItem from a Video.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Video item.
+            explicit (str): Explicit tag.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -717,6 +907,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def _result_item_from_playlist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        """Create a ResultItem from a Playlist.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Playlist item.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
@@ -733,6 +934,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _result_item_from_album(
         self, idx: int, item, explicit: str, date_user_added: str, date_release: str
     ) -> ResultItem:
+        """Create a ResultItem from an Album.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Album item.
+            explicit (str): Explicit tag.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -747,6 +960,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def _result_item_from_mix(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        """Create a ResultItem from a Mix.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Mix item.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=item.sub_title,
@@ -761,6 +985,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
 
     def _result_item_from_artist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
+        """Create a ResultItem from an Artist.
+
+        Args:
+            idx (int): Index of the item.
+            item: The Artist item.
+            date_user_added (str): Date user added.
+            date_release (str): Release date.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
         return ResultItem(
             position=idx,
             artist=item.name,
@@ -777,6 +1012,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def media_to_queue_download_model(
         self, media: Artist | Track | Video | Album | Playlist | Mix
     ) -> QueueDownloadItem | bool:
+        """Convert a media object to a QueueDownloadItem for the download queue.
+
+        Args:
+            media (Artist | Track | Video | Album | Playlist | Mix): The media object.
+
+        Returns:
+            QueueDownloadItem | bool: The queue item or False if not available.
+        """
         result: QueueDownloadItem | False
         name: str = ""
         quality_audio: Quality = self.settings.data.quality_audio
@@ -825,7 +1068,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         return result
 
-    def _init_signals(self):
+    def _init_signals(self) -> None:
+        """Connect signals to their respective slots."""
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
         self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
         self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
@@ -875,45 +1119,87 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
         self.s_queue_download_item_skipped.connect(self.on_queue_download_item_skipped)
 
-    def _init_buttons(self):
+    def _init_buttons(self) -> None:
+        """Initialize the state of the download buttons."""
         self.pb_queue_download_run()
 
-    def on_logout(self):
+    def on_logout(self) -> None:
+        """Log out from TIDAL and close the application."""
         result: bool = self.tidal.logout()
 
         if result:
             sys.exit(0)
 
-    def on_progress_list(self, value: float):
+    def on_progress_list(self, value: float) -> None:
+        """Update the progress of the list progress bar.
+
+        Args:
+            value (float): The progress value as a percentage.
+        """
         self.pb_list.setValue(int(math.ceil(value)))
 
-    def on_progress_item(self, value: float):
+    def on_progress_item(self, value: float) -> None:
+        """Update the progress of the item progress bar.
+
+        Args:
+            value (float): The progress value as a percentage.
+        """
         self.pb_item.setValue(int(math.ceil(value)))
 
-    def on_progress_item_name(self, value: str):
+    def on_progress_item_name(self, value: str) -> None:
+        """Set the format of the item progress bar.
+
+        Args:
+            value (str): The item name.
+        """
         self.pb_item.setFormat(f"%p% {value}")
 
-    def on_progress_list_name(self, value: str):
+    def on_progress_list_name(self, value: str) -> None:
+        """Set the format of the list progress bar.
+
+        Args:
+            value (str): The list name.
+        """
         self.pb_list.setFormat(f"%p% {value}")
 
-    def on_quality_set_audio(self, index):
+    def on_quality_set_audio(self, index: int) -> None:
+        """Set the audio quality for downloads.
+
+        Args:
+            index: The index of the selected quality in the combo box.
+        """
         self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
         self.settings.save()
 
         if self.tidal:
             self.tidal.settings_apply()
 
-    def on_quality_set_video(self, index):
+    def on_quality_set_video(self, index: int) -> None:
+        """Set the video quality for downloads.
+
+        Args:
+            index: The index of the selected quality in the combo box.
+        """
         self.settings.data.quality_video = QualityVideo(self.cb_quality_video.itemData(index))
         self.settings.save()
 
         if self.tidal:
             self.tidal.settings_apply()
 
-    def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem):
+    def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Show the items in the selected playlist or mix.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The selected tree widget item.
+        """
         self.thread_it(self.list_items_show, item)
 
-    def list_items_show(self, item: QtWidgets.QTreeWidgetItem):
+    def list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Fetch and display the items in a playlist or mix.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The tree widget item representing a playlist or mix.
+        """
         media_list: Album | Playlist | str = get_user_list_media_item(item)
 
         # Only if clicked item is not a top level item.
@@ -932,6 +1218,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.s_spinner_stop.emit()
 
     def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
+        """Handle the event when a result item is clicked.
+
+        Args:
+            index (QtCore.QModelIndex): The index of the clicked item.
+        """
         media: Track | Video | Album | Artist = get_results_media_item(
             index, self.proxy_tr_results, self.model_tr_results
         )
@@ -940,12 +1231,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.cover_show, media)
 
     def on_queue_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
+        """Handle the event when a queue download item is clicked.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The clicked tree widget item.
+            column (int): The column index of the clicked item.
+        """
         media: Track | Video | Album | Artist | Mix | Playlist = get_queue_download_media(item)
 
         # Load cover asynchronously to avoid blocking the GUI
         self.thread_it(self.cover_show, media)
 
     def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist) -> None:
+        """Show the cover image of the selected media item.
+
+        Args:
+            media (Album | Playlist | Track | Video | Album | Artist): The media item.
+        """
         cover_url: str = ""
         # Show spinner in the cover label itself
         parent_widget = self.l_pm_cover
@@ -987,6 +1289,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         parent: QtGui.QStandardItem = None,
         favorite_function: Callable = None,
     ) -> None:
+        """Populate the results tree with the items of a media list.
+
+        Args:
+            media_list (Album | Playlist | Mix | Artist | None, optional): The media list to show. Defaults to None.
+            point (QPoint | None, optional): The point in the tree. Defaults to None.
+            parent (QStandardItem, optional): Parent item for nested results. Defaults to None.
+            favorite_function (Callable, optional): Function to fetch favorite items. Defaults to None.
+        """
         if point:
             item = self.tr_lists_user.itemAt(point)
             media_list = get_user_list_media_item(item)
@@ -1004,22 +1314,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.populate_tree_results(result, parent=parent)
 
-    def thread_it(self, fn: Callable, *args, **kwargs):
+    def thread_it(self, fn: Callable, *args, **kwargs) -> None:
+        """Run a function in a separate thread.
+
+        Args:
+            fn (Callable): The function to run.
+            *args: Positional arguments for the function.
+            **kwargs: Keyword arguments for the function.
+        """
         # Any other args, kwargs are passed to the run function
         worker = Worker(fn, *args, **kwargs)
 
         # Execute
         self.threadpool.start(worker)
 
-    def on_queue_download_clear_all(self):
+    def on_queue_download_clear_all(self) -> None:
+        """Clear all items from the download queue."""
         self.on_clear_queue_download(
             f"({QueueDownloadStatus.Waiting}|{QueueDownloadStatus.Finished}|{QueueDownloadStatus.Failed})"
         )
 
-    def on_queue_download_clear_finished(self):
+    def on_queue_download_clear_finished(self) -> None:
+        """Clear finished items from the download queue."""
         self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished}]")
 
-    def on_clear_queue_download(self, regex: str):
+    def on_clear_queue_download(self, regex: str) -> None:
+        """Clear items from the download queue matching the given regex.
+
+        Args:
+            regex (str): Regular expression to match items.
+        """
         items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
             regex, QtCore.Qt.MatchFlag.MatchRegularExpression, column=0
         )
@@ -1027,7 +1351,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for item in items:
             self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
 
-    def on_queue_download_remove(self):
+    def on_queue_download_remove(self) -> None:
+        """Remove selected items from the download queue."""
         items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.selectedItems()
 
         if len(items) == 0:
@@ -1053,7 +1378,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             self.pb_queue_download_run()
 
-    def pb_queue_download_run(self):
+    def pb_queue_download_run(self) -> None:
+        """Start the download queue and update the button state."""
         handling_app: HandlingApp = HandlingApp()
 
         handling_app.event_run.set()
@@ -1062,7 +1388,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_queue_download_toggle.setIcon(icon)
         self.pb_queue_download_toggle.setStyleSheet("background-color: #218838; color: #fff")
 
-    def pb_queue_download_pause(self):
+    def pb_queue_download_pause(self) -> None:
+        """Pause the download queue and update the button state."""
         handling_app: HandlingApp = HandlingApp()
 
         handling_app.event_run.clear()
@@ -1073,6 +1400,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:
+        """Download the selected results in the results tree."""
         items: [HumanProxyModel | None] = self.tr_results.selectionModel().selectedRows()
 
         if len(items) == 0:
@@ -1088,6 +1416,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.queue_download_media(queue_dl_item)
 
     def queue_download_media(self, queue_dl_item: QueueDownloadItem) -> None:
+        """Add a media item to the download queue.
+
+        Args:
+            queue_dl_item (QueueDownloadItem): The item to add to the queue.
+        """
         # Populate child
         child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
 
@@ -1100,6 +1433,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
+        """Monitor the download queue and process items as they become available."""
         handling_app: HandlingApp = HandlingApp()
 
         while not handling_app.event_abort.is_set():
@@ -1129,18 +1463,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 time.sleep(2)
 
     def on_queue_download_item_downloading(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Update the status of a queue download item to 'Downloading'.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The item to update.
+        """
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
     def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Update the status of a queue download item to 'Finished'.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The item to update.
+        """
         self.queue_download_item_status(item, QueueDownloadStatus.Finished)
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Update the status of a queue download item to 'Failed'.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The item to update.
+        """
         self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
     def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Update the status of a queue download item to 'Skipped'.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The item to update.
+        """
         self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
 
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
+        """Set the status text of a queue download item.
+
+        Args:
+            item (QtWidgets.QTreeWidgetItem): The item to update.
+            status (str): The status text.
+        """
         item.setText(0, status)
 
     def on_queue_download(
@@ -1149,6 +1509,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ) -> QueueDownloadStatus:
+        """Download the specified media item(s) and return the result status.
+
+        Args:
+            media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
+            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
+
+        Returns:
+            QueueDownloadStatus: The status of the download operation.
+        """
         result: QueueDownloadStatus
         items_media: [Track | Album | Playlist | Video | Mix | Artist]
 
@@ -1178,6 +1548,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ) -> QueueDownloadStatus:
+        """Download a media item and return the result status.
+
+        Args:
+            media (Track | Album | Playlist | Video | Mix | Artist): The media item to download.
+            dl (Download): The Download object to use.
+            delay_track (bool, optional): Whether to apply download delay. Defaults to False.
+            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
+
+        Returns:
+            QueueDownloadStatus: The status of the download operation.
+        """
         result_dl: bool
         path_file: str
         result: QueueDownloadStatus
@@ -1222,15 +1604,33 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest = None
     ) -> None:
+        """Show the version information dialog.
+
+        Args:
+            update_check (bool, optional): Whether to check for updates. Defaults to False.
+            update_available (bool, optional): Whether an update is available. Defaults to False.
+            update_info (ReleaseLatest, optional): Information about the latest release. Defaults to None.
+        """
         DialogVersion(self, update_check, update_available, update_info)
 
     def on_preferences(self) -> None:
+        """Open the preferences dialog."""
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
 
     def on_tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
+        """Handle the event when a result item group is expanded.
+
+        Args:
+            index (QtCore.QModelIndex): The index of the expanded item.
+        """
         self.thread_it(self.tr_results_expanded, index)
 
     def tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
+        """Load and display the children of an expanded result item.
+
+        Args:
+            index (QtCore.QModelIndex): The index of the expanded item.
+        """
         # If the child is a dummy the list_item has not been expanded before
         item: QtGui.QStandardItem = self.model_tr_results.itemFromIndex(self.proxy_tr_results.mapToSource(index))
         load_children: bool = not item.child(0, 0).isEnabled()
@@ -1250,6 +1650,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.s_spinner_stop.emit()
 
     def button_reload_status(self, status: bool):
+        """Update the reload button's state and text.
+
+        Args:
+            status (bool): The new status.
+        """
         button_text: str = "Reloading..."
 
         if status:
@@ -1259,6 +1664,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_reload_user_lists.setText(button_text)
 
     def closeEvent(self, event):
+        """Handle the close event of the main window.
+
+        Args:
+            event: The close event.
+        """
         self.shutdown = True
 
         handling_app: HandlingApp = HandlingApp()
