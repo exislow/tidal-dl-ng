@@ -328,11 +328,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         header = self.tr_results.header()
         filters: list[str] = []
         for i in range(header.count()):
-            # Use getattr to avoid attribute error
-            filters.append(getattr(header, "filter_text", lambda x: "")(i))
-        proxy_model = self.tr_results.model()
-        if hasattr(proxy_model, "filters"):
-            proxy_model.filters = filters
+            text: str = header.filter_text(i)
+
+            if text:
+                filters.append((i, text))
+
+        proxy_model: HumanProxyModel = self.tr_results.model()
+        proxy_model.filters = filters
 
     def _init_tree_results(self, tree: QtWidgets.QTreeView, model: QtGui.QStandardItemModel) -> None:
         """Initialize the results tree view and its model.
