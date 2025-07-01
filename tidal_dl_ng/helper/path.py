@@ -278,12 +278,13 @@ def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: b
     sanitized_parts = []
 
     for part in sanitized_path.parts:
-        if part in sanitized_path.root:
+        if part in sanitized_path.anchor:
             sanitized_parts.append(part)
         else:
             sanitized_parts.append(
                 sanitize_filename(part, replacement_text="_", validate_after_sanitize=True, platform="auto")
             )
+
     sanitized_path = pathlib.Path(*sanitized_parts)
 
     # Then sanitize the whole path itself. The whole path is not allowed to be longer than 'PC_NAME_MAX'.
