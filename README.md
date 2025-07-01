@@ -191,4 +191,4 @@ Special thanks goes out to [@orbittwz](https://github.com/orbittwz) for all his 
 
 This project is based on:
 
-- <https://fpgmaas.github.io/cookiecutter-poetry/>
+- [cookiecutter-poetry](https://fpgmaas.github.io/cookiecutter-poetry/)
