@@ -13,6 +13,7 @@ applyTo: "**/*.py"
 - Always write doc strings for all modules, classes, functions, and methods using google docstring style.
 - Prefix private class members with underscore (\_).
 - Use ALL_CAPS for constants.
+- Use newest coding style which is supported by the used Python version.
 
 ## Error Handling
 
