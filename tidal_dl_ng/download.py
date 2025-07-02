@@ -151,53 +151,54 @@ class Download:
                 "be set in (`path_binary_ffmpeg`)."
             )
 
-    def _download(
+    def _get_media_urls(
         self,
         media: Track | Video,
-        path_file: pathlib.Path,
         stream_manifest: StreamManifest | None = None,
-    ) -> tuple[bool, pathlib.Path]:
-        """Download a media item (track or video), handling segments and merging.
+    ) -> list[str]:
+        """Extract URLs for the given media item.
 
         Args:
             media (Track | Video): The media item to download.
-            path_file (pathlib.Path): Path to the output file.
             stream_manifest (StreamManifest | None, optional): Stream manifest for tracks. Defaults to None.
 
         Returns:
-            tuple[bool, pathlib.Path]: (Success, path to downloaded or decrypted file)
+            list[str]: List of URLs for the media segments.
         """
-        media_name: str = name_builder_item(media)
-        urls: list[str]
-        path_base: pathlib.Path = path_file.parent
-        result_segments: bool = True
-        dl_segment_results: list[DownloadSegmentResult] = []
-        result_merge: bool = False
-
         # Get urls for media.
-        try:
-            if isinstance(media, Track):
-                urls = stream_manifest.get_urls()
-            elif isinstance(media, Video):
-                m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
-                # Find the desired video resolution or the next best one.
-                m3u8_playlist, codecs = self._extract_video_stream(m3u8_variant, int(self.settings.data.quality_video))
-                # Populate urls.
-                urls = m3u8_playlist.files
-        except Exception:
-            return False, path_file
+        if isinstance(media, Track):
+            return stream_manifest.get_urls()
+        elif isinstance(media, Video):
+            quality_video = self.settings.data.quality_video
+            m3u8_variant: m3u8.M3U8 = m3u8.load(media.get_url())
+            # Find the desired video resolution or the next best one.
+            m3u8_playlist, _ = self._extract_video_stream(m3u8_variant, int(quality_video))
 
-        # Set the correct progress output channel.
-        if self.progress_gui is None:
-            progress_to_stdout: bool = True
+            return m3u8_playlist.files
         else:
-            progress_to_stdout: bool = False
-            # Send signal to GUI with media name
-            self.progress_gui.item_name.emit(media_name[:30])
+            return []
+
+    def _setup_progress(
+        self,
+        media_name: str,
+        urls: list[str],
+        progress_to_stdout: bool,
+    ) -> tuple[TaskID, int | float | None, int | None]:
+        """Set up the progress bar/task and compute progress total and block size.
+
+        Args:
+            media_name (str): Name of the media item.
+            urls (list[str]): List of segment URLs.
+            progress_to_stdout (bool): Whether to show progress in stdout.
+
+        Returns:
+            tuple[TaskID, int | float | None, int | None]: (TaskID, progress_total, block_size)
+        """
+        urls_count: int = len(urls)
+        progress_total: int | float | None = None
+        block_size: int | None = None
 
         # Compute total iterations for progress
-        urls_count: int = len(urls)
-
         if urls_count > 1:
             progress_total: int = urls_count
             block_size: int | None = None
@@ -205,9 +206,10 @@ class Download:
             try:
                 # Get file size and compute progress steps
                 r = requests.head(urls[0], timeout=REQUESTS_TIMEOUT_SEC)
+
                 total_size_in_bytes: int = int(r.headers.get("content-length", 0))
-                block_size: int | None = 1048576
-                progress_total: float = total_size_in_bytes / block_size
+                block_size = 1048576
+                progress_total = total_size_in_bytes / block_size
             finally:
                 r.close()
         else:
@@ -219,6 +221,30 @@ class Download:
             total=progress_total,
             visible=progress_to_stdout,
         )
+        return p_task, progress_total, block_size
+
+    def _download_segments(
+        self,
+        urls: list[str],
+        path_base: pathlib.Path,
+        block_size: int | None,
+        p_task: TaskID,
+        progress_to_stdout: bool,
+    ) -> tuple[bool, list[DownloadSegmentResult]]:
+        """Download all segments with progress reporting and abort handling.
+
+        Args:
+            urls (list[str]): List of segment URLs.
+            path_base (pathlib.Path): Base path for segment files.
+            block_size (int | None): Block size for streaming.
+            p_task (TaskID): Progress bar task ID.
+            progress_to_stdout (bool): Whether to show progress in stdout.
+
+        Returns:
+            tuple[bool, list[DownloadSegmentResult]]: (result_segments, list of segment results)
+        """
+        result_segments: bool = True
+        dl_segment_results: list[DownloadSegmentResult] = []
 
         # Download segments until progress is finished.
         # TODO: Compute download speed (https://github.com/Textualize/rich/blob/master/examples/downloader.py)
@@ -239,14 +265,15 @@ class Download:
 
                     dl_segment_results.append(result_dl_segment)
 
-                    # check for a link that was skipped
+                    # Check for a link that was skipped
                     if not result_dl_segment.result and (result_dl_segment.url is not urls[-1]):
                         # Sometimes it happens, if a track is very short (< 8 seconds or so), that the last URL in `urls` is
                         # invalid (HTTP Error 500) and not necessary. File won't be corrupt.
                         # If this is NOT the case, but any other URL has resulted in an error,
                         # mark the whole thing as corrupt.
                         result_segments = False
-                        self.fn_logger.error(f"Something went wrong while downloading {media_name}. File is corrupt!")
+
+                        self.fn_logger.error("Something went wrong while downloading. File is corrupt!")
 
                     # If app is terminated (CTRL+C)
                     if self.event_abort.is_set():
@@ -254,22 +281,93 @@ class Download:
                         for f in l_futures:
                             f.cancel()
 
-                        return False, path_file
+                        return False, dl_segment_results
 
+        return result_segments, dl_segment_results
+
+    def _download_postprocess(
+        self,
+        result_segments: bool,
+        path_file: pathlib.Path,
+        dl_segment_results: list[DownloadSegmentResult],
+        media: Track | Video,
+        stream_manifest: StreamManifest | None = None,
+    ) -> tuple[bool, pathlib.Path]:
+        """Merge segments, decrypt if needed, and return the final file path.
+
+        Args:
+            result_segments (bool): Whether all segments downloaded successfully.
+            path_file (pathlib.Path): Path to the output file.
+            dl_segment_results (list[DownloadSegmentResult]): List of segment download results.
+            media (Track | Video): The media item.
+            stream_manifest (StreamManifest | None, optional): Stream manifest for tracks. Defaults to None.
+
+        Returns:
+            tuple[bool, pathlib.Path]: (Success, path to downloaded or decrypted file)
+        """
         tmp_path_file_decrypted: pathlib.Path = path_file
+        result_merge: bool = False
 
         # Only if no error happened while downloading.
         if result_segments:
             # Bring list into right order, so segments can be easily merged.
             dl_segment_results.sort(key=lambda x: x.id_segment)
-            result_merge: bool = self._segments_merge(path_file, dl_segment_results)
+
+            result_merge = self._segments_merge(path_file, dl_segment_results)
 
             if not result_merge:
-                self.fn_logger.error(f"Something went wrong while writing to {media_name}. File is corrupt!")
-            elif result_merge and isinstance(media, Track) and stream_manifest.is_encrypted:
+                self.fn_logger.error(f"Something went wrong while writing to {media.name}. File is corrupt!")
+            elif isinstance(media, Track) and stream_manifest.is_encrypted:
                 key, nonce = decrypt_security_token(stream_manifest.encryption_key)
                 tmp_path_file_decrypted = path_file.with_suffix(".decrypted")
+
                 decrypt_file(path_file, tmp_path_file_decrypted, key, nonce)
+
+        return result_merge, tmp_path_file_decrypted
+
+    def _download(
+        self,
+        media: Track | Video,
+        path_file: pathlib.Path,
+        stream_manifest: StreamManifest | None = None,
+    ) -> tuple[bool, pathlib.Path]:
+        """Download a media item (track or video), handling segments and merging.
+
+        Args:
+            media (Track | Video): The media item to download.
+            path_file (pathlib.Path): Path to the output file.
+            stream_manifest (StreamManifest | None, optional): Stream manifest for tracks. Defaults to None.
+
+        Returns:
+            tuple[bool, pathlib.Path]: (Success, path to downloaded or decrypted file)
+        """
+        media_name: str = name_builder_item(media)
+
+        try:
+            urls: list[str] = self._get_media_urls(media, stream_manifest)
+        except Exception:
+            return False, path_file
+
+        # Set the correct progress output channel.
+        if self.progress_gui is None:
+            progress_to_stdout: bool = True
+        else:
+            progress_to_stdout: bool = False
+            # Send signal to GUI with media name
+            self.progress_gui.item_name.emit(media_name[:30])
+
+        try:
+            p_task, progress_total, block_size = self._setup_progress(media_name, urls, progress_to_stdout)
+        except Exception:
+            return False, path_file
+
+        result_segments, dl_segment_results = self._download_segments(
+            urls, path_file.parent, block_size, p_task, progress_to_stdout
+        )
+
+        result_merge, tmp_path_file_decrypted = self._download_postprocess(
+            result_segments, path_file, dl_segment_results, media, stream_manifest
+        )
 
         return result_merge, tmp_path_file_decrypted
 
