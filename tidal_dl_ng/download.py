@@ -57,7 +57,7 @@ from tidal_dl_ng.model.gui_data import ProgressBars
 class RequestsClient:
     def download(
         self, uri: str, timeout: int = REQUESTS_TIMEOUT_SEC, headers: dict | None = None, verify_ssl: bool = True
-    ):
+    ) -> tuple[str, str]:
         if not headers:
             headers = {}
 
@@ -84,12 +84,12 @@ class Download:
         path_base: str,
         fn_logger: Callable,
         skip_existing: bool = False,
-        progress_gui: ProgressBars = None,
-        progress: Progress = None,
-        progress_overall: Progress = None,
-        event_abort: Event = None,
-        event_run: Event = None,
-    ):
+        progress_gui: ProgressBars | None = None,
+        progress: Progress | None = None,
+        progress_overall: Progress | None = None,
+        event_abort: Event | None = None,
+        event_run: Event | None = None,
+    ) -> None:
         self.settings = Settings()
         self.session = session
         self.skip_existing = skip_existing
@@ -118,12 +118,12 @@ class Download:
         media: Track | Video,
         path_file: pathlib.Path,
         stream_manifest: StreamManifest | None = None,
-    ) -> (bool, pathlib.Path):
+    ) -> tuple[bool, pathlib.Path]:
         media_name: str = name_builder_item(media)
-        urls: [str]
+        urls: list[str]
         path_base: pathlib.Path = path_file.parent
         result_segments: bool = True
-        dl_segment_results: [DownloadSegmentResult] = []
+        dl_segment_results: list[DownloadSegmentResult] = []
         result_merge: bool = False
 
         # Get urls for media.
@@ -179,7 +179,7 @@ class Download:
                 max_workers=self.settings.data.downloads_simultaneous_per_track_max
             ) as executor:
                 # Dispatch all download tasks to worker threads
-                l_futures: [futures.Future] = [
+                l_futures: list[futures.Future] = [
                     executor.submit(self._download_segment, url, path_base, block_size, p_task, progress_to_stdout)
                     for url in urls
                 ]
@@ -225,7 +225,7 @@ class Download:
 
         return result_merge, tmp_path_file_decrypted
 
-    def _segments_merge(self, path_file, dl_segment_results) -> bool:
+    def _segments_merge(self, path_file: pathlib.Path, dl_segment_results: list[DownloadSegmentResult]) -> bool:
         result: bool = True
 
         # Copy the content of all segments into one file.
@@ -298,7 +298,7 @@ class Download:
         )
 
     def extension_guess(
-        self, quality_audio: Quality, metadata_tags: [str], is_video: bool
+        self, quality_audio: Quality, metadata_tags: list[str], is_video: bool
     ) -> AudioExtensions | VideoExtensions:
         result: AudioExtensions | VideoExtensions
 
@@ -321,9 +321,9 @@ class Download:
     def item(
         self,
         file_template: str,
-        media: Track | Video = None,
-        media_id: str = None,
-        media_type: MediaType = None,
+        media: Track | Video | None = None,
+        media_id: str | None = None,
+        media_type: MediaType | None = None,
         video_download: bool = True,
         download_delay: bool = False,
         quality_audio: Quality | None = None,
@@ -331,7 +331,7 @@ class Download:
         is_parent_album: bool = False,
         list_position: int = 0,
         list_total: int = 0,
-    ) -> (bool, pathlib.Path):
+    ) -> tuple[bool, pathlib.Path | str]:
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
@@ -557,14 +557,14 @@ class Download:
 
         return path_media_dst
 
-    def adjust_quality_audio(self, quality) -> Quality:
+    def adjust_quality_audio(self, quality: Quality) -> Quality:
         # Save original quality settings
         quality_old: Quality = self.session.audio_quality
         self.session.audio_quality = quality
 
         return quality_old
 
-    def adjust_quality_video(self, quality) -> QualityVideo:
+    def adjust_quality_video(self, quality: QualityVideo) -> QualityVideo:
         quality_old: QualityVideo = self.settings.data.quality_video
 
         self.settings.data.quality_video = quality
@@ -618,7 +618,7 @@ class Download:
         return result
 
     @staticmethod
-    def cover_data(url: str = None, path_file: str = None) -> str | bytes:
+    def cover_data(url: str | None = None, path_file: str | None = None) -> str | bytes:
         result: str | bytes = ""
 
         if url:
@@ -642,7 +642,7 @@ class Download:
 
     def metadata_write(
         self, track: Track, path_media: pathlib.Path, is_parent_album: bool, media_stream: Stream
-    ) -> (bool, pathlib.Path | None, pathlib.Path | None):
+    ) -> tuple[bool, pathlib.Path | None, pathlib.Path | None]:
         result: bool = False
         path_lyrics: pathlib.Path | None = None
         path_cover: pathlib.Path | None = None
@@ -713,14 +713,14 @@ class Download:
     def items(
         self,
         file_template: str,
-        media: Album | Playlist | UserPlaylist | Mix = None,
-        media_id: str = None,
-        media_type: MediaType = None,
+        media: Album | Playlist | UserPlaylist | Mix | None = None,
+        media_id: str | None = None,
+        media_type: MediaType | None = None,
         video_download: bool = False,
         download_delay: bool = True,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ):
+    ) -> None:
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
@@ -765,14 +765,14 @@ class Download:
         is_album: bool = isinstance(media, Album)
         # TODO: Refactor strings to constants (also in cfg.py)
         sort_by_track_num: bool = bool("album_track_num" in file_name_relative or "list_pos" in file_name_relative)
-        result_dirs: [pathlib.Path] = []
+        result_dirs: list[pathlib.Path] = []
         list_total: int = len(items)
 
         # Iterate through list items
         while not progress.finished:
             with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
                 # Dispatch all download tasks to worker threads
-                l_futures: [futures.Future] = [
+                l_futures: list[futures.Future] = [
                     executor.submit(
                         self.item,
                         media=item_media,
@@ -817,9 +817,9 @@ class Download:
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
 
     def playlist_populate(
-        self, dirs_scoped: [pathlib.Path], name_list: str, is_album: bool, sort_alphabetically
-    ) -> [pathlib.Path]:
-        result: [pathlib.Path] = []
+        self, dirs_scoped: set[pathlib.Path], name_list: str, is_album: bool, sort_alphabetically: bool
+    ) -> list[pathlib.Path]:
+        result: list[pathlib.Path] = []
 
         # For each dir, which contains tracks
         for dir_scoped in dirs_scoped:
@@ -830,7 +830,7 @@ class Download:
             self.fn_logger.debug(f"Playlist: Creating {path_playlist}")
 
             # Get all tracks in the directory
-            path_tracks: [pathlib.Path] = []
+            path_tracks: list[pathlib.Path] = []
 
             for extension_audio in AudioExtensions:
                 path_tracks = path_tracks + list(dir_scoped.glob(f"*{extension_audio!s}"))
@@ -889,7 +889,7 @@ class Download:
 
         return path_media_out
 
-    def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> (m3u8.M3U8 | bool, str):
+    def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> tuple[m3u8.M3U8 | bool, str]:
         m3u8_playlist: m3u8.M3U8 | bool = False
         resolution_best: int = 0
         mime_type: str = ""

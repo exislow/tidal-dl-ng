@@ -326,7 +326,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def handle_filter_activated(self) -> None:
         """Handle activation of filter headers in the results tree."""
         header = self.tr_results.header()
-        filters: list[str] = []
+        filters: list[tuple[int, str]] = []
         for i in range(header.count()):
             text: str = header.filter_text(i)
 
@@ -369,7 +369,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             model (QStandardItemModel): The model to initialize.
         """
-        labels_column: [str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date"]
+        labels_column: list[str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date"]
 
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
@@ -404,7 +404,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """Populate the user lists tree with playlists, mixes, and favorites.
 
         Args:
-            user_lists (list): List of user playlists, mixes, and favorites.
+            user_lists (list[Playlist | UserPlaylist | Mix]): List of user playlists, mixes, and favorites.
         """
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
@@ -612,7 +612,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """Download all media items in a selected list.
 
         Args:
-            point (QPoint, optional): The point in the tree. Defaults to None.
+            point (QPoint | None, optional): The point in the tree. Defaults to None.
         """
         items: list[QtWidgets.QTreeWidgetItem] = []
 
@@ -733,12 +733,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.apply_settings(self.settings)
         self._init_dl()
 
-    def search(self, query: str, types_media: Any) -> list[ResultItem]:
+    def search(self, query: str, types_media: list[Any]) -> list[ResultItem]:
         """Perform a search and return a list of ResultItems.
 
         Args:
             query (str): The search query.
-            types_media (SearchTypes): The types of media to search for.
+            types_media (list[Any]): The types of media to search for.
 
         Returns:
             list[ResultItem]: The search results.
@@ -759,7 +759,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             result_search = {"direct": [media]}
         else:
-            result_search: dict[str, [SearchTypes]] = search_results_all(
+            result_search: dict[str, list[SearchTypes]] = search_results_all(
                 session=self.tidal.session, needle=query, types_media=types_media
             )
 
@@ -780,7 +780,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             list[ResultItem]: List of ResultItem models.
         """
-        result = []
+        result: list[ResultItem] = []
 
         for idx, item in enumerate(items):
             result_item = self._to_result_item(idx, item)
@@ -1288,16 +1288,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self,
         media_list: Album | Playlist | Mix | Artist | None = None,
         point: QtCore.QPoint | None = None,
-        parent: QtGui.QStandardItem = None,
-        favorite_function: Callable = None,
+        parent: QtGui.QStandardItem | None = None,
+        favorite_function: Callable | None = None,
     ) -> None:
         """Populate the results tree with the items of a media list.
 
         Args:
             media_list (Album | Playlist | Mix | Artist | None, optional): The media list to show. Defaults to None.
             point (QPoint | None, optional): The point in the tree. Defaults to None.
-            parent (QStandardItem, optional): Parent item for nested results. Defaults to None.
-            favorite_function (Callable, optional): Function to fetch favorite items. Defaults to None.
+            parent (QStandardItem | None, optional): Parent item for nested results. Defaults to None.
+            favorite_function (Callable | None, optional): Function to fetch favorite items. Defaults to None.
         """
         if point:
             item = self.tr_lists_user.itemAt(point)
@@ -1308,9 +1308,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if isinstance(media_list, str):
                 favorite_function = favorite_function_factory(self.tidal, media_list)
 
-            media_items: [Track | Video | Album] = favorite_function()
+            media_items: list[Track | Video | Album] = favorite_function()
         else:
-            media_items: [Track | Video | Album] = items_results_all(media_list)
+            media_items: list[Track | Video | Album] = items_results_all(media_list)
 
         result: list[ResultItem] = self.search_result_to_model(media_items)
 
@@ -1346,7 +1346,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             regex (str): Regular expression to match items.
         """
-        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
+        items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
             regex, QtCore.Qt.MatchFlag.MatchRegularExpression, column=0
         )
 
@@ -1355,7 +1355,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_queue_download_remove(self) -> None:
         """Remove selected items from the download queue."""
-        items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.selectedItems()
+        items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.selectedItems()
 
         if len(items) == 0:
             logger_gui.error("Please select an item from the queue first.")
@@ -1439,7 +1439,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         handling_app: HandlingApp = HandlingApp()
 
         while not handling_app.event_abort.is_set():
-            items: [QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
+            items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
                 QueueDownloadStatus.Waiting, QtCore.Qt.MatchFlag.MatchExactly, column=0
             )
 
