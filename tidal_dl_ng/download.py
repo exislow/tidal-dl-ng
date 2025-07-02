@@ -1,3 +1,13 @@
+"""
+download.py
+
+Implements the Download class and helpers for downloading media from TIDAL, including segment merging, file moving, metadata writing, and playlist creation.
+
+Classes:
+    RequestsClient: Simple HTTP client for downloading text content.
+    Download: Main class for managing downloads, segment merging, file operations, and metadata.
+"""
+
 import os
 import pathlib
 import random
@@ -55,9 +65,22 @@ from tidal_dl_ng.model.gui_data import ProgressBars
 # TODO: Set appropriate client string and use it for video download.
 # https://github.com/globocom/m3u8#using-different-http-clients
 class RequestsClient:
+    """HTTP client for downloading text content from a URI."""
+
     def download(
         self, uri: str, timeout: int = REQUESTS_TIMEOUT_SEC, headers: dict | None = None, verify_ssl: bool = True
     ) -> tuple[str, str]:
+        """Download the content of a URI as text.
+
+        Args:
+            uri (str): The URI to download.
+            timeout (int, optional): Timeout in seconds. Defaults to REQUESTS_TIMEOUT_SEC.
+            headers (dict | None, optional): HTTP headers. Defaults to None.
+            verify_ssl (bool, optional): Whether to verify SSL. Defaults to True.
+
+        Returns:
+            tuple[str, str]: Tuple of (text content, final URL).
+        """
         if not headers:
             headers = {}
 
@@ -68,6 +91,8 @@ class RequestsClient:
 
 # TODO: Use pathlib.Path everywhere
 class Download:
+    """Main class for managing downloads, segment merging, file operations, and metadata for TIDAL media."""
+
     settings: Settings
     session: Session
     skip_existing: bool = False
@@ -90,6 +115,19 @@ class Download:
         event_abort: Event | None = None,
         event_run: Event | None = None,
     ) -> None:
+        """Initialize the Download object and its dependencies.
+
+        Args:
+            session (Session): TIDAL session object.
+            path_base (str): Base path for downloads.
+            fn_logger (Callable): Logger function or object.
+            skip_existing (bool, optional): Whether to skip existing files. Defaults to False.
+            progress_gui (ProgressBars | None, optional): GUI progress bars. Defaults to None.
+            progress (Progress | None, optional): Rich progress bar. Defaults to None.
+            progress_overall (Progress | None, optional): Overall progress bar. Defaults to None.
+            event_abort (Event | None, optional): Abort event. Defaults to None.
+            event_run (Event | None, optional): Run event. Defaults to None.
+        """
         self.settings = Settings()
         self.session = session
         self.skip_existing = skip_existing
@@ -119,6 +157,16 @@ class Download:
         path_file: pathlib.Path,
         stream_manifest: StreamManifest | None = None,
     ) -> tuple[bool, pathlib.Path]:
+        """Download a media item (track or video), handling segments and merging.
+
+        Args:
+            media (Track | Video): The media item to download.
+            path_file (pathlib.Path): Path to the output file.
+            stream_manifest (StreamManifest | None, optional): Stream manifest for tracks. Defaults to None.
+
+        Returns:
+            tuple[bool, pathlib.Path]: (Success, path to downloaded or decrypted file)
+        """
         media_name: str = name_builder_item(media)
         urls: list[str]
         path_base: pathlib.Path = path_file.parent
@@ -226,6 +274,15 @@ class Download:
         return result_merge, tmp_path_file_decrypted
 
     def _segments_merge(self, path_file: pathlib.Path, dl_segment_results: list[DownloadSegmentResult]) -> bool:
+        """Merge downloaded segments into a single file and clean up segment files.
+
+        Args:
+            path_file (pathlib.Path): Path to the output file.
+            dl_segment_results (list[DownloadSegmentResult]): List of segment download results.
+
+        Returns:
+            bool: True if merge succeeded, False otherwise.
+        """
         result: bool = True
 
         # Copy the content of all segments into one file.
@@ -249,6 +306,18 @@ class Download:
     def _download_segment(
         self, url: str, path_base: pathlib.Path, block_size: int | None, p_task: TaskID, progress_to_stdout: bool
     ) -> DownloadSegmentResult:
+        """Download a single segment of a media file.
+
+        Args:
+            url (str): URL of the segment.
+            path_base (pathlib.Path): Base path for segment file.
+            block_size (int | None): Block size for streaming.
+            p_task (TaskID): Progress bar task ID.
+            progress_to_stdout (bool): Whether to show progress in stdout.
+
+        Returns:
+            DownloadSegmentResult: Result of the segment download.
+        """
         result: bool = False
         path_segment: pathlib.Path = path_base / url_to_filename(url)
         # Calculate the segment ID based on the file name within the URL.
@@ -300,6 +369,16 @@ class Download:
     def extension_guess(
         self, quality_audio: Quality, metadata_tags: list[str], is_video: bool
     ) -> AudioExtensions | VideoExtensions:
+        """Guess the file extension for a media item based on quality and type.
+
+        Args:
+            quality_audio (Quality): Audio quality.
+            metadata_tags (list[str]): Metadata tags for the media.
+            is_video (bool): Whether the media is a video.
+
+        Returns:
+            AudioExtensions | VideoExtensions: Guessed file extension.
+        """
         result: AudioExtensions | VideoExtensions
 
         if is_video:
@@ -332,6 +411,24 @@ class Download:
         list_position: int = 0,
         list_total: int = 0,
     ) -> tuple[bool, pathlib.Path | str]:
+        """Download a single media item, handling file naming, skipping, and post-processing.
+
+        Args:
+            file_template (str): Template for file naming.
+            media (Track | Video | None, optional): Media item. Defaults to None.
+            media_id (str | None, optional): Media ID. Defaults to None.
+            media_type (MediaType | None, optional): Media type. Defaults to None.
+            video_download (bool, optional): Whether to allow video downloads. Defaults to True.
+            download_delay (bool, optional): Whether to delay between downloads. Defaults to False.
+            quality_audio (Quality | None, optional): Audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
+            is_parent_album (bool, optional): Whether this is a parent album. Defaults to False.
+            list_position (int, optional): Position in list. Defaults to 0.
+            list_total (int, optional): Total items in list. Defaults to 0.
+
+        Returns:
+            tuple[bool, pathlib.Path | str]: (Downloaded, path to file)
+        """
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
@@ -526,6 +623,16 @@ class Download:
     def media_move_and_symlink(
         self, media: Track | Video, path_media_src: pathlib.Path, file_extension: str
     ) -> pathlib.Path:
+        """Move a media file and create a symlink if required.
+
+        Args:
+            media (Track | Video): Media item.
+            path_media_src (pathlib.Path): Source file path.
+            file_extension (str): File extension.
+
+        Returns:
+            pathlib.Path: Destination path.
+        """
         # Compute tracks path, sanitize and ensure path exists
         file_name_relative: str = format_path_media(self.settings.data.format_track, media)
         path_media_dst: pathlib.Path = (
@@ -558,6 +665,14 @@ class Download:
         return path_media_dst
 
     def adjust_quality_audio(self, quality: Quality) -> Quality:
+        """Temporarily set audio quality and return the previous value.
+
+        Args:
+            quality (Quality): New audio quality.
+
+        Returns:
+            Quality: Previous audio quality.
+        """
         # Save original quality settings
         quality_old: Quality = self.session.audio_quality
         self.session.audio_quality = quality
@@ -565,6 +680,14 @@ class Download:
         return quality_old
 
     def adjust_quality_video(self, quality: QualityVideo) -> QualityVideo:
+        """Temporarily set video quality and return the previous value.
+
+        Args:
+            quality (QualityVideo): New video quality.
+
+        Returns:
+            QualityVideo: Previous video quality.
+        """
         quality_old: QualityVideo = self.settings.data.quality_video
 
         self.settings.data.quality_video = quality
@@ -572,6 +695,15 @@ class Download:
         return quality_old
 
     def _move_file(self, path_file_source: pathlib.Path, path_file_destination: str | pathlib.Path) -> bool:
+        """Move a file from source to destination.
+
+        Args:
+            path_file_source (pathlib.Path): Source file path.
+            path_file_destination (str | pathlib.Path): Destination file path.
+
+        Returns:
+            bool: True if moved, False otherwise.
+        """
         result: bool
 
         # Check if the file was downloaded
@@ -586,6 +718,15 @@ class Download:
         return result
 
     def _move_lyrics(self, path_lyrics: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
+        """Move a lyrics file to the destination.
+
+        Args:
+            path_lyrics (pathlib.Path): Source lyrics file.
+            file_media_dst (pathlib.Path): Destination media file path.
+
+        Returns:
+            bool: True if moved, False otherwise.
+        """
         # Build tmp lyrics filename
         path_file_lyrics: pathlib.Path = file_media_dst.with_suffix(EXTENSION_LYRICS)
         result: bool = self._move_file(path_lyrics, path_file_lyrics)
@@ -593,6 +734,15 @@ class Download:
         return result
 
     def _move_cover(self, path_cover: pathlib.Path, file_media_dst: pathlib.Path) -> bool:
+        """Move a cover file to the destination.
+
+        Args:
+            path_cover (pathlib.Path): Source cover file.
+            file_media_dst (pathlib.Path): Destination media file path.
+
+        Returns:
+            bool: True if moved, False otherwise.
+        """
         # Build tmp lyrics filename
         path_file_cover: pathlib.Path = file_media_dst.parent / COVER_NAME
         result: bool = self._move_file(path_cover, path_file_cover)
@@ -600,12 +750,40 @@ class Download:
         return result
 
     def lyrics_to_file(self, dir_destination: pathlib.Path, lyrics: str) -> str:
+        """Write lyrics to a temporary file.
+
+        Args:
+            dir_destination (pathlib.Path): Directory for the temp file.
+            lyrics (str): Lyrics content.
+
+        Returns:
+            str: Path to the temp file.
+        """
         return self.write_to_tmp_file(dir_destination, mode="x", content=lyrics)
 
     def cover_to_file(self, dir_destination: pathlib.Path, image: bytes) -> str:
+        """Write cover image to a temporary file.
+
+        Args:
+            dir_destination (pathlib.Path): Directory for the temp file.
+            image (bytes): Image data.
+
+        Returns:
+            str: Path to the temp file.
+        """
         return self.write_to_tmp_file(dir_destination, mode="xb", content=image)
 
     def write_to_tmp_file(self, dir_destination: pathlib.Path, mode: str, content: str | bytes) -> str:
+        """Write content to a temporary file.
+
+        Args:
+            dir_destination (pathlib.Path): Directory for the temp file.
+            mode (str): File open mode.
+            content (str | bytes): Content to write.
+
+        Returns:
+            str: Path to the temp file.
+        """
         result: pathlib.Path = dir_destination / str(uuid4())
         encoding: str | None = "utf-8" if isinstance(content, str) else None
 
@@ -619,6 +797,15 @@ class Download:
 
     @staticmethod
     def cover_data(url: str | None = None, path_file: str | None = None) -> str | bytes:
+        """Retrieve cover image data from a URL or file.
+
+        Args:
+            url (str | None, optional): URL to download image from. Defaults to None.
+            path_file (str | None, optional): Path to image file. Defaults to None.
+
+        Returns:
+            str | bytes: Image data or empty string on failure.
+        """
         result: str | bytes = ""
 
         if url:
@@ -643,6 +830,17 @@ class Download:
     def metadata_write(
         self, track: Track, path_media: pathlib.Path, is_parent_album: bool, media_stream: Stream
     ) -> tuple[bool, pathlib.Path | None, pathlib.Path | None]:
+        """Write metadata, lyrics, and cover to a media file.
+
+        Args:
+            track (Track): Track object.
+            path_media (pathlib.Path): Path to media file.
+            is_parent_album (bool): Whether this is a parent album.
+            media_stream (Stream): Stream object.
+
+        Returns:
+            tuple[bool, pathlib.Path | None, pathlib.Path | None]: (Success, path to lyrics, path to cover)
+        """
         result: bool = False
         path_lyrics: pathlib.Path | None = None
         path_cover: pathlib.Path | None = None
@@ -721,6 +919,18 @@ class Download:
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ) -> None:
+        """Download all items in an album, playlist, or mix.
+
+        Args:
+            file_template (str): Template for file naming.
+            media (Album | Playlist | UserPlaylist | Mix | None, optional): Media item. Defaults to None.
+            media_id (str | None, optional): Media ID. Defaults to None.
+            media_type (MediaType | None, optional): Media type. Defaults to None.
+            video_download (bool, optional): Whether to allow video downloads. Defaults to False.
+            download_delay (bool, optional): Whether to delay between downloads. Defaults to True.
+            quality_audio (Quality | None, optional): Audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
+        """
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
@@ -819,6 +1029,17 @@ class Download:
     def playlist_populate(
         self, dirs_scoped: set[pathlib.Path], name_list: str, is_album: bool, sort_alphabetically: bool
     ) -> list[pathlib.Path]:
+        """Create playlist files (m3u) for downloaded tracks in each directory.
+
+        Args:
+            dirs_scoped (set[pathlib.Path]): Set of directories containing tracks.
+            name_list (str): Name of the playlist.
+            is_album (bool): Whether this is an album.
+            sort_alphabetically (bool): Whether to sort tracks alphabetically.
+
+        Returns:
+            list[pathlib.Path]: List of created playlist file paths.
+        """
         result: list[pathlib.Path] = []
 
         # For each dir, which contains tracks
@@ -858,6 +1079,14 @@ class Download:
         return result
 
     def _video_convert(self, path_file: pathlib.Path) -> pathlib.Path:
+        """Convert a TS video file to MP4 using ffmpeg.
+
+        Args:
+            path_file (pathlib.Path): Path to the TS file.
+
+        Returns:
+            pathlib.Path: Path to the converted MP4 file.
+        """
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
@@ -871,6 +1100,14 @@ class Download:
         return path_file_out
 
     def _extract_flac(self, path_media_src: pathlib.Path) -> pathlib.Path:
+        """Extract FLAC audio from a media file using ffmpeg.
+
+        Args:
+            path_media_src (pathlib.Path): Path to the source media file.
+
+        Returns:
+            pathlib.Path: Path to the extracted FLAC file.
+        """
         path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
@@ -890,6 +1127,15 @@ class Download:
         return path_media_out
 
     def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> tuple[m3u8.M3U8 | bool, str]:
+        """Extract the best matching video stream from an m3u8 variant playlist.
+
+        Args:
+            m3u8_variant (m3u8.M3U8): The m3u8 variant playlist.
+            quality (int): Desired video quality (vertical resolution).
+
+        Returns:
+            tuple[m3u8.M3U8 | bool, str]: (Selected m3u8 playlist or False, codecs string)
+        """
         m3u8_playlist: m3u8.M3U8 | bool = False
         resolution_best: int = 0
         mime_type: str = ""
