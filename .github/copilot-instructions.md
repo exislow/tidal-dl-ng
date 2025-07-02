@@ -22,7 +22,7 @@ applyTo: "**/*.py"
 - Use type annotations / hints for function and method parameters, return types and variables. Follow PEP 484.
 - Use the modern built-in generics from the `typing` module, such as `list`, `dict`, and `set`, instead of the older `List`, `Dict`, and `Set` from `typing`.
 - Use newest coding style which is supported by the used Python version.
-- Use blank lines to keep code organized and readable.
+- Use more blank lines to achieve better code organization and readability.
 - Follow PEP 492 – Coroutines with async and await syntax
 - Follow PEP 498 – Literal String Interpolation
 - Follow PEP 572 – Assignment Expressions
@@ -31,4 +31,6 @@ applyTo: "**/*.py"
 
 - Always write doc strings for all modules, classes, functions, and methods using google docstring style.
 - Use typing in doc strings.
-- Use short inline comments to explain complex logic.
+- Use line comments to explain complex logic.
+- If refactoring code, ensure to update or add doc strings accordingly.
+- If refactoring code to not remove existing line comments, but to update them to reflect the new code logic.
