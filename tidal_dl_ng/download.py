@@ -1240,23 +1240,97 @@ class Download:
             quality_audio (Quality | None, optional): Audio quality. Defaults to None.
             quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
         """
+        # Validate and prepare media collection
+        media = self._validate_and_prepare_media_collection(media, media_id, media_type)
+        if media is None:
+            return
+
+        # Set up download context
+        download_context = self._setup_collection_download_context(media, file_template, video_download)
+        file_name_relative, list_media_name, list_media_name_short, items, progress_stdout = download_context
+
+        # Set up progress tracking
+        progress: Progress = self.progress_overall if self.progress_overall else self.progress
+        progress_task: TaskID = progress.add_task(
+            f"[green]List '{list_media_name_short}'", total=len(items), visible=progress_stdout
+        )
+
+        # Download configuration
+        is_album: bool = isinstance(media, Album)
+        sort_by_track_num: bool = bool("album_track_num" in file_name_relative or "list_pos" in file_name_relative)
+        list_total: int = len(items)
+
+        # Execute downloads
+        result_dirs: list[pathlib.Path] = self._execute_collection_downloads(
+            items,
+            file_name_relative,
+            quality_audio,
+            quality_video,
+            download_delay,
+            is_album,
+            list_total,
+            progress,
+            progress_task,
+            progress_stdout,
+        )
+
+        # Create playlist file if requested
+        if self.settings.data.playlist_create:
+            self.playlist_populate(set(result_dirs), list_media_name, is_album, sort_by_track_num)
+
+        self.fn_logger.info(f"Finished list '{list_media_name}'.")
+
+    def _validate_and_prepare_media_collection(
+        self,
+        media: Album | Playlist | UserPlaylist | Mix | None,
+        media_id: str | None,
+        media_type: MediaType | None,
+    ) -> Album | Playlist | UserPlaylist | Mix | None:
+        """Validate and prepare media collection for download.
+
+        Args:
+            media (Album | Playlist | UserPlaylist | Mix | None): Media collection instance.
+            media_id (str | None): Media ID if creating new instance.
+            media_type (MediaType | None): Media type if creating new instance.
+
+        Returns:
+            Album | Playlist | UserPlaylist | Mix | None: Prepared media collection or None if invalid.
+        """
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
                 # Throws `tidalapi.exceptions.ObjectNotFound` if item is not available anymore.
                 media = instantiate_media(self.session, media_type, media_id)
-            elif isinstance(media, Album):  # Check if media is available not deactivated / removed from TIDAL.
+            elif isinstance(media, Album):
+                # Check if media is available not deactivated / removed from TIDAL.
                 if not media.available:
                     self.fn_logger.info(
                         f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_title(media)}"
                     )
-
-                    return
+                    return None
             elif not media:
                 raise MediaMissing
         except:
-            return
+            return None
 
+        return media
+
+    def _setup_collection_download_context(
+        self,
+        media: Album | Playlist | UserPlaylist | Mix,
+        file_template: str,
+        video_download: bool,
+    ) -> tuple[str, str, str, list, bool]:
+        """Set up download context for media collection.
+
+        Args:
+            media (Album | Playlist | UserPlaylist | Mix): Media collection.
+            file_template (str): Template for file naming.
+            video_download (bool): Whether to allow video downloads.
+
+        Returns:
+            tuple[str, str, str, list, bool]: (file_name_relative, list_media_name, list_media_name_short, items, progress_stdout)
+        """
         # Create file name and path
         file_name_relative: str = format_path_media(file_template, media)
 
@@ -1272,26 +1346,48 @@ class Download:
             progress_stdout: bool = True
         else:
             progress_stdout: bool = False
+
             self.progress_gui.list_name.emit(list_media_name_short)
 
-        progress: Progress = self.progress_overall if self.progress_overall else self.progress
+        return file_name_relative, list_media_name, list_media_name_short, items, progress_stdout
 
-        # Create the list progress task.
-        p_task1: TaskID = progress.add_task(
-            f"[green]List '{list_media_name_short}'", total=len(items), visible=progress_stdout
-        )
+    def _execute_collection_downloads(
+        self,
+        items: list,
+        file_name_relative: str,
+        quality_audio: Quality | None,
+        quality_video: QualityVideo | None,
+        download_delay: bool,
+        is_album: bool,
+        list_total: int,
+        progress: Progress,
+        progress_task: TaskID,
+        progress_stdout: bool,
+    ) -> list[pathlib.Path]:
+        """Execute downloads for all items in the collection.
 
-        is_album: bool = isinstance(media, Album)
-        # TODO: Refactor strings to constants (also in cfg.py)
-        sort_by_track_num: bool = bool("album_track_num" in file_name_relative or "list_pos" in file_name_relative)
+        Args:
+            items (list): List of media items to download.
+            file_name_relative (str): Relative file name template.
+            quality_audio (Quality | None): Audio quality setting.
+            quality_video (QualityVideo | None): Video quality setting.
+            download_delay (bool): Whether to apply download delay.
+            is_album (bool): Whether this is an album.
+            list_total (int): Total number of items.
+            progress (Progress): Progress bar instance.
+            progress_task (TaskID): Progress task ID.
+            progress_stdout (bool): Whether to show progress in stdout.
+
+        Returns:
+            list[pathlib.Path]: List of result directories.
+        """
         result_dirs: list[pathlib.Path] = []
-        list_total: int = len(items)
 
         # Iterate through list items
         while not progress.finished:
             with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
                 # Dispatch all download tasks to worker threads
-                l_futures: list[futures.Future] = [
+                download_futures: list[futures.Future] = [
                     executor.submit(
                         self.item,
                         media=item_media,
@@ -1306,34 +1402,98 @@ class Download:
                     for count, item_media in enumerate(items)
                 ]
 
-                # Report results as they become available
-                for future in futures.as_completed(l_futures):
-                    # Retrieve result
-                    status, result_path_file = future.result()
+                # Process download results
+                result_dirs = self._process_download_futures(download_futures, progress, progress_task, progress_stdout)
 
-                    if result_path_file:
-                        result_dirs.append(result_path_file.parent)
+                # Check for abort signal
+                if self.event_abort.is_set():
+                    return result_dirs
 
-                    # Advance progress bar.
-                    progress.advance(p_task1)
+        return result_dirs
 
-                    if not progress_stdout:
-                        self.progress_gui.list_item.emit(progress.tasks[p_task1].percentage)
+    def _create_download_futures(
+        self,
+        items: list,
+        file_name_relative: str,
+        quality_audio: Quality | None,
+        quality_video: QualityVideo | None,
+        download_delay: bool,
+        is_album: bool,
+        list_total: int,
+    ) -> list[futures.Future]:
+        """Create download futures for all items in the collection.
 
-                    # If app is terminated (CTRL+C)
-                    if self.event_abort.is_set():
-                        # Cancel all not yet started tasks
-                        for f in l_futures:
-                            f.cancel()
+        Args:
+            items (list): List of media items to download.
+            file_name_relative (str): Relative file name template.
+            quality_audio (Quality | None): Audio quality setting.
+            quality_video (QualityVideo | None): Video quality setting.
+            download_delay (bool): Whether to apply download delay.
+            is_album (bool): Whether this is an album.
+            list_total (int): Total number of items.
 
-                        # End method here.
-                        return
+        Returns:
+            list[futures.Future]: List of download futures.
+        """
+        with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
+            return [
+                executor.submit(
+                    self.item,
+                    media=item_media,
+                    file_template=file_name_relative,
+                    quality_audio=quality_audio,
+                    quality_video=quality_video,
+                    download_delay=download_delay,
+                    is_parent_album=is_album,
+                    list_position=count + 1,
+                    list_total=list_total,
+                )
+                for count, item_media in enumerate(items)
+            ]
 
-        # Create playlist file
-        if self.settings.data.playlist_create:
-            self.playlist_populate(set(result_dirs), list_media_name, is_album, sort_by_track_num)
+    def _process_download_futures(
+        self,
+        futures_list: list[futures.Future],
+        progress: Progress,
+        progress_task: TaskID,
+        progress_stdout: bool,
+    ) -> list[pathlib.Path]:
+        """Process download futures and collect results.
 
-        self.fn_logger.info(f"Finished list '{list_media_name}'.")
+        Args:
+            futures_list (list[futures.Future]): List of download futures.
+            progress (Progress): Progress bar instance.
+            progress_task (TaskID): Progress task ID.
+            progress_stdout (bool): Whether to show progress in stdout.
+
+        Returns:
+            list[pathlib.Path]: List of result directories.
+        """
+        result_dirs: list[pathlib.Path] = []
+
+        # Report results as they become available
+        for future in futures.as_completed(futures_list):
+            # Retrieve result
+            status, result_path_file = future.result()
+
+            if result_path_file:
+                result_dirs.append(result_path_file.parent)
+
+            # Advance progress bar.
+            progress.advance(progress_task)
+
+            if not progress_stdout:
+                self.progress_gui.list_item.emit(progress.tasks[progress_task].percentage)
+
+            # If app is terminated (CTRL+C)
+            if self.event_abort.is_set():
+                # Cancel all not yet started tasks
+                for f in futures_list:
+                    f.cancel()
+
+                break
+
+        return result_dirs
 
     def playlist_populate(
         self, dirs_scoped: set[pathlib.Path], name_list: str, is_album: bool, sort_alphabetically: bool
