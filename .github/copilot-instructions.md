@@ -20,6 +20,7 @@ applyTo: "**/*.py"
 ## Coding Guidelines
 
 - Use type annotations / hints for function and method parameters, return types and variables. Follow PEP 484.
+- Use the modern built-in generics from the `typing` module, such as `list`, `dict`, and `set`, instead of the older `List`, `Dict`, and `Set` from `typing`.
 - Use newest coding style which is supported by the used Python version.
 - Use blank lines to keep code organized and readable.
 - Follow PEP 492 – Coroutines with async and await syntax
