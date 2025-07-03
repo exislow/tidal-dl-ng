@@ -103,7 +103,7 @@ jobs:
             CMD_BUILD: >
               brew install create-dmg &&
               source $VENV &&
-              poetry run make gui-macos-dmg-intel APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
+              poetry run make gui-macos-dmg APP_NAME=${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..

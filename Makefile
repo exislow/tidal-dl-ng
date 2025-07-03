@@ -84,6 +84,7 @@ gui-linux: gui ## Build GUI app
 gui-macos-dmg: gui ## Package GUI in a *.dmg file
 	@poetry run mkdir -p $(app_path_dist)/dmg
 	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).app" "$(app_path_dist)/$(DMG_NAME)/$(APP_NAME).app"
+	@poetry run sleep 60
 	@poetry run create-dmg \
                 --volname "$(APP_NAME)" \
                 --volicon "$(path_asset)/icon.icns" \
