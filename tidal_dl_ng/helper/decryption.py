@@ -7,9 +7,17 @@ from Crypto.Util import Counter
 
 def decrypt_security_token(security_token: str) -> (str, str):
     """
-    Decrypts security token into key and nonce pair
+    The `decrypt_security_token` function decrypts a security token into a key and nonce pair using AES
+    encryption.
 
-    security_token should match the securityToken value from the web response
+    Args:
+      security_token (str): The `security_token` parameter in the `decrypt_security_token` function is a
+    string that represents an encrypted security token. This function decrypts the security token into a
+    key and nonce pair using AES encryption. security_token should match the securityToken value from the web response.
+
+    Returns:
+      The `decrypt_security_token` function returns a tuple containing the key and nonce extracted from
+    the decrypted security token.
     """
 
     # Do not change this
