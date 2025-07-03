@@ -1,4 +1,4 @@
-name: release-master
+name: release-or-test-build
 
 permissions:
   contents: write
@@ -14,6 +14,8 @@ on:
   push:
     tags:
       - "v*.*.*"
+    branches:
+      - "test-build"
 
 env:
   ASSET_EXTENSION: ".zip"
@@ -27,6 +29,7 @@ env:
 
 jobs:
   publish:
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     steps:
       - name: Check out
@@ -53,6 +56,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   deploy-docs:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: publish
     runs-on: ubuntu-24.04
     steps:
@@ -87,7 +91,8 @@ jobs:
           echo "ARCH_WINDOWS_X64=${{ env.ARCH_WINDOWS_X64 }}" >> $GITHUB_OUTPUT
           echo "ARCH_WINDOWS_ARM64=${{ env.ARCH_WINDOWS_ARM64 }}" >> $GITHUB_OUTPUT
   build-gui-and-upload-assets:
-    needs: ["publish", "compute"]
+    needs: ["compute"]
+    if: always() && needs.compute.result == 'success' && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/test-build')
     strategy:
       fail-fast: false
       matrix:
@@ -159,6 +164,7 @@ jobs:
       - name: Build with pyinstaller for ${{matrix.TARGET}}
         run: ${{matrix.CMD_BUILD}}
       - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
         id: upload-release-asset
         uses: softprops/action-gh-release@v2
         env:
