@@ -528,9 +528,11 @@ class Download:
             tuple[bool, pathlib.Path | str]: (Downloaded, path to file)
         """
         # Step 1: Validate and prepare media
-        media = self._validate_media_instance(media, media_id, media_type, video_download)
-        if media is None:
+        validated_media = self._validate_and_prepare_media(media, media_id, media_type, video_download)
+        if validated_media is None or not isinstance(validated_media, Track | Video):
             return False, ""
+
+        media = validated_media
 
         # Step 2: Create file paths and determine skip logic
         path_media_dst, file_extension_dummy, skip_file, skip_download = self._prepare_file_paths_and_skip_logic(
@@ -564,56 +566,56 @@ class Download:
 
         return download_success, path_media_dst
 
-    def _validate_media_instance(
+    def _validate_and_prepare_media(
         self,
-        media: Track | Video | None,
+        media: Track | Video | Album | Playlist | UserPlaylist | Mix | None,
         media_id: str | None,
         media_type: MediaType | None,
-        video_download: bool,
-    ) -> Track | Video | None:
+        video_download: bool = True,
+    ) -> Track | Video | Album | Playlist | UserPlaylist | Mix | None:
         """Validate and prepare media instance for download.
 
         Args:
-            media (Track | Video | None): Media item instance.
+            media (Track | Video | Album | Playlist | UserPlaylist | Mix | None): Media instance.
             media_id (str | None): Media ID if creating new instance.
             media_type (MediaType | None): Media type if creating new instance.
-            video_download (bool): Whether video downloads are allowed.
+            video_download (bool, optional): Whether video downloads are allowed. Defaults to True.
 
         Returns:
-            Track | Video | None: Prepared media instance or None if invalid.
+            Track | Video | Album | Playlist | UserPlaylist | Mix | None: Prepared media instance or None if invalid.
         """
         try:
             if media_id and media_type:
                 # If no media instance is provided, we need to create the media instance.
-                media_instance = instantiate_media(self.session, media_type, media_id)
-
-                # Filter to only Track or Video types
-                if isinstance(media_instance, Track | Video):
-                    media = media_instance
-                else:
-                    return None
+                # Throws `tidalapi.exceptions.ObjectNotFound` if item is not available anymore.
+                media = instantiate_media(self.session, media_type, media_id)
             elif isinstance(media, Track | Video):
                 # Check if media is available not deactivated / removed from TIDAL.
                 if not media.available:
                     self.fn_logger.info(
                         f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
                     )
-
                     return None
                 elif isinstance(media, Track):
                     # Re-create media instance with full album information
                     media = self.session.track(str(media.id), with_album=True)
+            elif isinstance(media, Album):
+                # Check if media is available not deactivated / removed from TIDAL.
+                if not media.available:
+                    self.fn_logger.info(
+                        f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_title(media)}"
+                    )
+                    return None
             elif not media:
                 raise MediaMissing
         except:
             return None
 
-        # If video download is not allowed end here
+        # If video download is not allowed and this is a video, return None
         if not video_download and isinstance(media, Video):
             self.fn_logger.info(
                 f"Video downloads are deactivated (see settings). Skipping video: {name_builder_item(media)}"
             )
-
             return None
 
         return media
@@ -1241,9 +1243,11 @@ class Download:
             quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
         """
         # Validate and prepare media collection
-        media = self._validate_and_prepare_media_collection(media, media_id, media_type)
-        if media is None:
+        validated_media = self._validate_and_prepare_media(media, media_id, media_type, video_download)
+        if validated_media is None or not isinstance(validated_media, Album | Playlist | UserPlaylist | Mix):
             return
+
+        media = validated_media
 
         # Set up download context
         download_context = self._setup_collection_download_context(media, file_template, video_download)
@@ -1279,41 +1283,6 @@ class Download:
             self.playlist_populate(set(result_dirs), list_media_name, is_album, sort_by_track_num)
 
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
-
-    def _validate_and_prepare_media_collection(
-        self,
-        media: Album | Playlist | UserPlaylist | Mix | None,
-        media_id: str | None,
-        media_type: MediaType | None,
-    ) -> Album | Playlist | UserPlaylist | Mix | None:
-        """Validate and prepare media collection for download.
-
-        Args:
-            media (Album | Playlist | UserPlaylist | Mix | None): Media collection instance.
-            media_id (str | None): Media ID if creating new instance.
-            media_type (MediaType | None): Media type if creating new instance.
-
-        Returns:
-            Album | Playlist | UserPlaylist | Mix | None: Prepared media collection or None if invalid.
-        """
-        try:
-            if media_id and media_type:
-                # If no media instance is provided, we need to create the media instance.
-                # Throws `tidalapi.exceptions.ObjectNotFound` if item is not available anymore.
-                media = instantiate_media(self.session, media_type, media_id)
-            elif isinstance(media, Album):
-                # Check if media is available not deactivated / removed from TIDAL.
-                if not media.available:
-                    self.fn_logger.info(
-                        f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_title(media)}"
-                    )
-                    return None
-            elif not media:
-                raise MediaMissing
-        except:
-            return None
-
-        return media
 
     def _setup_collection_download_context(
         self,
