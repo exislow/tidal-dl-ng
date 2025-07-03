@@ -101,7 +101,8 @@ gui-macos-dmg: gui ## Package GUI in a *.dmg file
 gui-macos-dmg-intel: gui ## Package GUI in a *.dmg file; Workaround for Intel Macs, since Apple Script permissions are not set correctly on GitHub Actiion Runner images
 	@poetry run mkdir -p $(app_path_dist)/dmg
 	@poetry run mv "$(app_path_dist)/$(APP_BUNDLE_NAME).app" "$(app_path_dist)/$(DMG_NAME)/$(APP_NAME).app"
-	@poetry run hdiutil create -volname "$(APP_NAME)" \
+	@poetry run sleep 60
+	@poetry run /usr/bin/sudo hdiutil create -debug -volname "$(APP_NAME)" \
 				-srcfolder "$(app_path_dist)/$(DMG_NAME)/" \
 				-ov -format UDZO \
 				-fs APFS \
