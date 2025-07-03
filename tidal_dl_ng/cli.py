@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 import signal
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import urlparse
 
 import typer
 from rich.console import Console, Group
@@ -31,13 +33,13 @@ from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]}, add_completion=False)
-dl_fav_group = typer.Typer(
+app_dl_fav = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     add_completion=True,
     help="Download from a favorites collection.",
 )
 
-app.add_typer(dl_fav_group, name="dl_fav")
+app.add_typer(app_dl_fav, name="dl_fav")
 
 
 def version_callback(value: bool):
@@ -50,6 +52,20 @@ def version_callback(value: bool):
         print(f"{__version__}")
 
         raise typer.Exit()
+
+
+@app.callback()
+def callback_app(
+    ctx: typer.Context,
+    version: Annotated[bool | None, typer.Option("--version", "-v", callback=version_callback, is_eager=True)] = None,
+):
+    """App callback to initialize context and handle version option.
+
+    Args:
+        ctx (typer.Context): Typer context object.
+        version (bool | None, optional): Version flag. Defaults to None.
+    """
+    ctx.obj = {"tidal": None}
 
 
 def _handle_track_or_video(
@@ -256,20 +272,6 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
     return True
 
 
-@app.callback()
-def callback_app(
-    ctx: typer.Context,
-    version: Annotated[bool | None, typer.Option("--version", "-v", callback=version_callback, is_eager=True)] = None,
-):
-    """App callback to initialize context and handle version option.
-
-    Args:
-        ctx (typer.Context): Typer context object.
-        version (bool | None, optional): Version flag. Defaults to None.
-    """
-    ctx.obj = {"tidal": None}
-
-
 @app.command(name="cfg")
 def settings_management(
     names: Annotated[list[str] | None, typer.Argument()] = None,
@@ -397,7 +399,7 @@ def download(
     return _download(ctx, urls)
 
 
-@dl_fav_group.command(
+@app_dl_fav.command(
     name="tracks",
     help="Download your favorite track collection.",
 )
@@ -416,7 +418,7 @@ def download_fav_tracks(ctx: typer.Context) -> bool:
     return _download_fav_factory(ctx, func_name_favorites)
 
 
-@dl_fav_group.command(
+@app_dl_fav.command(
     name="artists",
     help="Download your favorite artist collection.",
 )
@@ -435,7 +437,7 @@ def download_fav_artists(ctx: typer.Context) -> bool:
     return _download_fav_factory(ctx, func_name_favorites)
 
 
-@dl_fav_group.command(
+@app_dl_fav.command(
     name="albums",
     help="Download your favorite album collection.",
 )
@@ -454,7 +456,7 @@ def download_fav_albums(ctx: typer.Context) -> bool:
     return _download_fav_factory(ctx, func_name_favorites)
 
 
-@dl_fav_group.command(
+@app_dl_fav.command(
     name="videos",
     help="Download your favorite video collection.",
 )
@@ -518,5 +520,14 @@ if __name__ == "__main__":
     # Catch CTRL+C
     signal.signal(signal.SIGINT, handle_sigint_term)
     signal.signal(signal.SIGTERM, handle_sigint_term)
+
+    # Check if the first argument is a URL. Hacky solution, since Typer does not support positional arguments without options / commands.
+    if len(sys.argv) > 1:
+        first_arg = sys.argv[1]
+        parsed_url = urlparse(first_arg)
+
+        if parsed_url.scheme in ["http", "https"] and parsed_url.netloc:
+            # Rewrite sys.argv to simulate `dl <URL>`
+            sys.argv.insert(1, "dl")
 
     app()
