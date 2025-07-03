@@ -48,23 +48,25 @@ def version_callback(value: bool):
     """
     if value:
         print(f"{__version__}")
+
         raise typer.Exit()
 
 
 def _handle_track_or_video(
-    dl: Download, settings: Settings, item: str, media: object, file_template: str, idx: int, urls_pos_last: int
+    dl: Download, ctx: typer.Context, item: str, media: object, file_template: str, idx: int, urls_pos_last: int
 ) -> None:
     """Handle downloading a track or video item.
 
     Args:
         dl (Download): The Download instance.
-        settings (Settings): The Settings instance.
+        ctx (typer.Context): Typer context object.
         item (str): The URL or identifier of the item.
         media: The media object to download.
         file_template (str): The file template for saving the media.
         idx (int): The index of the item in the list.
         urls_pos_last (int): The last index in the URLs list.
     """
+    settings = ctx.obj[CTX_TIDAL].settings
     download_delay: bool = bool(settings.data.download_delay and idx < urls_pos_last)
 
     dl.item(
@@ -77,10 +79,9 @@ def _handle_track_or_video(
 
 
 def _handle_album_playlist_mix_artist(
-    dl: Download,
     ctx: typer.Context,
+    dl: Download,
     handling_app: HandlingApp,
-    settings: Settings,
     media_type: MediaType,
     media: object,
     item_id: str,
@@ -89,10 +90,9 @@ def _handle_album_playlist_mix_artist(
     """Handle downloading albums, playlists, mixes, or artist collections.
 
     Args:
-        dl (Download): The Download instance.
         ctx (typer.Context): Typer context object.
+        dl (Download): The Download instance.
         handling_app (HandlingApp): The HandlingApp instance.
-        settings (Settings): The Settings instance.
         media_type (MediaType): The type of media (album, playlist, mix, or artist).
         media: The media object to download.
         item_id (str): The ID of the media item.
@@ -102,6 +102,7 @@ def _handle_album_playlist_mix_artist(
         bool: False if aborted, True otherwise.
     """
     item_ids: list[str] = []
+    settings = ctx.obj[CTX_TIDAL].settings
 
     if media_type == MediaType.ARTIST:
         media_type = MediaType.ALBUM
@@ -117,8 +118,10 @@ def _handle_album_playlist_mix_artist(
             media_id=_item_id,
             media_type=media_type,
             file_template=file_template,
-            video_download=ctx.obj[CTX_TIDAL].settings.data.video_download,
+            video_download=settings.data.video_download,
             download_delay=settings.data.download_delay,
+            quality_audio=settings.data.quality_audio,
+            quality_video=settings.data.quality_video,
         )
 
     return True
@@ -128,7 +131,6 @@ def _process_url(
     dl: Download,
     ctx: typer.Context,
     handling_app: HandlingApp,
-    settings: Settings,
     item: str,
     idx: int,
     urls_pos_last: int,
@@ -139,7 +141,6 @@ def _process_url(
         dl (Download): The Download instance.
         ctx (typer.Context): Typer context object.
         handling_app (HandlingApp): The HandlingApp instance.
-        settings (Settings): The Settings instance.
         item (str): The URL or identifier to process.
         idx (int): The index of the item in the list.
         urls_pos_last (int): The last index in the URLs list.
@@ -147,6 +148,8 @@ def _process_url(
     Returns:
         bool: False if aborted, True otherwise.
     """
+    settings = ctx.obj[CTX_TIDAL].settings
+
     if handling_app.event_abort.is_set():
         return False
 
@@ -176,11 +179,9 @@ def _process_url(
         return True
 
     if media_type in [MediaType.TRACK, MediaType.VIDEO]:
-        _handle_track_or_video(dl, settings, item, media, file_template, idx, urls_pos_last)
+        _handle_track_or_video(dl, ctx, item, media, file_template, idx, urls_pos_last)
     elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
-        return _handle_album_playlist_mix_artist(
-            dl, ctx, handling_app, settings, media_type, media, item_id, file_template
-        )
+        return _handle_album_playlist_mix_artist(ctx, dl, handling_app, media_type, media, item_id, file_template)
     return True
 
 
@@ -198,7 +199,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
     if try_login:
         ctx.invoke(login, ctx)
 
-    settings: Settings = Settings()
+    settings: Settings = ctx.obj[CTX_TIDAL].settings
     handling_app: HandlingApp = HandlingApp()
 
     progress: Progress = Progress(
@@ -227,7 +228,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
 
     dl = Download(
         session=ctx.obj[CTX_TIDAL].session,
-        skip_existing=ctx.obj[CTX_TIDAL].settings.data.skip_existing,
+        skip_existing=settings.data.skip_existing,
         path_base=settings.data.download_base_path,
         fn_logger=fn_logger,
         progress=progress,
@@ -246,7 +247,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
     with Live(progress_group, refresh_per_second=20, vertical_overflow="visible"):
         try:
             for idx, item in enumerate(urls):
-                if _process_url(dl, ctx, handling_app, settings, item, idx, urls_pos_last) is False:
+                if _process_url(dl, ctx, handling_app, item, idx, urls_pos_last) is False:
                     return False
         finally:
             progress.refresh()
