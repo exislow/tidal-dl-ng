@@ -117,7 +117,7 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_MACOS_ARM64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}}.dmg -x "*.DS_Store" &&
               cd ..
-          - os: "ubuntu-22.04"
+          - os: "ubuntu-24.04"
             TARGET: "ubuntu-22.04"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_X64}}
             CMD_BUILD: >
@@ -126,7 +126,7 @@ jobs:
               cd dist &&
               zip -r ${{needs.compute.outputs.OUT_NAME_FILE}}_${{needs.compute.outputs.ARCH_LINUX_X64}}${{needs.compute.outputs.ASSET_EXTENSION}} ${{needs.compute.outputs.OUT_NAME_FILE}} &&
               cd ..
-          - os: "ubuntu-22.04-arm"
+          - os: "ubuntu-24.04-arm"
             TARGET: "ubuntu-22.04-arm"
             OS_ARCH: ${{needs.compute.outputs.ARCH_LINUX_ARM64}}
             CMD_BUILD: >
