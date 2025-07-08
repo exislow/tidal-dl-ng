@@ -47,7 +47,7 @@ If you like this projects and want to support it, feel free to buy me a coffee �
 ```bash
 pip install --upgrade tidal-dl-ng
 # If you like to have the GUI as well use this command instead
-pip install --upgrade tidal-dl-ng[gui]
+pip install --upgrade "tidal-dl-ng[gui]"
 ```
 
 ## ⌨️ Usage
