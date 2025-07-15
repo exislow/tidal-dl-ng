@@ -283,6 +283,9 @@ def _format_ids(
         name == "playlist_id" and isinstance(media, Playlist)
     ):
         return str(media.id)
+    # Handle video ID
+    elif name == "video_id" and isinstance(media, Video):
+        return str(media.id)
     # Handle album IDs
     elif name == "album_id":
         if isinstance(media, Album):
