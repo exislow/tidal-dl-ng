@@ -5,7 +5,7 @@
 #    nuitka-project: --macos-signed-app-name=com.exislow.TidalDlNg
 #    nuitka-project: --macos-app-mode=gui
 # nuitka-project-if: {OS} in ("Linux", "FreeBSD"):
-#    nuitka-project: --linux-icon=tidal_dl_ng/ui/icon.png
+#    nuitka-project: --linux-icon=tidal_dl_ng/ui/icon512.png
 # nuitka-project-if: {OS} in ("Windows"):
 #    nuitka-project: --windows-icon-from-ico=tidal_dl_ng/ui/icon.ico
 #    nuitka-project: --file-description="TIDAL media downloader next generation."
@@ -1692,9 +1692,14 @@ def gui_activate(tidal: Tidal | None = None):
     qdarktheme.setup_theme(additional_qss="QToolTip { border: 0px; }")
 
     # Create icon object and apply it to app window.
-    pixmap: QtGui.QPixmap = QtGui.QPixmap("tidal_dl_ng/ui/icon.png")
-    icon: QtGui.QIcon = QtGui.QIcon(pixmap)
+    icon: QtGui.QIcon = QtGui.QIcon()
 
+    icon.addFile("tidal_dl_ng/ui/icon16.png", QtCore.QSize(16, 16))
+    icon.addFile("tidal_dl_ng/ui/icon32.png", QtCore.QSize(32, 32))
+    icon.addFile("tidal_dl_ng/ui/icon48.png", QtCore.QSize(48, 48))
+    icon.addFile("tidal_dl_ng/ui/icon64.png", QtCore.QSize(64, 64))
+    icon.addFile("tidal_dl_ng/ui/icon256.png", QtCore.QSize(256, 256))
+    icon.addFile("tidal_dl_ng/ui/icon512.png", QtCore.QSize(512, 512))
     app.setWindowIcon(icon)
 
     # This bit gets the taskbar icon working properly in Windows
