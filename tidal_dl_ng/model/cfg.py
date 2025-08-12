@@ -45,6 +45,7 @@ class Settings:
     symlink_to_track: bool = False
     playlist_create: bool = False
     metadata_replay_gain: bool = True
+    metadata_write_url: bool = True
 
 
 @dataclass_json
@@ -99,6 +100,7 @@ class HelpSettings:
     )
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
     metadata_replay_gain: str = "Replay gain information will be written to metadata."
+    metadata_write_url: str = "URL of the media file will be written to metadata."
 
 
 @dataclass_json

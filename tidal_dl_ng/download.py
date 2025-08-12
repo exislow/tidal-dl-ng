@@ -1213,7 +1213,7 @@ class Download:
             album_peak_amplitude=media_stream.album_peak_amplitude,
             track_replay_gain=media_stream.track_replay_gain,
             track_peak_amplitude=media_stream.track_peak_amplitude,
-            url_share=track.share_url if track.share_url else "",
+            url_share=track.share_url if track.share_url and self.settings.data.metadata_write_url else "",
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
         )
