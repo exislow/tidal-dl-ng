@@ -38,6 +38,7 @@ from tidal_dl_ng.constants import (
     PLAYLIST_EXTENSION,
     PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
+    CoverDimensions,
     MediaType,
     QualityVideo,
 )
@@ -1183,7 +1184,10 @@ class Download:
             path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)
 
         if self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album):
-            url_cover = track.album.image(int(self.settings.data.metadata_cover_dimension))
+            cover_dimension = self.settings.data.metadata_cover_dimension
+            url_cover = track.album.image(
+                int(cover_dimension) if cover_dimension != CoverDimensions.PxORIGIN else cover_dimension
+            )
             cover_data = self.cover_data(url=url_cover)
 
         if cover_data and self.settings.data.cover_album_file and is_parent_album:

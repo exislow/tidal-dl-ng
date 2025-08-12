@@ -37,6 +37,7 @@ class CoverDimensions(StrEnum):
     Px320: str = "320"
     Px640: str = "640"
     Px1280: str = "1280"
+    PxORIGIN: str = "origin"
 
 
 class TidalLists(StrEnum):
