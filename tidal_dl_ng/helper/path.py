@@ -279,8 +279,10 @@ def _format_ids(
         str | None: The formatted ID or None if the format string is not ID-related.
     """
     # Handle track and playlist IDs
-    if (name == "track_id" and isinstance(media, Track | Video)) or (
-        name == "playlist_id" and isinstance(media, Playlist)
+    if (
+        (name == "track_id" and isinstance(media, Track))
+        or (name == "playlist_id" and isinstance(media, Playlist))
+        or (name == "video_id" and isinstance(media, Video))
     ):
         return str(media.id)
     # Handle album IDs
