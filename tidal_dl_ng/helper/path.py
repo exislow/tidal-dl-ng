@@ -135,6 +135,7 @@ def format_str_media(
             _format_numbers,
             _format_ids,
             _format_durations,
+            _format_dates,
             _format_metadata,
             _format_volumes,
         ):
@@ -333,12 +334,35 @@ def _format_durations(
         m, s = divmod(media.duration, 60)
         return f"{m:01d}:{s:02d}"
 
-    # Format year
-    elif name == "album_year":
+    return None
+
+
+def _format_dates(
+    name: str,
+    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
+    *_args,
+) -> str | None:
+    """Handle date-related format strings.
+
+    Args:
+        name (str): The format string name to check.
+        media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object to extract date information from.
+        *_args (Any): Additional arguments (not used).
+
+    Returns:
+        str | None: The formatted date or None if the format string is not date-related.
+    """
+    if name == "album_year":
         if isinstance(media, Album):
             return str(media.year)
         elif isinstance(media, Track):
             return str(media.album.year)
+    elif name == "album_date":
+        if isinstance(media, Album):
+            return media.release_date.strftime("%Y-%m-%d") if media.release_date else None
+        elif isinstance(media, Track):
+            return media.album.release_date.strftime("%Y-%m-%d") if media.album.release_date else None
+
     return None
 
 
