@@ -28,6 +28,7 @@ class Metadata:
     track_peak_amplitude: float
     url_share: str
     replay_gain_write: bool
+    upc: str
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -53,6 +54,7 @@ class Metadata:
         track_peak_amplitude: float = 1.0,
         url_share: str = "",
         replay_gain_write: bool = True,
+        upc: str = "",
     ):
         self.path_file = path_file
         self.title = title
@@ -75,6 +77,7 @@ class Metadata:
         self.track_peak_amplitude = track_peak_amplitude
         self.url_share = url_share
         self.replay_gain_write = replay_gain_write
+        self.upc = upc
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -131,6 +134,7 @@ class Metadata:
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
         self.m.tags["URL"] = self.url_share
+        self.m.tags["UPC"] = self.upc
 
         if self.replay_gain_write:
             self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
@@ -153,6 +157,7 @@ class Metadata:
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
         self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
+        self.m.tags.add(TXXX(encoding=3, desc="UPC", text=self.upc))
 
         if self.replay_gain_write:
             self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
@@ -174,6 +179,7 @@ class Metadata:
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
+        self.m.tags["----:com.apple.iTunes:UPC"] = self.upc.encode("utf-8")
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
