@@ -38,6 +38,7 @@ from tidal_dl_ng.constants import (
     PLAYLIST_EXTENSION,
     PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
+    AudioExtensionsValid,
     CoverDimensions,
     MediaType,
     QualityVideo,
@@ -1496,7 +1497,7 @@ class Download:
             # Get all tracks in the directory
             path_tracks: list[pathlib.Path] = []
 
-            for extension_audio in AudioExtensions:
+            for extension_audio in AudioExtensionsValid:
                 path_tracks = path_tracks + list(dir_scoped.glob(f"*{extension_audio!s}"))
 
             # Sort alphabetically, e.g. if items are prefixed with numbers
