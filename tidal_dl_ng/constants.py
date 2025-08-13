@@ -16,48 +16,57 @@ FORMAT_TEMPLATE_EXPLICIT: str = " (Explicit)"
 
 
 class QualityVideo(StrEnum):
-    P360: str = "360"
-    P480: str = "480"
-    P720: str = "720"
-    P1080: str = "1080"
+    P360 = "360"
+    P480 = "480"
+    P720 = "720"
+    P1080 = "1080"
 
 
 class MediaType(StrEnum):
-    TRACK: str = "track"
-    VIDEO: str = "video"
-    PLAYLIST: str = "playlist"
-    ALBUM: str = "album"
-    MIX: str = "mix"
-    ARTIST: str = "artist"
+    TRACK = "track"
+    VIDEO = "video"
+    PLAYLIST = "playlist"
+    ALBUM = "album"
+    MIX = "mix"
+    ARTIST = "artist"
 
 
 class CoverDimensions(StrEnum):
-    Px80: str = "80"
-    Px160: str = "160"
-    Px320: str = "320"
-    Px640: str = "640"
-    Px1280: str = "1280"
-    PxORIGIN: str = "origin"
+    Px80 = "80"
+    Px160 = "160"
+    Px320 = "320"
+    Px640 = "640"
+    Px1280 = "1280"
+    PxORIGIN = "origin"
 
 
 class TidalLists(StrEnum):
-    Playlists: str = "Playlists"
-    Favorites: str = "Favorites"
-    Mixes: str = "Mixes"
+    Playlists = "Playlists"
+    Favorites = "Favorites"
+    Mixes = "Mixes"
 
 
 class QueueDownloadStatus(StrEnum):
-    Waiting: str = "⏳️"
-    Downloading: str = "▶️"
-    Finished: str = "✅"
-    Failed: str = "❌"
-    Skipped: str = "↪️"
+    Waiting = "⏳️"
+    Downloading = "▶️"
+    Finished = "✅"
+    Failed = "❌"
+    Skipped = "↪️"
 
 
-FAVORITES: {} = {
+FAVORITES: dict[str, dict[str, str]] = {
     "fav_videos": {"name": "Videos", "function_name": "videos"},
     "fav_tracks": {"name": "Tracks", "function_name": "tracks"},
     "fav_mixes": {"name": "Mixes & Radio", "function_name": "mixes"},
     "fav_artists": {"name": "Artists", "function_name": "artists"},
     "fav_albums": {"name": "Albums", "function_name": "albums"},
 }
+
+
+class AudioExtensionsValid(StrEnum):
+    FLAC = ".flac"
+    M4A = ".m4a"
+    MP4 = ".mp4"
+    MP3 = ".mp3"
+    OGG = ".ogg"
+    ALAC = ".alac"
