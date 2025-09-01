@@ -46,6 +46,10 @@ class Settings:
     playlist_create: bool = False
     metadata_replay_gain: bool = True
     metadata_write_url: bool = True
+    window_x: int = 50
+    window_y: int = 50
+    window_w: int = 1200
+    window_h: int = 800
 
 
 @dataclass_json

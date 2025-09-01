@@ -151,7 +151,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         super().__init__()
         self.setupUi(self)
-        # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Generation!")
 
         # Logging redirect.
@@ -160,6 +159,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.settings = Settings()
 
+        self.setGeometry(
+            self.settings.data.window_x,
+            self.settings.data.window_y,
+            self.settings.data.window_w,
+            self.settings.data.window_h,
+        )
         self._init_threads()
         self._init_gui()
         self._init_tree_results_model(self.model_tr_results)
@@ -1672,6 +1677,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             event (QtGui.QCloseEvent): The close event.
         """
+
+        # Save the main window size and position
+        self.settings.data.window_x = self.x()
+        self.settings.data.window_y = self.y()
+        self.settings.data.window_w = self.width()
+        self.settings.data.window_h = self.height()
+        self.settings.save()
+
         self.shutdown = True
 
         handling_app: HandlingApp = HandlingApp()
