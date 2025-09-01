@@ -360,9 +360,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ## Styling
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
-        tree.setColumnWidth(2, 150)
-        tree.setColumnWidth(3, 150)
-        tree.setColumnWidth(4, 150)
+        normal_width = max(150, (self.width() * 0.13))  # 12% for normal fields
+        narrow_width = max(90, (self.width() * 0.06))  # 6% for shorter fields
+        skinny_width = max(60, (self.width() * 0.03))  # 3% for very short fields
+        tree.setColumnWidth(2, normal_width)  # artist
+        tree.setColumnWidth(3, normal_width)  # title
+        tree.setColumnWidth(4, normal_width)  # album
+        tree.setColumnWidth(5, skinny_width)  # duration
+        tree.setColumnWidth(6, narrow_width)  # quality
+        tree.setColumnWidth(7, narrow_width)  # date
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         # Connect the contextmenu
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
