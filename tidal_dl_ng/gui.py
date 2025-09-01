@@ -1113,6 +1113,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Results
         self.tr_results.expanded.connect(self.on_tr_results_expanded)
         self.tr_results.clicked.connect(self.on_result_item_clicked)
+        self.tr_results.doubleClicked.connect(lambda: self.thread_it(self.on_download_results))
 
         # Download Queue
         self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
