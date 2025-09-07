@@ -41,6 +41,7 @@ def name_builder_item(media: Track | Video) -> str:
 
 
 def get_tidal_media_id(url_or_id_media: str) -> str:
+
     id_dirty = url_or_id_media.rsplit("/", 1)[-1]
     id_media = id_dirty.rsplit("?", 1)[0]
 
@@ -68,6 +69,18 @@ def get_tidal_media_type(url_media: str) -> MediaType | bool:
             result = MediaType.ARTIST
 
     return result
+
+
+def url_ending_clean(url: str) -> str:
+    """Checks if a link ends with "/u" or "?u" and removes that part.
+
+    Args:
+        url (str): The URL to clean.
+
+    Returns:
+        str: The cleaned URL.
+    """
+    return url[:-2] if url.endswith("/u") or url.endswith("?u") else url
 
 
 def search_results_all(session: Session, needle: str, types_media: SearchTypes = None) -> dict[str, [SearchTypes]]:

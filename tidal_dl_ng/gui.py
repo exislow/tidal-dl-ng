@@ -77,6 +77,7 @@ from tidal_dl_ng.helper.tidal import (
     name_builder_title,
     quality_audio_highest,
     search_results_all,
+    url_ending_clean,
     user_media_lists,
 )
 
@@ -743,12 +744,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             list[ResultItem]: The search results.
         """
-        query = query.strip()
+        query_clean: str = query.strip()
 
         # If a direct link was searched for, skip search and create the object from the link directly.
-        if "http" in query:
-            media_type = get_tidal_media_type(query)
-            item_id = get_tidal_media_id(query)
+        if "http" in query_clean:
+            query_clean: str = url_ending_clean(query_clean)
+            media_type = get_tidal_media_type(query_clean)
+            item_id = get_tidal_media_id(query_clean)
 
             try:
                 media = instantiate_media(self.tidal.session, media_type, item_id)
@@ -760,7 +762,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             result_search = {"direct": [media]}
         else:
             result_search: dict[str, list[SearchTypes]] = search_results_all(
-                session=self.tidal.session, needle=query, types_media=types_media
+                session=self.tidal.session, needle=query_clean, types_media=types_media
             )
 
         result: list[ResultItem] = []
