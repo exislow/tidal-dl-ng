@@ -1184,15 +1184,23 @@ class Download:
         if lyrics and self.settings.data.lyrics_file:
             path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)
 
+        cover_dimension = self.settings.data.metadata_cover_dimension
+
         if self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album):
-            cover_dimension = self.settings.data.metadata_cover_dimension
+            # Do not write CoverDimensions.PxORIGIN to metadata, since it can exceed max metadata file size (>16Mb)
             url_cover = track.album.image(
-                int(cover_dimension) if cover_dimension != CoverDimensions.PxORIGIN else cover_dimension
+                int(cover_dimension) if cover_dimension != CoverDimensions.PxORIGIN else int(CoverDimensions.Px1280)
             )
             cover_data = self.cover_data(url=url_cover)
 
         if cover_data and self.settings.data.cover_album_file and is_parent_album:
-            path_cover = self.cover_to_file(path_media.parent, cover_data)
+            if cover_dimension == CoverDimensions.PxORIGIN:
+                url_cover_album_file = track.album.image(CoverDimensions.PxORIGIN)
+                cover_data_album_file = self.cover_data(url=url_cover_album_file)
+            else:
+                cover_data_album_file = cover_data
+
+            path_cover = self.cover_to_file(path_media.parent, cover_data_album_file)
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
