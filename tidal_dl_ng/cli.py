@@ -28,6 +28,7 @@ from tidal_dl_ng.helper.tidal import (
     get_tidal_media_id,
     get_tidal_media_type,
     instantiate_media,
+    url_ending_clean,
 )
 from tidal_dl_ng.helper.wrapper import LoggerWrapped
 from tidal_dl_ng.model.cfg import HelpSettings
@@ -147,7 +148,7 @@ def _process_url(
     dl: Download,
     ctx: typer.Context,
     handling_app: HandlingApp,
-    item: str,
+    url: str,
     idx: int,
     urls_pos_last: int,
 ) -> bool:
@@ -157,8 +158,8 @@ def _process_url(
         dl (Download): The Download instance.
         ctx (typer.Context): Typer context object.
         handling_app (HandlingApp): The HandlingApp instance.
-        item (str): The URL or identifier to process.
-        idx (int): The index of the item in the list.
+        url (str): The URL or identifier to process.
+        idx (int): The index of the url in the list.
         urls_pos_last (int): The last index in the URLs list.
 
     Returns:
@@ -169,35 +170,37 @@ def _process_url(
     if handling_app.event_abort.is_set():
         return False
 
-    if "http" not in item:
-        print(f"It seems like that you have supplied an invalid URL: {item}")
+    if "http" not in url:
+        print(f"It seems like that you have supplied an invalid URL: {url}")
         return True
 
-    media_type = get_tidal_media_type(item)
+    url_clean: str = url_ending_clean(url)
+
+    media_type = get_tidal_media_type(url_clean)
     if not isinstance(media_type, MediaType):
-        print(f"Could not determine media type for: {item}")
+        print(f"Could not determine media type for: {url_clean}")
         return True
 
-    item_id = get_tidal_media_id(item)
-    if not isinstance(item_id, str):
-        print(f"Could not determine media id for: {item}")
+    url_clean_id = get_tidal_media_id(url_clean)
+    if not isinstance(url_clean_id, str):
+        print(f"Could not determine media id for: {url_clean}")
         return True
 
     file_template = get_format_template(media_type, settings)
     if not isinstance(file_template, str):
-        print(f"Could not determine file template for: {item}")
+        print(f"Could not determine file template for: {url_clean}")
         return True
 
     try:
-        media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, item_id)
+        media = instantiate_media(ctx.obj[CTX_TIDAL].session, media_type, url_clean_id)
     except Exception:
-        print(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
+        print(f"Media not found (ID: {url_clean_id}). Maybe it is not available anymore.")
         return True
 
     if media_type in [MediaType.TRACK, MediaType.VIDEO]:
-        _handle_track_or_video(dl, ctx, item, media, file_template, idx, urls_pos_last)
+        _handle_track_or_video(dl, ctx, url_clean, media, file_template, idx, urls_pos_last)
     elif media_type in [MediaType.ALBUM, MediaType.PLAYLIST, MediaType.MIX, MediaType.ARTIST]:
-        return _handle_album_playlist_mix_artist(ctx, dl, handling_app, media_type, media, item_id, file_template)
+        return _handle_album_playlist_mix_artist(ctx, dl, handling_app, media_type, media, url_clean_id, file_template)
     return True
 
 

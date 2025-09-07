@@ -18,7 +18,7 @@ body:
     attributes:
       label: What happened?
       description: Also tell us, what did you expect to happen?
-      placeholder: Use three sentences (!) or more. Otherwise your report gets rejected. Provide all necessary information to be able to **reproduce** this bug, for instance, links and exact names to your items to tried to download, images of the error, and the command you have used. If you do not this issue will be rejected and closed.
+      placeholder: Use three sentences (!) or more, otherwise your report gets rejected. Provide all necessary information to be able to **reproduce** (!) this bug, for instance, **links** and exact names to your items you tried to download, logs and images of the error, and the command you have used. If you do not this issue will be rejected and closed.
     validations:
       required: true
   - type: input
