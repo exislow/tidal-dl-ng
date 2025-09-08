@@ -152,7 +152,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         super().__init__()
         self.setupUi(self)
-        # self.setGeometry(50, 50, 500, 300)
         self.setWindowTitle("TIDAL Downloader Next Generation!")
 
         # Logging redirect.
@@ -160,7 +159,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
-
         self._init_threads()
         self._init_gui()
         self._init_tree_results_model(self.model_tr_results)
@@ -181,6 +179,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _init_gui(self) -> None:
         """Initialize GUI-specific variables and state."""
+        self.setGeometry(
+            self.settings.data.window_x,
+            self.settings.data.window_y,
+            self.settings.data.window_w,
+            self.settings.data.window_h,
+        )
         self.spinners: dict[QtWidgets.QWidget, QtWaitingSpinner] = {}
 
     def init_tidal(self, tidal: Tidal | None = None):
@@ -356,9 +360,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         ## Styling
         tree.sortByColumn(0, QtCore.Qt.SortOrder.AscendingOrder)
         tree.setColumnHidden(1, True)
-        tree.setColumnWidth(2, 150)
-        tree.setColumnWidth(3, 150)
-        tree.setColumnWidth(4, 150)
+        normal_width = max(150, (self.width() * 0.13))  # 12% for normal fields
+        narrow_width = max(90, (self.width() * 0.06))  # 6% for shorter fields
+        skinny_width = max(60, (self.width() * 0.03))  # 3% for very short fields
+        tree.setColumnWidth(2, normal_width)  # artist
+        tree.setColumnWidth(3, normal_width)  # title
+        tree.setColumnWidth(4, normal_width)  # album
+        tree.setColumnWidth(5, skinny_width)  # duration
+        tree.setColumnWidth(6, narrow_width)  # quality
+        tree.setColumnWidth(7, narrow_width)  # date
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         # Connect the contextmenu
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -1115,6 +1125,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Results
         self.tr_results.expanded.connect(self.on_tr_results_expanded)
         self.tr_results.clicked.connect(self.on_result_item_clicked)
+        self.tr_results.doubleClicked.connect(lambda: self.thread_it(self.on_download_results))
 
         # Download Queue
         self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
@@ -1673,6 +1684,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             event (QtGui.QCloseEvent): The close event.
         """
+
+        # Save the main window size and position
+        self.settings.data.window_x = self.x()
+        self.settings.data.window_y = self.y()
+        self.settings.data.window_w = self.width()
+        self.settings.data.window_h = self.height()
+        self.settings.save()
+
         self.shutdown = True
 
         handling_app: HandlingApp = HandlingApp()
