@@ -158,13 +158,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
-
-        self.setGeometry(
-            self.settings.data.window_x,
-            self.settings.data.window_y,
-            self.settings.data.window_w,
-            self.settings.data.window_h,
-        )
         self._init_threads()
         self._init_gui()
         self._init_tree_results_model(self.model_tr_results)
@@ -185,6 +178,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _init_gui(self) -> None:
         """Initialize GUI-specific variables and state."""
+        self.setGeometry(
+            self.settings.data.window_x,
+            self.settings.data.window_y,
+            self.settings.data.window_w,
+            self.settings.data.window_h,
+        )
         self.spinners: dict[QtWidgets.QWidget, QtWaitingSpinner] = {}
 
     def init_tidal(self, tidal: Tidal | None = None):
