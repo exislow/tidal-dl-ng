@@ -105,6 +105,10 @@ class HelpSettings:
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
     metadata_replay_gain: str = "Replay gain information will be written to metadata."
     metadata_write_url: str = "URL of the media file will be written to metadata."
+    window_x: str = "X-Coordinate of saved window location."
+    window_y: str = "Y-Coordinate of saved window location."
+    window_w: str = "Width of saved window size."
+    window_h: str = "Height of saved window size."
 
 
 @dataclass_json
