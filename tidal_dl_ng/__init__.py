@@ -36,7 +36,14 @@ def metadata_project() -> ProjectInformation:
     else:
         try:
             meta_info = importlib.metadata.metadata(name_package())
-            result = ProjectInformation(version=meta_info["Version"], repository_url=meta_info["Home-page"])
+
+            repo_url = meta_info["Home-page"]
+            if not repo_url:
+                urls = meta_info.get_all("Project-URL")
+                # attempt to parse, else use hardcoded fallback
+                repo_url = next((url.split(", ")[1] for url in urls if url.startswith("Repository")), "https://github.com/exislow/tidal-dl-ng")
+
+            result = ProjectInformation(version=meta_info["Version"], repository_url=repo_url)
         except:
             result = ProjectInformation(version="0.0.0", repository_url="https://anerroroccur.ed/sorry/for/that")
 
