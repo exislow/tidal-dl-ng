@@ -46,6 +46,10 @@ class Settings:
     playlist_create: bool = False
     metadata_replay_gain: bool = True
     metadata_write_url: bool = True
+    window_x: int = 50
+    window_y: int = 50
+    window_w: int = 1200
+    window_h: int = 800
 
 
 @dataclass_json
@@ -101,6 +105,10 @@ class HelpSettings:
     playlist_create: str = "Creates a '_playlist.m3u8' file for downloaded albums, playlists and mixes."
     metadata_replay_gain: str = "Replay gain information will be written to metadata."
     metadata_write_url: str = "URL of the media file will be written to metadata."
+    window_x: str = "X-Coordinate of saved window location."
+    window_y: str = "Y-Coordinate of saved window location."
+    window_w: str = "Width of saved window size."
+    window_h: str = "Height of saved window size."
 
 
 @dataclass_json
