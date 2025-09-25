@@ -487,7 +487,9 @@ def path_file_sanitize(path_file: pathlib.Path, adapt: bool = False, uniquify: b
 
     if not sanitized_filename.endswith(path_file.suffix):
         sanitized_filename = (
-            sanitized_filename[: -len(path_file.suffix)] + FILENAME_SANITIZE_PLACEHOLDER + path_file.suffix
+            sanitized_filename[: -len(path_file.suffix) - len(FILENAME_SANITIZE_PLACEHOLDER)]
+            + FILENAME_SANITIZE_PLACEHOLDER
+            + path_file.suffix
         )
 
     sanitized_path = pathlib.Path(
