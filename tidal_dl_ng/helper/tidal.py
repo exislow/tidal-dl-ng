@@ -11,7 +11,7 @@ from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 
 def name_builder_artist(media: Track | Video | Album) -> str:
-    return ", ".join(artist.name for artist in media.artists)
+    return "; ".join(artist.name for artist in media.artists)
 
 
 def name_builder_album_artist(media: Track | Album, first_only: bool = False) -> str:
@@ -25,7 +25,7 @@ def name_builder_album_artist(media: Track | Album, first_only: bool = False) ->
         if first_only:
             break
 
-    return ", ".join(artists_tmp)
+    return "; ".join(artists_tmp)
 
 
 def name_builder_title(media: Track | Video | Mix | Playlist | Album | Video) -> str:
