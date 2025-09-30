@@ -15,7 +15,7 @@ def metadata_project() -> ProjectInformation:
     file_path: Path = Path(__file__)
     tmp_result: dict = {}
 
-    paths: [Path] = [
+    paths: list[Path] = [
         file_path.parent,
         file_path.parent.parent,
         file_path.parent.parent.parent,
@@ -24,7 +24,7 @@ def metadata_project() -> ProjectInformation:
     for pyproject_toml_dir in paths:
         pyproject_toml_file: Path = pyproject_toml_dir / "pyproject.toml"
 
-        if pyproject_toml_file.exists() and pyproject_toml_file.is_file():
+        if pyproject_toml_file.is_file():
             tmp_result = toml.load(pyproject_toml_file)
 
             break
@@ -36,15 +36,18 @@ def metadata_project() -> ProjectInformation:
     else:
         try:
             meta_info = importlib.metadata.metadata(name_package())
-
             repo_url = meta_info["Home-page"]
+
             if not repo_url:
                 urls = meta_info.get_all("Project-URL")
                 # attempt to parse, else use hardcoded fallback
-                repo_url = next((url.split(", ")[1] for url in urls if url.startswith("Repository")), "https://github.com/exislow/tidal-dl-ng")
+                repo_url = next(
+                    (url.split(", ")[1] for url in urls if url.startswith("Repository")),
+                    "https://github.com/exislow/tidal-dl-ng",
+                )
 
             result = ProjectInformation(version=meta_info["Version"], repository_url=repo_url)
-        except:
+        except Exception:
             result = ProjectInformation(version="0.0.0", repository_url="https://anerroroccur.ed/sorry/for/that")
 
     return result
@@ -78,12 +81,14 @@ def latest_version_information() -> ReleaseLatest:
 
     try:
         response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
-        release_info: str = response.json()
+        release_info_json: dict = response.json()
 
         release_info = ReleaseLatest(
-            version=release_info["tag_name"], url=release_info["html_url"], release_info=release_info["body"]
+            version=release_info_json["tag_name"],
+            url=release_info_json["html_url"],
+            release_info=release_info_json["body"],
         )
-    except:
+    except Exception:
         release_info = ReleaseLatest(
             version="v0.0.0",
             url=url,
@@ -109,7 +114,7 @@ def is_dev_env() -> bool:
     if "__compiled__" not in globals():
         try:
             importlib.metadata.version(package_name)
-        except:
+        except Exception:
             # If package is not installed
             result = True
 
@@ -121,7 +126,7 @@ def name_app() -> str:
     is_dev: bool = is_dev_env()
 
     if is_dev:
-        app_name = app_name + "-dev"
+        app_name += "-dev"
 
     return app_name
 
@@ -130,12 +135,9 @@ __name_display__ = name_app()
 __version__ = version_app()
 
 
-def update_available() -> (bool, ReleaseLatest):
+def update_available() -> tuple[bool, ReleaseLatest]:
     latest_info: ReleaseLatest = latest_version_information()
-    result: bool = False
-    version_current: str = "v" + __version__
+    version_current: str = f"v{__version__}"
 
-    if version_current != latest_info.version and version_current != "v0.0.0":
-        result = True
-
+    result = version_current not in [latest_info.version, "v0.0.0"]
     return result, latest_info
