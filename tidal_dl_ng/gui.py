@@ -159,6 +159,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
+
         self._init_threads()
         self._init_gui()
         self._init_tree_results_model(self.model_tr_results)
@@ -1684,7 +1685,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             event (QtGui.QCloseEvent): The close event.
         """
-
         # Save the main window size and position
         self.settings.data.window_x = self.x()
         self.settings.data.window_y = self.y()
