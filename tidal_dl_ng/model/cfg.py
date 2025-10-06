@@ -44,7 +44,7 @@ class Settings:
     downloads_concurrent_max: int = 3
     symlink_to_track: bool = False
     playlist_create: bool = False
-    metadata_replay_gain: bool = True
+    metadata_replay_gain: bool = False
     metadata_write_url: bool = True
     window_x: int = 50
     window_y: int = 50
