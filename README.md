@@ -185,6 +185,12 @@ Ubuntu / Debian
 sudo apt install libxcb-cursor0
 ```
 
+### A terminal is flashing when I run this app on Windows
+
+Please see this isse [#103](https://github.com/exislow/tidal-dl-ng/issues/103).
+
+This is due to the Python `ffmpeg` library which is used and only happens on windows if `extract_flac` is activated.
+
 ## ‼️ Disclaimer
 
 - For educational purposes only. I am not liable and responsible for any damage that happens.
