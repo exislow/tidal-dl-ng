@@ -175,6 +175,16 @@ Long answer: See [here](https://github.com/exislow/tidal-dl-ng/issues/231)
 
 Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the help of this particular option until you get it right what path to put for `path_binary_ffmpeg`.
 
+### My Linux (e.g. Ubuntu) complains that `libxcb-cursor0` is not installed
+
+Simply install this dependency using your OS specific package manager.
+
+Ubuntu / Debian
+
+```bash
+sudo apt install libxcb-cursor0
+```
+
 ## ‼️ Disclaimer
 
 - For educational purposes only. I am not liable and responsible for any damage that happens.
