@@ -1366,6 +1366,16 @@ class Download:
         """
         result_dirs: list[pathlib.Path] = []
 
+        # Check if items list is empty
+        if not items:
+            # Mark progress as complete for empty lists
+            progress.update(progress_task, completed=progress.tasks[progress_task].total)
+
+            if not progress_stdout and self.progress_gui:
+                self.progress_gui.list_item.emit(100.0)
+
+            return result_dirs
+
         # Iterate through list items
         while not progress.finished:
             with futures.ThreadPoolExecutor(max_workers=self.settings.data.downloads_concurrent_max) as executor:
