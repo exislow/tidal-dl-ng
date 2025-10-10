@@ -62,6 +62,9 @@ help:
 
 .PHONY: gui
 gui: ## Build GUI app
+	@if [ "$$(uname)" = "Darwin" ] && [ -f "/opt/homebrew/opt/gettext/lib/libintl.9.dylib" ] && [ ! -f "/opt/homebrew/opt/gettext/lib/libintl.8.dylib" ]; then \
+		ln -sf /opt/homebrew/opt/gettext/lib/libintl.9.dylib /opt/homebrew/opt/gettext/lib/libintl.8.dylib; \
+	fi
 	@poetry run python -m nuitka \
 		--macos-app-version=$(APP_VERSION) \
 		--file-version=$(APP_VERSION) \
