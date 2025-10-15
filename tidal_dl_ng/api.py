@@ -13,6 +13,7 @@ __KEYS_JSON__ = """
 {
     "version": "1.0.1",
     "keys": [
+        // Invalid
         {
             "platform": "Fire TV",
             "formats": "Normal/High/HiFi(No Master)",
@@ -21,6 +22,7 @@ __KEYS_JSON__ = """
             "valid": "False",
             "from": "Fokka-Engineering (https://github.com/Fokka-Engineering/libopenTIDAL/blob/655528e26e4f3ee2c426c06ea5b8440cf27abc4a/README.md#example)"
         },
+        // Only max MQA.
         {
             "platform": "Fire TV",
             "formats": "Master-Only(Else Error)",
@@ -29,6 +31,7 @@ __KEYS_JSON__ = """
             "valid": "True",
             "from": "Dniel97 (https://github.com/Dniel97/RedSea/blob/4ba02b88cee33aeb735725cb854be6c66ff372d4/config/settings.example.py#L68)"
         },
+        // Invalid
         {
             "platform": "Android TV",
             "formats": "Normal/High/HiFi(No Master)",
@@ -37,6 +40,7 @@ __KEYS_JSON__ = """
             "valid": "False",
             "from": ""
         },
+        // Invalid
         {
             "platform": "TV",
             "formats": "Normal/High/HiFi/Master",
@@ -45,6 +49,7 @@ __KEYS_JSON__ = """
             "valid": "False",
             "from": "morguldir (https://github.com/morguldir/python-tidal/commit/50f1afcd2079efb2b4cf694ef5a7d67fdf619d09)"
         },
+        // Invalid
         {
             "platform": "Android Auto",
             "formats": "Normal/High/HiFi/Master",
