@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow">
+ <class>cb_api_key</class>
+ <widget class="QMainWindow" name="cb_api_key">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -59,13 +59,13 @@
          <string notr="true"/>
         </property>
         <property name="editTriggers">
-         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+         <set>QAbstractItemView::NoEditTriggers</set>
         </property>
         <property name="showDropIndicator" stdset="0">
          <bool>false</bool>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
+         <enum>QAbstractItemView::NoSelection</enum>
         </property>
         <property name="indentation">
          <number>10</number>
@@ -195,9 +195,9 @@
      </layout>
     </item>
     <item>
-     <layout class="QVBoxLayout" name="lv_search_result" stretch="0,0,0,0">
+     <layout class="QVBoxLayout" name="lv_search_result" stretch="0,0,0,0,0">
       <property name="spacing">
-       <number>-1</number>
+       <number>7</number>
       </property>
       <item>
        <layout class="QHBoxLayout" name="lh_search">
@@ -262,9 +262,9 @@
            <string notr="true"/>
           </property>
           <property name="sizeAdjustPolicy">
-           <enum>QComboBox::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
+           <enum>QComboBox::AdjustToContents</enum>
           </property>
-          <property name="placeholderText">
+          <property name="placeholderText" stdset="0">
            <string notr="true"/>
           </property>
          </widget>
@@ -296,7 +296,7 @@
       <item>
        <widget class="QTreeView" name="tr_results">
         <property name="editTriggers">
-         <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+         <set>QAbstractItemView::NoEditTriggers</set>
         </property>
         <property name="showDropIndicator" stdset="0">
          <bool>false</bool>
@@ -308,7 +308,7 @@
          <bool>false</bool>
         </property>
         <property name="selectionMode">
-         <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
+         <enum>QAbstractItemView::NoSelection</enum>
         </property>
         <property name="indentation">
          <number>10</number>
@@ -340,9 +340,6 @@
           <property name="text">
            <string notr="true">Audio</string>
           </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-          </property>
          </widget>
         </item>
         <item>
@@ -372,13 +369,13 @@
            <string notr="true"/>
           </property>
           <property name="sizeAdjustPolicy">
-           <enum>QComboBox::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
-          </property>
-          <property name="placeholderText">
-           <string notr="true"/>
+           <enum>QComboBox::AdjustToContents</enum>
           </property>
           <property name="frame">
            <bool>true</bool>
+          </property>
+          <property name="placeholderText" stdset="0">
+           <string notr="true"/>
           </property>
          </widget>
         </item>
@@ -401,9 +398,6 @@
           </property>
           <property name="text">
            <string notr="true">Video</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
           </property>
          </widget>
         </item>
@@ -434,9 +428,9 @@
            <string notr="true"/>
           </property>
           <property name="sizeAdjustPolicy">
-           <enum>QComboBox::SizeAdjustPolicy::AdjustToContentsOnFirstShow</enum>
+           <enum>QComboBox::AdjustToContents</enum>
           </property>
-          <property name="placeholderText">
+          <property name="placeholderText" stdset="0">
            <string notr="true"/>
           </property>
          </widget>
@@ -467,6 +461,9 @@
          </widget>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboBox"/>
       </item>
       <item>
        <widget class="QPlainTextEdit" name="te_debug">
@@ -543,7 +540,7 @@
              </size>
             </property>
             <property name="frameShape">
-             <enum>QFrame::Shape::NoFrame</enum>
+             <enum>QFrame::NoFrame</enum>
             </property>
             <property name="text">
              <string/>
@@ -553,9 +550,6 @@
             </property>
             <property name="scaledContents">
              <bool>true</bool>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignmentFlag::AlignHCenter|Qt::AlignmentFlag::AlignTop</set>
             </property>
            </widget>
           </item>
@@ -569,6 +563,7 @@
          <widget class="QLabel" name="l_h_queue_download">
           <property name="font">
            <font>
+            <weight>75</weight>
             <italic>false</italic>
             <bold>true</bold>
             <kerning>true</kerning>
@@ -582,7 +577,7 @@
         <item>
          <widget class="QTreeWidget" name="tr_queue_download">
           <property name="editTriggers">
-           <set>QAbstractItemView::EditTrigger::NoEditTriggers</set>
+           <set>QAbstractItemView::NoEditTriggers</set>
           </property>
           <property name="tabKeyNavigation">
            <bool>false</bool>
@@ -594,10 +589,10 @@
            <bool>false</bool>
           </property>
           <property name="selectionMode">
-           <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
+           <enum>QAbstractItemView::NoSelection</enum>
           </property>
           <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+           <enum>QAbstractItemView::SelectItems</enum>
           </property>
           <property name="rootIsDecorated">
            <bool>false</bool>
@@ -660,7 +655,8 @@
              <string>Remove</string>
             </property>
             <property name="icon">
-             <iconset theme="QIcon::ThemeIcon::EditClear"/>
+             <iconset theme="QIcon::ThemeIcon::EditClear">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -671,6 +667,8 @@
             </property>
             <property name="icon">
              <iconset theme="QIcon::ThemeIcon::MediaPlaybackPause"/>
+             <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart">
+              <normaloff>.</normaloff>.</iconset>
             </property>
            </widget>
           </item>
@@ -706,7 +704,7 @@
      <x>0</x>
      <y>0</y>
      <width>1200</width>
-     <height>24</height>
+     <height>26</height>
     </rect>
    </property>
    <property name="toolTip">
@@ -774,7 +772,7 @@
     <string notr="true"/>
    </property>
    <property name="layoutDirection">
-    <enum>Qt::LayoutDirection::LeftToRight</enum>
+    <enum>Qt::LeftToRight</enum>
    </property>
   </widget>
   <action name="a_preferences">

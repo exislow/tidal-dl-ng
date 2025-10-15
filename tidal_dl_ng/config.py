@@ -96,9 +96,11 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
     def __init__(self, settings: Settings = None):
         self.cls_model = ModelToken
         tidal_config: tidalapi.Config = tidalapi.Config(item_limit=10000)
+        if settings and settings.data.api_key_client_id:
+            tidal_config.client_id = settings.data.api_key_client_id
+            tidal_config.client_secret = settings.data.api_key_client_secret
+
         self.session = tidalapi.Session(tidal_config)
-        # self.session.config.client_id = "km8T1xS355y7dd3H"
-        # self.session.config.client_secret = "vcmeGW1OuZ0fWYMCSZ6vNvSLJlT3XEpW0ambgYt5ZuI="
         self.file_path = path_file_token()
         self.token_from_storage = self.read(self.file_path)
 
