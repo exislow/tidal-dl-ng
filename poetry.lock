@@ -2015,14 +2015,14 @@ files = [
 
 [[package]]
 name = "tidalapi"
-version = "0.8.7"
+version = "0.8.8"
 description = "Unofficial API for TIDAL music streaming service."
 optional = false
 python-versions = "<4.0,>=3.8"
 groups = ["main"]
 files = [
-    {file = "tidalapi-0.8.7-py3-none-any.whl", hash = "sha256:b2cf0116da6a4b0f0b635850df016093089abec376cd3e0022c0d3d6d5871f9d"},
-    {file = "tidalapi-0.8.7.tar.gz", hash = "sha256:22118cc0776be9caa5a11fb925bfce4356d8e76513f1d99b556b28c0bc951ca7"},
+    {file = "tidalapi-0.8.8-py3-none-any.whl", hash = "sha256:70e5ccebf608ad3fb9e17bde5fe36783322f993e1d4efb25a0ae970d898669fc"},
+    {file = "tidalapi-0.8.8.tar.gz", hash = "sha256:f378e5f8c56c0a0e59ac75880f50b986132e2e0a992da061646b5abe97704c75"},
 ]
 
 [package.dependencies]
@@ -2339,4 +2339,4 @@ gui = ["pyqtdarktheme-fork", "pyside6"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "342d28f2860a3423d014524aac49753853c634c2c06c6e7d984824eb822dc338"
+content-hash = "b4016a2fe1c82a9257429d437ae13bbd4fafd97ac6f120152e1a03209d0e70b0"
