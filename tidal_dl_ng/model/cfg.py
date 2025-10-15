@@ -50,6 +50,8 @@ class Settings:
     window_y: int = 50
     window_w: int = 1200
     window_h: int = 800
+    api_key_client_id: str = ""
+    api_key_client_secret: str = ""
 
 
 @dataclass_json
