@@ -1,7 +1,7 @@
 [project]
 name = "tidal-dl-ng"
 authors = [{ name = "Robert Honz", email = "<cen.sored@gmail.com>" }]
-version = "0.27.0"
+version = "0.28.0"
 description = "TIDAL Medial Downloader Next Generation!"
 readme = "README.md"
 classifiers = [
