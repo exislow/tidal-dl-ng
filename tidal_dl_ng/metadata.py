@@ -29,11 +29,13 @@ class Metadata:
     url_share: str
     replay_gain_write: bool
     upc: str
+    target_upc: dict[str, str]
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
         self,
         path_file: str | pathlib.Path,
+        target_upc: dict[str, str],
         album: str = "",
         title: str = "",
         artists: str = "",
@@ -78,6 +80,7 @@ class Metadata:
         self.url_share = url_share
         self.replay_gain_write = replay_gain_write
         self.upc = upc
+        self.target_upc = target_upc
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -134,7 +137,7 @@ class Metadata:
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
         self.m.tags["URL"] = self.url_share
-        self.m.tags["UPC"] = self.upc
+        self.m.tags[self.target_upc["FLAC"]] = self.upc
 
         if self.replay_gain_write:
             self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
@@ -157,7 +160,7 @@ class Metadata:
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
         self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
-        self.m.tags.add(TXXX(encoding=3, desc="UPC", text=self.upc))
+        self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["MP3"], text=self.upc))
 
         if self.replay_gain_write:
             self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
@@ -179,7 +182,7 @@ class Metadata:
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
-        self.m.tags["----:com.apple.iTunes:UPC"] = self.upc.encode("utf-8")
+        self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")

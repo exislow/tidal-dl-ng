@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo
+from tidal_dl_ng.constants import CoverDimensions, MetadataTargetUPC, QualityVideo
 
 
 @dataclass_json
@@ -54,6 +54,7 @@ class Settings:
     metadata_delimiter_album_artist: str = ", "
     filename_delimiter_artist: str = ", "
     filename_delimiter_album_artist: str = ", "
+    metadata_target_upc: MetadataTargetUPC = MetadataTargetUPC.UPC
 
 
 @dataclass_json
@@ -117,6 +118,9 @@ class HelpSettings:
     metadata_delimiter_album_artist: str = "Metadata tag delimiter for multiple album artists. Default: ', '"
     filename_delimiter_artist: str = "Filename delimiter for multiple artists. Default: ', '"
     filename_delimiter_album_artist: str = "Filename delimiter for multiple album artists. Default: ', '"
+    metadata_target_upc: str = (
+        "Select the target metadata tag ('UPC', 'BARCODE', 'EAN') where to write the UPC information to. Default: 'UPC'."
+    )
 
 
 @dataclass_json
