@@ -4,10 +4,11 @@ authors = [{ name = "Robert Honz", email = "<cen.sored@gmail.com>" }]
 version = "0.28.0"
 description = "TIDAL Medial Downloader Next Generation!"
 readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
 ]
