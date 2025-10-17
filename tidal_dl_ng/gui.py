@@ -52,7 +52,7 @@ from typing import Any
 
 from requests.exceptions import HTTPError
 from tidalapi.session import LinkLogin
-from tidal_dl_ng import api as ApiKeys
+
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
 from tidal_dl_ng.helper.gui import (
@@ -170,7 +170,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._init_progressbar()
         self._populate_quality(self.cb_quality_audio, Quality)
         self._populate_quality(self.cb_quality_video, QualityVideo)
-        self._populate_api_keys(self.cb_api_key)
         self._populate_search_types(self.cb_search_type, SearchTypes)
         self.apply_settings(self.settings)
         self._init_signals()
@@ -252,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         progress: Progress = Progress()
         handling_app: HandlingApp = HandlingApp()
         self.dl = Download(
-            session=self.tidal.session,
+            tidal_obj=self.tidal,
             skip_existing=self.tidal.settings.data.skip_existing,
             path_base=self.settings.data.download_base_path,
             fn_logger=logger_gui,
@@ -306,14 +305,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.te_debug.setTextCursor(cursor)
         self.te_debug.ensureCursorVisible()
-        
-    def _populate_api_keys(self, ui_target: QtWidgets.QComboBox) -> None:
-        """Puebla el ComboBox con los API keys disponibles."""
-        ui_target.addItem("Por defecto", None)
-        for i, key_data in enumerate(ApiKeys.getItems()):
-            if key_data["valid"] == "True":
-                platform_name = f"{key_data['platform']} - ({key_data['formats']})"
-                ui_target.addItem(platform_name, i)
 
     def _populate_quality(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with quality options.
@@ -324,6 +315,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         for item in options:
             ui_target.addItem(item.name, item)
+            
+        # Add our custom Dolby Atmos option to the audio quality dropdown
+        if ui_target == self.cb_quality_audio:
+                # Check if it already exists to be safe
+                if ui_target.findText("DOLBY_ATMOS") == -1:
+                    ui_target.addItem("DOLBY_ATMOS", "DOLBY_ATMOS")
 
     def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with search type options.
@@ -525,17 +522,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item["element"].setCurrentIndex(idx)
             else:
                 item["element"].setCurrentIndex(item["default_id"])
-        if settings.data.api_key_client_id:
-            for i in range(self.cb_api_key.count()):
-                key_index = self.cb_api_key.itemData(i)
-                if key_index is not None:
-                    key_data = ApiKeys.getItem(key_index)
-                    if key_data["clientId"] == settings.data.api_key_client_id:
-                        self.cb_api_key.setCurrentIndex(i)
-                        break
-        else:
-            self.cb_api_key.setCurrentIndex(0) # "Por defecto"
-
 
     def on_spinner_start(self, parent: QtWidgets.QWidget) -> None:
         """Start a loading spinner on the given parent widget.
@@ -905,7 +891,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem: The constructed ResultItem.
         """
-        
+
         final_quality = quality_audio_highest(item)
         if hasattr(item, "audio_modes") and "DOLBY_ATMOS" in item.audio_modes:
             final_quality = "Dolby Atmos"
@@ -1130,7 +1116,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         )
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
         self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
-        self.cb_api_key.currentIndexChanged.connect(self.on_api_key_set)
         self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
         self.s_spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
         self.s_spinner_stop.connect(self.on_spinner_stop)
@@ -1215,7 +1200,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             index: The index of the selected quality in the combo box.
         """
-        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
+        quality_data = self.cb_quality_audio.itemData(index)
+
+        # Handle our custom string for Dolby Atmos
+        if isinstance(quality_data, str) and quality_data == "DOLBY_ATMOS":
+            self.settings.data.quality_audio = "DOLBY_ATMOS"
+        else:
+            self.settings.data.quality_audio = Quality(quality_data)
+
         self.settings.save()
 
         if self.tidal:
@@ -1232,20 +1224,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if self.tidal:
             self.tidal.settings_apply()
-
-    def on_api_key_set(self, index: int) -> None:
-        """Guarda el API Key seleccionado en la configuración."""
-        key_index = self.cb_api_key.itemData(index)
-        if key_index is not None:
-            key_data = ApiKeys.getItem(key_index)
-            self.settings.data.api_key_client_id = key_data["clientId"]
-            self.settings.data.api_key_client_secret = key_data["clientSecret"]
-        else: # Si se selecciona "Por defecto"
-            self.settings.data.api_key_client_id = ""
-            self.settings.data.api_key_client_secret = ""
-        
-        self.settings.save()
-        logger_gui.info("API Key cambiado. Reinicia la aplicación para aplicar los cambios.")
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Show the items in the selected playlist or mix.
