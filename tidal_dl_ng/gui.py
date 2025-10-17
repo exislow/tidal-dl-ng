@@ -1400,9 +1400,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         handling_app.event_run.set()
 
-        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackStart))
+        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackPause))
         self.pb_queue_download_toggle.setIcon(icon)
-        self.pb_queue_download_toggle.setStyleSheet("background-color: #218838; color: #fff")
+        self.pb_queue_download_toggle.setStyleSheet("background-color: #e0a800; color: #212529")
 
     def pb_queue_download_pause(self) -> None:
         """Pause the download queue and update the button state."""
@@ -1410,9 +1410,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         handling_app.event_run.clear()
 
-        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackPause))
+        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackStart))
         self.pb_queue_download_toggle.setIcon(icon)
-        self.pb_queue_download_toggle.setStyleSheet("background-color: #e0a800; color: #212529")
+        self.pb_queue_download_toggle.setStyleSheet("background-color: #218838; color: #fff")
 
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:
