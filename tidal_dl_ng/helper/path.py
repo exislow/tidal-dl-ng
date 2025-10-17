@@ -87,7 +87,25 @@ def format_path_media(
     album_track_num_pad_min: int = 0,
     list_pos: int = 0,
     list_total: int = 0,
+    delimiter_artist: str = ", ",
+    delimiter_album_artist: str = ", ",
 ) -> str:
+    """Formats a media path string using a template and media attributes.
+
+    Replaces placeholders in the format template with sanitized media attribute values to generate a valid file path.
+
+    Args:
+        fmt_template (str): The format template string containing placeholders.
+        media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object to extract values from.
+        album_track_num_pad_min (int, optional): Minimum padding for track numbers. Defaults to 0.
+        list_pos (int, optional): Position in a list. Defaults to 0.
+        list_total (int, optional): Total items in a list. Defaults to 0.
+        delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
+        delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
+
+    Returns:
+        str: The formatted and sanitized media path string.
+    """
     result = fmt_template
 
     # Search track format template for placeholder.
@@ -96,7 +114,15 @@ def format_path_media(
 
     for _matchNum, match in enumerate(matches, start=1):
         template_str = match.group()
-        result_fmt = format_str_media(match.group(1), media, album_track_num_pad_min, list_pos, list_total)
+        result_fmt = format_str_media(
+            match.group(1),
+            media,
+            album_track_num_pad_min,
+            list_pos,
+            list_total,
+            delimiter_artist=delimiter_artist,
+            delimiter_album_artist=delimiter_album_artist,
+        )
 
         if result_fmt != match.group(1):
             # Sanitize here, in case of the filename has slashes or something, which will be recognized later as a directory separator.
@@ -115,18 +141,24 @@ def format_str_media(
     album_track_num_pad_min: int = 0,
     list_pos: int = 0,
     list_total: int = 0,
+    delimiter_artist: str = ", ",
+    delimiter_album_artist: str = ", ",
 ) -> str:
-    """Format a string based on media attributes.
+    """Formats a string for media attributes based on the provided name.
+
+    Attempts to format the given name using a sequence of formatter functions, returning the first successful result.
 
     Args:
-        name (str): The format template name.
-        media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object.
-        album_track_num_pad_min (int): Minimum padding for track numbers. Defaults to 0.
-        list_pos (int): Position in a list. Defaults to 0.
-        list_total (int): Total items in a list. Defaults to 0.
+        name (str): The format string name to process.
+        media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object to extract values from.
+        album_track_num_pad_min (int, optional): Minimum padding for track numbers. Defaults to 0.
+        list_pos (int, optional): Position in a list. Defaults to 0.
+        list_total (int, optional): Total items in a list. Defaults to 0.
+        delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
+        delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
 
     Returns:
-        str: The formatted string.
+        str: The formatted string for the media attribute, or the original name if no formatter matches.
     """
     try:
         # Try each formatter function in sequence
@@ -139,7 +171,15 @@ def format_str_media(
             _format_metadata,
             _format_volumes,
         ):
-            result = formatter(name, media, album_track_num_pad_min, list_pos, list_total)
+            result = formatter(
+                name,
+                media,
+                album_track_num_pad_min,
+                list_pos,
+                list_total,
+                delimiter_artist=delimiter_artist,
+                delimiter_album_artist=delimiter_album_artist,
+            )
             if result is not None:
                 return result
     except Exception as e:
@@ -152,6 +192,8 @@ def format_str_media(
 def _format_artist_names(
     name: str,
     media: Track | Album | Playlist | UserPlaylist | Video | Mix,
+    delimiter_artist: str = ", ",
+    delimiter_album_artist: str = ", ",
     *_args,
 ) -> str | None:
     """Handle artist name-related format strings.
@@ -166,13 +208,13 @@ def _format_artist_names(
     """
     if name == "artist_name" and isinstance(media, Track | Video):
         if hasattr(media, "artists"):
-            return name_builder_artist(media)
+            return name_builder_artist(media, delimiter=delimiter_artist)
         elif hasattr(media, "artist"):
             return media.artist.name
     elif name == "album_artist":
         return name_builder_album_artist(media, first_only=True)
     elif name == "album_artists":
-        return name_builder_album_artist(media)
+        return name_builder_album_artist(media, delimiter=delimiter_album_artist)
     return None
 
 
@@ -208,20 +250,28 @@ def _format_titles(
 def _format_names(
     name: str,
     media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    *args,
+    delimiter_artist: str = ", ",
+    delimiter_album_artist: str = ", ",
 ) -> str | None:
-    """Handle name-related format strings.
+    """Handles name-related format strings for media.
+
+    Tries to format the provided name as an artist or title, returning the first matching result.
 
     Args:
         name (str): The format string name to check.
         media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object to extract name information from.
-        *_args (Any): Additional arguments (not used).
+        *args: Additional arguments (not used).
+        delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
+        delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
 
     Returns:
         str | None: The formatted name or None if the format string is not name-related.
     """
     # First try artist name formats
-    result = _format_artist_names(name, media)
+    result = _format_artist_names(
+        name, media, delimiter_artist=delimiter_artist, delimiter_album_artist=delimiter_album_artist
+    )
     if result is not None:
         return result
 

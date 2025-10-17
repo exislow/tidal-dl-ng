@@ -653,7 +653,13 @@ class Download:
         )
 
         file_name_relative: str = format_path_media(
-            file_template, media, self.settings.data.album_track_num_pad_min, list_position, list_total
+            file_template,
+            media,
+            self.settings.data.album_track_num_pad_min,
+            list_position,
+            list_total,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
         )
 
         path_media_dst: pathlib.Path = (
@@ -671,7 +677,12 @@ class Download:
 
             if self.settings.data.symlink_to_track and not isinstance(media, Video):
                 # Compute symlink tracks path, sanitize and check if file exists
-                file_name_track_dir_relative: str = format_path_media(self.settings.data.format_track, media)
+                file_name_track_dir_relative: str = format_path_media(
+                    self.settings.data.format_track,
+                    media,
+                    delimiter_artist=self.settings.data.filename_delimiter_artist,
+                    delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+                )
                 path_media_track_dir: pathlib.Path = (
                     pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
                 ).absolute()
@@ -947,7 +958,12 @@ class Download:
             pathlib.Path: Destination path.
         """
         # Compute tracks path, sanitize and ensure path exists
-        file_name_relative: str = format_path_media(self.settings.data.format_track, media)
+        file_name_relative: str = format_path_media(
+            self.settings.data.format_track,
+            media,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
         path_media_dst: pathlib.Path = (
             pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)
         ).absolute()
@@ -1315,7 +1331,12 @@ class Download:
             tuple[str, str, str, list, bool]: (file_name_relative, list_media_name, list_media_name_short, items, progress_stdout)
         """
         # Create file name and path
-        file_name_relative: str = format_path_media(file_template, media)
+        file_name_relative: str = format_path_media(
+            file_template,
+            media,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
 
         # Get the name of the list and check, if videos should be included.
         list_media_name: str = name_builder_title(media)
@@ -1522,8 +1543,8 @@ class Download:
             if sort_alphabetically:
                 path_tracks.sort()
             elif not is_album:
-                # If it is not an album sort by modification time
-                path_tracks.sort(key=lambda x: os.path.getmtime(x))
+                # If it is not an album sort by creation time
+                path_tracks.sort(key=lambda x: os.path.getctime(x))
 
             # Write data to m3u file
             with path_playlist.open(mode="w", encoding="utf-8") as f:
