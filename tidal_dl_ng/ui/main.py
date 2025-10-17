@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.0
+## Created by: Qt User Interface Compiler version 6.9.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -467,7 +467,7 @@ class Ui_MainWindow:
 
         self.pb_queue_download_toggle = QPushButton(self.w_central)
         self.pb_queue_download_toggle.setObjectName("pb_queue_download_toggle")
-        icon1 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackStart))
+        icon1 = QIcon(QIcon.fromTheme(QIcon.ThemeIcon.MediaPlaybackPause))
         self.pb_queue_download_toggle.setIcon(icon1)
 
         self.horizontalLayout_4.addWidget(self.pb_queue_download_toggle)
