@@ -35,6 +35,7 @@ from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
     EXTENSION_LYRICS,
+    METADATA_EXPLICIT,
     METADATA_LOOKUP_UPC,
     PLAYLIST_EXTENSION,
     PLAYLIST_PREFIX,
@@ -1226,6 +1227,9 @@ class Download:
 
         metadata_target_upc = MetadataTargetUPC(self.settings.data.metadata_target_upc)
         target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
+        explicit: bool = track.explicit if hasattr(track, "explicit") else False
+        title = name_builder_title(track)
+        title += METADATA_EXPLICIT if explicit else ""
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
@@ -1234,7 +1238,7 @@ class Download:
             lyrics=lyrics_synced,
             lyrics_unsynced=lyrics_unsynced,
             copy_right=copy_right,
-            title=name_builder_title(track),
+            title=title,
             artists=name_builder_artist(track, delimiter=self.settings.data.metadata_delimiter_artist),
             album=track.album.name if track.album else "",
             tracknumber=track.track_num,
@@ -1252,6 +1256,7 @@ class Download:
             url_share=track.share_url if track.share_url and self.settings.data.metadata_write_url else "",
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
+            explicit=explicit,
         )
 
         m.save()

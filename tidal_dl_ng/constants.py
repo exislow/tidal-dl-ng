@@ -13,6 +13,7 @@ PLAYLIST_EXTENSION: str = ".m3u"
 PLAYLIST_PREFIX: str = "_"
 FILENAME_LENGTH_MAX: int = 255
 FORMAT_TEMPLATE_EXPLICIT: str = " (Explicit)"
+METADATA_EXPLICIT: str = " 🅴"
 
 
 class QualityVideo(StrEnum):
