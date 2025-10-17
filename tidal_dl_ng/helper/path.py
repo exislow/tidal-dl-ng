@@ -195,6 +195,7 @@ def _format_artist_names(
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
     *_args,
+    **kwargs,
 ) -> str | None:
     """Handle artist name-related format strings.
 
@@ -219,9 +220,7 @@ def _format_artist_names(
 
 
 def _format_titles(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle title-related format strings.
 
@@ -253,6 +252,7 @@ def _format_names(
     *args,
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
+    **kwargs,
 ) -> str | None:
     """Handles name-related format strings for media.
 
@@ -286,6 +286,7 @@ def _format_numbers(
     list_pos: int,
     list_total: int,
     *_args,
+    **kwargs,
 ) -> str | None:
     """Handle number-related format strings.
 
@@ -315,9 +316,7 @@ def _format_numbers(
 
 
 def _format_ids(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle ID-related format strings.
 
@@ -349,9 +348,7 @@ def _format_ids(
 
 
 def _format_durations(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle duration-related format strings.
 
@@ -388,9 +385,7 @@ def _format_durations(
 
 
 def _format_dates(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle date-related format strings.
 
@@ -417,9 +412,7 @@ def _format_dates(
 
 
 def _format_metadata(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle metadata-related format strings.
 
@@ -443,9 +436,7 @@ def _format_metadata(
 
 
 def _format_volumes(
-    name: str,
-    media: Track | Album | Playlist | UserPlaylist | Video | Mix,
-    *_args,
+    name: str, media: Track | Album | Playlist | UserPlaylist | Video | Mix, *_args, **kwargs
 ) -> str | None:
     """Handle volume-related format strings.
 
