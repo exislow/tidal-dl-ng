@@ -187,10 +187,14 @@ class Ui_DialogSettings:
 
         self.horizontalLayout_12.addLayout(self.lv_playlist_create)
 
-        self.verticalLayout_4 = QVBoxLayout()
-        self.verticalLayout_4.setObjectName("verticalLayout_4")
+        self.lv_flag_use_primary_album_artist = QVBoxLayout()
+        self.lv_flag_use_primary_album_artist.setObjectName("lv_flag_use_primary_album_artist")
+        self.cb_use_primary_album_artist = QCheckBox(self.gb_flags)
+        self.cb_use_primary_album_artist.setObjectName("cb_use_primary_album_artist")
 
-        self.horizontalLayout_12.addLayout(self.verticalLayout_4)
+        self.lv_flag_use_primary_album_artist.addWidget(self.cb_use_primary_album_artist)
+
+        self.horizontalLayout_12.addLayout(self.lv_flag_use_primary_album_artist)
 
         self.lv_flags.addLayout(self.horizontalLayout_12)
 
@@ -591,6 +595,7 @@ class Ui_DialogSettings:
         # endif // QT_CONFIG(whatsthis)
         self.cb_lyrics_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_lyrics_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_use_primary_album_artist.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_delay.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_metadata_cover_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
