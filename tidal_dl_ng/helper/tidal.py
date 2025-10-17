@@ -10,11 +10,11 @@ from tidal_dl_ng.constants import FAVORITES, MediaType
 from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 
-def name_builder_artist(media: Track | Video | Album) -> str:
-    return "; ".join(artist.name for artist in media.artists)
+def name_builder_artist(media: Track | Video | Album, delimiter: str = "; ") -> str:
+    return delimiter.join(artist.name for artist in media.artists)
 
 
-def name_builder_album_artist(media: Track | Album, first_only: bool = False) -> str:
+def name_builder_album_artist(media: Track | Album, first_only: bool = False, delimiter: str = "; ") -> str:
     artists_tmp: [str] = []
     artists: [Artist] = media.album.artists if isinstance(media, Track) else media.artists
 
@@ -25,7 +25,7 @@ def name_builder_album_artist(media: Track | Album, first_only: bool = False) ->
         if first_only:
             break
 
-    return "; ".join(artists_tmp)
+    return delimiter.join(artists_tmp)
 
 
 def name_builder_title(media: Track | Video | Mix | Playlist | Album | Video) -> str:
