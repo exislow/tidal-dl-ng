@@ -8,7 +8,6 @@ from threading import Event
 from typing import Any
 
 import tidalapi
-from requests import HTTPError
 
 from tidal_dl_ng.helper.decorator import SingletonMeta
 from tidal_dl_ng.helper.path import path_config_base, path_file_settings, path_file_token
@@ -129,7 +128,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                     self.data.expiry_time,
                     is_pkce=do_pkce,
                 )
-            except (HTTPError, JSONDecodeError):
+            except Exception:
                 result = False
                 # Remove token file. Probably corrupt or invalid.
                 if os.path.exists(self.file_path):
