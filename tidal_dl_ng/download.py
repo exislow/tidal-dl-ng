@@ -35,12 +35,14 @@ from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
     EXTENSION_LYRICS,
+    METADATA_LOOKUP_UPC,
     PLAYLIST_EXTENSION,
     PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
     AudioExtensionsValid,
     CoverDimensions,
     MediaType,
+    MetadataTargetUPC,
     QualityVideo,
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
@@ -1218,9 +1220,13 @@ class Download:
 
             path_cover = self.cover_to_file(path_media.parent, cover_data_album_file)
 
+        metadata_target_upc = MetadataTargetUPC(self.settings.data.metadata_target_upc)
+        target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
+
         # `None` values are not allowed.
         m: Metadata = Metadata(
             path_file=path_media,
+            target_upc=target_upc,
             lyrics=lyrics,
             copy_right=copy_right,
             title=name_builder_title(track),
