@@ -401,6 +401,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(header, "setSectionResizeMode"):
             header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.customContextMenuRequested.connect(self.menu_context_queue_download)
 
     def tidal_user_lists(self) -> None:
         """Fetch and emit user playlists, mixes, and favorites from Tidal."""
@@ -565,6 +566,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         menu = QtWidgets.QMenu()
         menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
+        menu.addAction("Download All Albums", lambda: self.thread_it(self.on_download_all_albums_from_playlist, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
@@ -581,11 +583,54 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not index.isValid():
             return
 
+        # Get the media item at this point
+        media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+
         # We build the menu.
         menu = QtWidgets.QMenu()
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
+        # Add "Download Full Album" option if it's a track or video with an album
+        if isinstance(media, (Track, Video)) and hasattr(media, "album") and media.album:
+            menu.addAction("Download Full Album", lambda: self.thread_it(self.on_download_album_from_track, point))
+
         menu.exec(self.tr_results.mapToGlobal(point))
+
+    def menu_context_queue_download(self, point: QtCore.QPoint) -> None:
+        """Show context menu for download queue.
+
+        Args:
+            point (QPoint): The point where the menu is requested.
+        """
+        # Get the item at this point
+        item = self.tr_queue_download.itemAt(point)
+
+        if not item:
+            return
+
+        # Build the menu
+        menu = QtWidgets.QMenu()
+
+        # Show remove option for waiting items
+        status = item.text(0)
+        if status == QueueDownloadStatus.Waiting:
+            menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
+
+        if menu.isEmpty():
+            return
+
+        menu.exec(self.tr_queue_download.mapToGlobal(point))
+
+    def on_queue_download_remove_item(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Remove a specific item from the download queue.
+        
+        Args:
+            item (QTreeWidgetItem): The item to remove.
+        """
+        index = self.tr_queue_download.indexOfTopLevelItem(item)
+        if index >= 0:
+            self.tr_queue_download.takeTopLevelItem(index)
+            logger_gui.info("Removed item from download queue")
 
     def thread_download_list_media(self, point: QtCore.QPoint) -> None:
         """Start download of a list media item in a thread.
@@ -594,6 +639,127 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             point (QPoint): The point in the tree.
         """
         self.thread_it(self.on_download_list_media, point)
+
+    def on_download_all_albums_from_playlist(self, point: QtCore.QPoint) -> None:
+        """Download all unique albums from tracks in a playlist.
+        
+        Args:
+            point (QPoint): The point in the tree where the playlist was right-clicked.
+        """
+        try:
+            # Get the playlist
+            item = self.tr_lists_user.itemAt(point)
+            media_list = get_user_list_media_item(item)
+            
+            if not isinstance(media_list, (Playlist, UserPlaylist, Mix)):
+                logger_gui.error("Please select a playlist or mix.")
+                return
+            
+            # Get all items from the playlist
+            logger_gui.info(f"Fetching all tracks from: {media_list.name}")
+            media_items = items_results_all(media_list)
+            
+            # Extract unique albums from tracks
+            albums_dict = {}
+            for media_item in media_items:
+                if isinstance(media_item, (Track, Video)) and hasattr(media_item, 'album') and media_item.album:
+                    # Reload full album object
+                    album = self.tidal.session.album(media_item.album.id)
+                    albums_dict[album.id] = album
+            
+            if not albums_dict:
+                logger_gui.warning("No albums found in this playlist.")
+                return
+            
+            # Prepare all queue items first
+            logger_gui.info(f"Found {len(albums_dict)} unique albums. Preparing queue items...")
+            
+            queue_items = []
+            for album in albums_dict.values():
+                queue_dl_item = self.media_to_queue_download_model(album)
+                if queue_dl_item:
+                    queue_items.append((queue_dl_item, album))
+                    logger_gui.debug(f"Prepared: {name_builder_artist(album)} - {album.name}")
+            
+            # Add all items to queue at once
+            logger_gui.info(f"Adding {len(queue_items)} albums to queue...")
+            for queue_dl_item, album in queue_items:
+                self.queue_download_media(queue_dl_item)
+                logger_gui.info(f"Added: {name_builder_artist(album)} - {album.name}")
+            
+            # Show confirmation
+            message = f"Added {len(queue_items)} albums to download queue"
+            self.s_statusbar_message.emit(StatusbarMessage(message=message, timeout=3000))
+            logger_gui.info(message)
+            
+        except Exception as e:
+            error_msg = f"Error downloading albums from playlist: {str(e)}"
+            logger_gui.error(error_msg)
+            self.s_statusbar_message.emit(StatusbarMessage(message=error_msg, timeout=3000))
+
+    def on_download_album_from_track(self, point: QtCore.QPoint) -> None:
+        """Download the full album from a selected track.
+
+        Args:
+            point (QPoint): The point in the tree where the track was right-clicked.
+        """
+        try:
+            # Get the selected track/video
+            index = self.tr_results.indexAt(point)
+            
+            if not index.isValid():
+                logger_gui.error("Invalid selection.")
+                return
+            
+            # Get the media item (Track or Video)
+            media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+            
+            # Verify it's a Track or Video with an album
+            if not isinstance(media, (Track, Video)):
+                logger_gui.error("Selected item is not a track or video.")
+                return
+            
+            if not hasattr(media, 'album') or not media.album:
+                logger_gui.error("Selected track does not have an associated album.")
+                return
+            
+            # Get the album
+            album = media.album
+            
+            # Reload the complete album object from TIDAL's API
+            album = self.tidal.session.album(album.id)
+            
+            # Debug logging for album object
+            logger_gui.info(f"Album object: {album}")
+            logger_gui.info(f"Album name: {album.name}")
+            logger_gui.info(f"Album ID: {album.id}")
+            logger_gui.info(f"Album available: {getattr(album, 'available', 'unknown')}")
+            
+            # Create a queue download item for the album
+            queue_dl_item = self.media_to_queue_download_model(album)
+            
+            if queue_dl_item:
+                # Add to download queue
+                self.queue_download_media(queue_dl_item)
+                
+                # Show confirmation message
+                artist_name = name_builder_artist(album)
+                message = f"Album added to queue: {artist_name} - {album.name}"
+                
+                self.s_statusbar_message.emit(
+                    StatusbarMessage(message=message, timeout=3000)
+                )
+                
+                logger_gui.info(message)
+            else:
+                logger_gui.error(f"Unable to add album to queue: {album.name}")
+                
+        except Exception as e:
+            error_msg = f"Error downloading album from track: {str(e)}"
+            logger_gui.error(error_msg)
+            self.s_statusbar_message.emit(
+                StatusbarMessage(message=error_msg, timeout=3000)
+            )
 
     def on_copy_url_share(
         self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None
@@ -1042,7 +1208,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         explicit: str = ""
 
         # Check if item is available on TIDAL.
-        if hasattr(media, "available") and not media.available:
+        # Note: Some albums have available=None, which should be treated as available
+        if hasattr(media, "available") and media.available is False:
             return False
 
         # Set "Explicit" tag

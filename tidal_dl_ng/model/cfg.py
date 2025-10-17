@@ -12,6 +12,7 @@ class Settings:
     skip_existing: bool = True
     lyrics_embed: bool = False
     lyrics_file: bool = False
+    use_primary_album_artist: bool = False  # When True, uses first album artist instead of track artists for folder paths
     # TODO: Implement API KEY selection.
     # api_key_index: bool = 0
     # TODO: Implement album info download to separate file.
@@ -63,6 +64,7 @@ class HelpSettings:
     skip_existing: str = "Skip download if file already exists."
     album_cover_save: str = "Safe cover to album folder."
     lyrics_embed: str = "Embed lyrics in audio file, if lyrics are available."
+    use_primary_album_artist: str = "Use only the primary album artist for folder paths instead of track artists."
     lyrics_file: str = "Save lyrics to separate *.lrc file, if lyrics are available."
     api_key_index: str = "Set the device API KEY."
     album_info_save: str = "Save album info to track?"
