@@ -251,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         progress: Progress = Progress()
         handling_app: HandlingApp = HandlingApp()
         self.dl = Download(
-            session=self.tidal.session,
+            tidal_obj=self.tidal,
             skip_existing=self.tidal.settings.data.skip_existing,
             path_base=self.settings.data.download_base_path,
             fn_logger=logger_gui,
@@ -315,6 +315,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         for item in options:
             ui_target.addItem(item.name, item)
+            
+        # Add our custom Dolby Atmos option to the audio quality dropdown
+        if ui_target == self.cb_quality_audio:
+                # Check if it already exists to be safe
+                if ui_target.findText("DOLBY_ATMOS") == -1:
+                    ui_target.addItem("DOLBY_ATMOS", "DOLBY_ATMOS")
 
     def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with search type options.
@@ -880,6 +886,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem: The constructed ResultItem.
         """
+
+        final_quality = quality_audio_highest(item)
+        if hasattr(item, "audio_modes") and "DOLBY_ATMOS" in item.audio_modes:
+            final_quality = "Dolby Atmos"
+
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -887,7 +898,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             album=item.album.name,
             duration_sec=item.duration,
             obj=item,
-            quality=quality_audio_highest(item),
+            quality=final_quality,
             explicit=bool(item.explicit),
             date_user_added=date_user_added,
             date_release=date_release,
@@ -1184,7 +1195,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             index: The index of the selected quality in the combo box.
         """
-        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
+        quality_data = self.cb_quality_audio.itemData(index)
+
+        # Handle our custom string for Dolby Atmos
+        if isinstance(quality_data, str) and quality_data == "DOLBY_ATMOS":
+            self.settings.data.quality_audio = "DOLBY_ATMOS"
+        else:
+            self.settings.data.quality_audio = Quality(quality_data)
+
         self.settings.save()
 
         if self.tidal:

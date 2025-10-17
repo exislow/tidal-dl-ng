@@ -89,6 +89,7 @@ class Settings(BaseConfig, metaclass=SingletonMeta):
 
 class Tidal(BaseConfig, metaclass=SingletonMeta):
     session: tidalapi.Session
+    atmos_session: tidalapi.Session = None
     token_from_storage: bool = False
     settings: Settings
     is_pkce: bool
@@ -110,8 +111,12 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         if settings:
             self.settings = settings
 
-        self.session.audio_quality = self.settings.data.quality_audio
-        self.session.video_quality = tidalapi.VideoQuality.high
+        # Handle standard qualities and our special Dolby Atmos string
+        if self.settings.data.quality_audio == "DOLBY_ATMOS":
+            self.session.audio_quality = "DOLBY_ATMOS"
+        else:
+            self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
+            self.session.video_quality = tidalapi.VideoQuality.high
 
         return True
 
@@ -155,6 +160,32 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.set_option("refresh_token", self.session.refresh_token)
         self.set_option("expiry_time", self.session.expiry_time)
         self.save()
+
+    def get_atmos_session(self) -> tidalapi.Session:
+        """
+        Returns the Atmos session. If it doesn't exist, it creates it
+        by logging in with the Fire TV client ID using the main session's token.
+        """
+        if self.atmos_session is None:
+            # This config uses the Fire TV client ID needed for Dolby Atmos.
+            # It is handled internally and not exposed to the user.
+            atmos_config = tidalapi.Config(item_limit=10000)
+            atmos_config.client_id = "7m7Ap0JC9j1cOM3n"
+            atmos_config.client_secret = "vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY="
+
+            self.atmos_session = tidalapi.Session(atmos_config)
+
+        # Try to log in using the token from the already logged-in main session.
+        if not self.atmos_session.check_login():
+            self.atmos_session.load_oauth_session(
+                self.data.token_type,
+                self.data.access_token,
+                self.data.refresh_token,
+                self.data.expiry_time,
+                is_pkce=self.is_pkce,
+            )
+
+        return self.atmos_session
 
     def login(self, fn_print: Callable) -> bool:
         is_token = self.login_token()
