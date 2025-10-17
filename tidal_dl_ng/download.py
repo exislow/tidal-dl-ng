@@ -30,17 +30,20 @@ from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.exceptions import TooManyRequests
 from tidalapi.media import AudioExtensions, Codec, Quality, Stream, StreamManifest, VideoExtensions
 
-from tidal_dl_ng.config import Settings
+from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
     EXTENSION_LYRICS,
+    METADATA_EXPLICIT,
+    METADATA_LOOKUP_UPC,
     PLAYLIST_EXTENSION,
     PLAYLIST_PREFIX,
     REQUESTS_TIMEOUT_SEC,
     AudioExtensionsValid,
     CoverDimensions,
     MediaType,
+    MetadataTargetUPC,
     QualityVideo,
 )
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
@@ -96,6 +99,7 @@ class Download:
     """Main class for managing downloads, segment merging, file operations, and metadata for TIDAL media."""
 
     settings: Settings
+    tidal: "Tidal"  # Using a forward reference for type hinting
     session: Session
     skip_existing: bool = False
     fn_logger: Callable
@@ -107,7 +111,7 @@ class Download:
 
     def __init__(
         self,
-        session: Session,
+        tidal_obj: "Tidal",
         path_base: str,
         fn_logger: Callable,
         skip_existing: bool = False,
@@ -131,7 +135,8 @@ class Download:
             event_run (Event | None, optional): Run event. Defaults to None.
         """
         self.settings = Settings()
-        self.session = session
+        self.tidal = tidal_obj
+        self.session = tidal_obj.session
         self.skip_existing = skip_existing
         self.fn_logger = fn_logger
         self.progress_gui = progress_gui
@@ -653,7 +658,13 @@ class Download:
         )
 
         file_name_relative: str = format_path_media(
-            file_template, media, self.settings.data.album_track_num_pad_min, list_position, list_total
+            file_template,
+            media,
+            self.settings.data.album_track_num_pad_min,
+            list_position,
+            list_total,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
         )
 
         path_media_dst: pathlib.Path = (
@@ -671,7 +682,12 @@ class Download:
 
             if self.settings.data.symlink_to_track and not isinstance(media, Video):
                 # Compute symlink tracks path, sanitize and check if file exists
-                file_name_track_dir_relative: str = format_path_media(self.settings.data.format_track, media)
+                file_name_track_dir_relative: str = format_path_media(
+                    self.settings.data.format_track,
+                    media,
+                    delimiter_artist=self.settings.data.filename_delimiter_artist,
+                    delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+                )
                 path_media_track_dir: pathlib.Path = (
                     pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
                 ).absolute()
@@ -769,8 +785,36 @@ class Download:
 
         if isinstance(media, Track):
             try:
-                media_stream = media.get_stream()
+                # Check which quality the user has selected
+                selected_quality = self.settings.data.quality_audio
+
+                if selected_quality == "DOLBY_ATMOS":
+                    # Dolby Atmos requested: use the special Atmos session.
+                    atmos_session = self.tidal.get_atmos_session()
+                
+                    # Store the original quality of the atmos_session to restore it later
+                    original_quality = atmos_session.audio_quality 
+                
+                    try:
+                        # Temporarily set the session to request what Tidal considers "High" (320k AAC).
+                        # This is the key to getting the Atmos stream with the Fire TV client ID.
+                        atmos_session.audio_quality = Quality.low_320k
+                    
+                        # Get the track object from the correct session
+                        atmos_track = atmos_session.track(media.id)
+                    
+                        # Call get_stream() WITHOUT arguments. It will use the quality from the session object.
+                        media_stream = atmos_track.get_stream()
+                    finally:
+                        # IMPORTANT: Always restore the original quality on the atmos_session
+                        atmos_session.audio_quality = original_quality
+                else:
+                    # Standard behavior: get_stream uses the quality already set on the main session
+                    media_stream = media.get_stream()
+            
                 stream_manifest = media_stream.get_stream_manifest()
+
+            
             except TooManyRequests:
                 self.fn_logger.exception(
                     f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
@@ -947,7 +991,12 @@ class Download:
             pathlib.Path: Destination path.
         """
         # Compute tracks path, sanitize and ensure path exists
-        file_name_relative: str = format_path_media(self.settings.data.format_track, media)
+        file_name_relative: str = format_path_media(
+            self.settings.data.format_track,
+            media,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
         path_media_dst: pathlib.Path = (
             pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)
         ).absolute()
@@ -1165,6 +1214,8 @@ class Download:
         copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
+        lyrics_synced: str = ""
+        lyrics_unsynced: str = ""
         cover_data: bytes = None
 
         if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
@@ -1172,10 +1223,12 @@ class Download:
             try:
                 lyrics_obj = track.lyrics()
 
+                if lyrics_obj.text:
+                    lyrics_unsynced = lyrics_obj.text
+                    lyrics = lyrics_unsynced
                 if lyrics_obj.subtitles:
-                    lyrics = lyrics_obj.subtitles
-                elif lyrics_obj.text:
-                    lyrics = lyrics_obj.text
+                    lyrics_synced = lyrics_obj.subtitles
+                    lyrics = lyrics_synced
             except:
                 lyrics = ""
                 # TODO: Implement proper logging.
@@ -1202,18 +1255,26 @@ class Download:
 
             path_cover = self.cover_to_file(path_media.parent, cover_data_album_file)
 
+        metadata_target_upc = MetadataTargetUPC(self.settings.data.metadata_target_upc)
+        target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
+        explicit: bool = track.explicit if hasattr(track, "explicit") else False
+        title = name_builder_title(track)
+        title += METADATA_EXPLICIT if explicit else ""
+
         # `None` values are not allowed.
         m: Metadata = Metadata(
             path_file=path_media,
-            lyrics=lyrics,
+            target_upc=target_upc,
+            lyrics=lyrics_synced,
+            lyrics_unsynced=lyrics_unsynced,
             copy_right=copy_right,
-            title=name_builder_title(track),
-            artists=name_builder_artist(track),
+            title=title,
+            artists=name_builder_artist(track, delimiter=self.settings.data.metadata_delimiter_artist),
             album=track.album.name if track.album else "",
             tracknumber=track.track_num,
             date=release_date,
             isrc=isrc,
-            albumartist=name_builder_album_artist(track),
+            albumartist=name_builder_album_artist(track, delimiter=self.settings.data.metadata_delimiter_album_artist),
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
@@ -1225,6 +1286,7 @@ class Download:
             url_share=track.share_url if track.share_url and self.settings.data.metadata_write_url else "",
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
+            explicit=explicit,
         )
 
         m.save()
@@ -1315,7 +1377,12 @@ class Download:
             tuple[str, str, str, list, bool]: (file_name_relative, list_media_name, list_media_name_short, items, progress_stdout)
         """
         # Create file name and path
-        file_name_relative: str = format_path_media(file_template, media)
+        file_name_relative: str = format_path_media(
+            file_template,
+            media,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
 
         # Get the name of the list and check, if videos should be included.
         list_media_name: str = name_builder_title(media)
@@ -1522,8 +1589,8 @@ class Download:
             if sort_alphabetically:
                 path_tracks.sort()
             elif not is_album:
-                # If it is not an album sort by modification time
-                path_tracks.sort(key=lambda x: os.path.getmtime(x))
+                # If it is not an album sort by creation time
+                path_tracks.sort(key=lambda x: os.path.getctime(x))
 
             # Write data to m3u file
             with path_playlist.open(mode="w", encoding="utf-8") as f:

@@ -2,7 +2,7 @@ import pathlib
 
 import mutagen
 from mutagen import flac, id3, mp4
-from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
+from mutagen.id3 import APIC, SYLT, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
 
 
 class Metadata:
@@ -20,6 +20,7 @@ class Metadata:
     composer: str
     isrc: str
     lyrics: str
+    lyrics_unsynced: str
     path_cover: str
     cover_data: bytes
     album_replay_gain: float
@@ -29,11 +30,14 @@ class Metadata:
     url_share: str
     replay_gain_write: bool
     upc: str
+    target_upc: dict[str, str]
+    explicit: bool
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
         self,
         path_file: str | pathlib.Path,
+        target_upc: dict[str, str],
         album: str = "",
         title: str = "",
         artists: str = "",
@@ -47,6 +51,7 @@ class Metadata:
         albumartist: str = "",
         date: str = "",
         lyrics: str = "",
+        lyrics_unsynced: str = "",
         cover_data: bytes = None,
         album_replay_gain: float = 1.0,
         album_peak_amplitude: float = 1.0,
@@ -55,6 +60,7 @@ class Metadata:
         url_share: str = "",
         replay_gain_write: bool = True,
         upc: str = "",
+        explicit: bool = False,
     ):
         self.path_file = path_file
         self.title = title
@@ -70,6 +76,7 @@ class Metadata:
         self.composer = composer
         self.isrc = isrc
         self.lyrics = lyrics
+        self.lyrics_unsynced = lyrics_unsynced
         self.cover_data = cover_data
         self.album_replay_gain = album_replay_gain
         self.album_peak_amplitude = album_peak_amplitude
@@ -78,6 +85,8 @@ class Metadata:
         self.url_share = url_share
         self.replay_gain_write = replay_gain_write
         self.upc = upc
+        self.target_upc = target_upc
+        self.explicit = explicit
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -133,8 +142,9 @@ class Metadata:
         self.m.tags["COMPOSER"] = self.composer
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
+        self.m.tags["UNSYNCEDLYRICS"] = self.lyrics_unsynced
         self.m.tags["URL"] = self.url_share
-        self.m.tags["UPC"] = self.upc
+        self.m.tags[self.target_upc["FLAC"]] = self.upc
 
         if self.replay_gain_write:
             self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
@@ -155,9 +165,10 @@ class Metadata:
         self.m.tags.add(TDRC(encoding=3, text=self.date))
         self.m.tags.add(TCOM(encoding=3, text=self.composer))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
-        self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
+        self.m.tags.add(SYLT(encoding=3, desc="text", text=self.lyrics))
+        self.m.tags.add(USLT(encoding=3, desc="text", text=self.lyrics_unsynced))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
-        self.m.tags.add(TXXX(encoding=3, desc="UPC", text=self.upc))
+        self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["MP3"], text=self.upc))
 
         if self.replay_gain_write:
             self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
@@ -177,9 +188,11 @@ class Metadata:
         self.m.tags["\xa9day"] = self.date
         self.m.tags["\xa9wrt"] = self.composer
         self.m.tags["\xa9lyr"] = self.lyrics
+        self.m.tags["----:com.apple.iTunes:UNSYNCEDLYRICS"] = self.lyrics_unsynced.encode("utf-8")
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
-        self.m.tags["----:com.apple.iTunes:UPC"] = self.upc.encode("utf-8")
+        self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
+        self.m.tags["rtng"] = [1 if self.explicit else 0]
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
