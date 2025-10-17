@@ -2,7 +2,7 @@ import pathlib
 
 import mutagen
 from mutagen import flac, id3, mp4
-from mutagen.id3 import APIC, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
+from mutagen.id3 import APIC, SYLT, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
 
 
 class Metadata:
@@ -20,6 +20,7 @@ class Metadata:
     composer: str
     isrc: str
     lyrics: str
+    lyrics_unsynced: str
     path_cover: str
     cover_data: bytes
     album_replay_gain: float
@@ -49,6 +50,7 @@ class Metadata:
         albumartist: str = "",
         date: str = "",
         lyrics: str = "",
+        lyrics_unsynced: str = "",
         cover_data: bytes = None,
         album_replay_gain: float = 1.0,
         album_peak_amplitude: float = 1.0,
@@ -72,6 +74,7 @@ class Metadata:
         self.composer = composer
         self.isrc = isrc
         self.lyrics = lyrics
+        self.lyrics_unsynced = lyrics_unsynced
         self.cover_data = cover_data
         self.album_replay_gain = album_replay_gain
         self.album_peak_amplitude = album_peak_amplitude
@@ -136,6 +139,7 @@ class Metadata:
         self.m.tags["COMPOSER"] = self.composer
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
+        self.m.tags["UNSYNCEDLYRICS"] = self.lyrics_unsynced
         self.m.tags["URL"] = self.url_share
         self.m.tags[self.target_upc["FLAC"]] = self.upc
 
@@ -158,7 +162,8 @@ class Metadata:
         self.m.tags.add(TDRC(encoding=3, text=self.date))
         self.m.tags.add(TCOM(encoding=3, text=self.composer))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
-        self.m.tags.add(USLT(encoding=3, lang="eng", desc="desc", text=self.lyrics))
+        self.m.tags.add(SYLT(encoding=3, desc="text", text=self.lyrics))
+        self.m.tags.add(USLT(encoding=3, desc="text", text=self.lyrics_unsynced))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
         self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["MP3"], text=self.upc))
 
@@ -180,6 +185,7 @@ class Metadata:
         self.m.tags["\xa9day"] = self.date
         self.m.tags["\xa9wrt"] = self.composer
         self.m.tags["\xa9lyr"] = self.lyrics
+        self.m.tags["----:com.apple.iTunes:UNSYNCEDLYRICS"] = self.lyrics_unsynced.encode("utf-8")
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
         self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")

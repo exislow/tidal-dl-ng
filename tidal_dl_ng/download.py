@@ -1183,6 +1183,8 @@ class Download:
         copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
         lyrics: str = ""
+        lyrics_synced: str = ""
+        lyrics_unsynced: str = ""
         cover_data: bytes = None
 
         if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
@@ -1190,10 +1192,12 @@ class Download:
             try:
                 lyrics_obj = track.lyrics()
 
+                if lyrics_obj.text:
+                    lyrics_unsynced = lyrics_obj.text
+                    lyrics = lyrics_unsynced
                 if lyrics_obj.subtitles:
-                    lyrics = lyrics_obj.subtitles
-                elif lyrics_obj.text:
-                    lyrics = lyrics_obj.text
+                    lyrics_synced = lyrics_obj.subtitles
+                    lyrics = lyrics_synced
             except:
                 lyrics = ""
                 # TODO: Implement proper logging.
@@ -1227,7 +1231,8 @@ class Download:
         m: Metadata = Metadata(
             path_file=path_media,
             target_upc=target_upc,
-            lyrics=lyrics,
+            lyrics=lyrics_synced,
+            lyrics_unsynced=lyrics_unsynced,
             copy_right=copy_right,
             title=name_builder_title(track),
             artists=name_builder_artist(track, delimiter=self.settings.data.metadata_delimiter_artist),
