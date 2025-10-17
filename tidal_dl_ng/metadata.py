@@ -31,6 +31,7 @@ class Metadata:
     replay_gain_write: bool
     upc: str
     target_upc: dict[str, str]
+    explicit: bool
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -59,6 +60,7 @@ class Metadata:
         url_share: str = "",
         replay_gain_write: bool = True,
         upc: str = "",
+        explicit: bool = False,
     ):
         self.path_file = path_file
         self.title = title
@@ -84,6 +86,7 @@ class Metadata:
         self.replay_gain_write = replay_gain_write
         self.upc = upc
         self.target_upc = target_upc
+        self.explicit = explicit
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -189,6 +192,7 @@ class Metadata:
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
         self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
+        self.m.tags["rtng"] = [1 if self.explicit else 0]
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")

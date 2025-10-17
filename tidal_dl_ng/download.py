@@ -1252,6 +1252,7 @@ class Download:
             url_share=track.share_url if track.share_url and self.settings.data.metadata_write_url else "",
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
+            explicit=track.explicit if hasattr(track, "explicit") else False,
         )
 
         m.save()
