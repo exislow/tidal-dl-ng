@@ -50,8 +50,10 @@ class Settings:
     window_y: int = 50
     window_w: int = 1200
     window_h: int = 800
-    metadata_delimiter_artist: str = "; "
-    metadata_delimiter_album_artist: str = "; "
+    metadata_delimiter_artist: str = ", "
+    metadata_delimiter_album_artist: str = ", "
+    filename_delimiter_artist: str = ", "
+    filename_delimiter_album_artist: str = ", "
 
 
 @dataclass_json
@@ -111,8 +113,10 @@ class HelpSettings:
     window_y: str = "Y-Coordinate of saved window location."
     window_w: str = "Width of saved window size."
     window_h: str = "Height of saved window size."
-    metadata_delimiter_artist: str = "Metadata tag delimiter for multiple artists. Default: '; '"
-    metadata_delimiter_album_artist: str = "Metadata tag delimiter for multiple album artists. Default: '; '"
+    metadata_delimiter_artist: str = "Metadata tag delimiter for multiple artists. Default: ', '"
+    metadata_delimiter_album_artist: str = "Metadata tag delimiter for multiple album artists. Default: ', '"
+    filename_delimiter_artist: str = "Filename delimiter for multiple artists. Default: ', '"
+    filename_delimiter_album_artist: str = "Filename delimiter for multiple album artists. Default: ', '"
 
 
 @dataclass_json

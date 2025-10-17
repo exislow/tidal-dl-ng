@@ -10,11 +10,34 @@ from tidal_dl_ng.constants import FAVORITES, MediaType
 from tidal_dl_ng.helper.exceptions import MediaUnknown
 
 
-def name_builder_artist(media: Track | Video | Album, delimiter: str = "; ") -> str:
+def name_builder_artist(media: Track | Video | Album, delimiter: str = ", ") -> str:
+    """Builds a string of artist names for a track, video, or album.
+
+    Returns a delimited string of all artist names associated with the given media.
+
+    Args:
+        media (Track | Video | Album): The media object to extract artist names from.
+        delimiter (str, optional): The delimiter to use between artist names. Defaults to ", ".
+
+    Returns:
+        str: A delimited string of artist names.
+    """
     return delimiter.join(artist.name for artist in media.artists)
 
 
-def name_builder_album_artist(media: Track | Album, first_only: bool = False, delimiter: str = "; ") -> str:
+def name_builder_album_artist(media: Track | Album, first_only: bool = False, delimiter: str = ", ") -> str:
+    """Builds a string of main album artist names for a track or album.
+
+    Returns a delimited string of main artist names from the album, optionally including only the first main artist.
+
+    Args:
+        media (Track | Album): The media object to extract artist names from.
+        first_only (bool, optional): If True, only the first main artist is included. Defaults to False.
+        delimiter (str, optional): The delimiter to use between artist names. Defaults to ", ".
+
+    Returns:
+        str: A delimited string of main album artist names.
+    """
     artists_tmp: [str] = []
     artists: [Artist] = media.album.artists if isinstance(media, Track) else media.artists
 
