@@ -659,20 +659,62 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             logger_gui.info(f"Fetching all tracks from: {media_list.name}")
             media_items = items_results_all(media_list)
             
-            # Extract unique albums from tracks
-            albums_dict = {}
+            # Extract unique album IDs from tracks
+            album_ids = {}
             for media_item in media_items:
                 if isinstance(media_item, (Track, Video)) and hasattr(media_item, 'album') and media_item.album:
-                    # Reload full album object
-                    album = self.tidal.session.album(media_item.album.id)
-                    albums_dict[album.id] = album
+                    try:
+                        # Access album.id carefully as it might trigger API calls
+                        album_id = media_item.album.id
+                        if album_id:
+                            album_ids[album_id] = media_item.album
+                    except Exception as e:
+                        logger_gui.debug(f"Skipping track with unavailable album: {str(e)}")
+                        continue
             
-            if not albums_dict:
+            if not album_ids:
                 logger_gui.warning("No albums found in this playlist.")
                 return
             
+            logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
+            
+            # Load albums with rate limiting
+            albums_dict = {}
+            for idx, (album_id, album_stub) in enumerate(album_ids.items(), start=1):
+                try:
+                    # Add delay every 20 albums to avoid rate limiting
+                    if idx > 1 and (idx - 1) % 20 == 0:
+                        logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for 3 seconds...")
+                        time.sleep(3)
+                    
+                    # Check session validity before making API calls
+                    if not self.tidal.session.check_login():
+                        logger_gui.error("Session expired. Please restart the application and login again.")
+                        return
+                    
+                    # Reload full album object
+                    album = self.tidal.session.album(album_id)
+                    albums_dict[album.id] = album
+                    logger_gui.debug(f"Loaded album {idx}/{len(album_ids)}: {name_builder_artist(album)} - {album.name}")
+                    
+                except Exception as e:
+                    error_msg = str(e)
+                    # Check for OAuth/authentication errors
+                    if "401" in error_msg or "OAuth" in error_msg or "token" in error_msg.lower():
+                        logger_gui.error(f"Authentication error: {error_msg}")
+                        logger_gui.error("Your session has expired. Please restart the application and login again.")
+                        self.s_statusbar_message.emit(StatusbarMessage(message="Session expired - please restart and login", timeout=5000))
+                        return
+                    logger_gui.warning(f"Failed to load album {album_id}: {error_msg}")
+                    logger_gui.info("Note: Some albums may be unavailable due to region restrictions or removal from TIDAL. This is normal.")
+                    continue
+            
+            if not albums_dict:
+                logger_gui.error("Failed to load any albums from playlist.")
+                return
+            
             # Prepare all queue items first
-            logger_gui.info(f"Found {len(albums_dict)} unique albums. Preparing queue items...")
+            logger_gui.info(f"Successfully loaded {len(albums_dict)} albums. Preparing queue items...")
             
             queue_items = []
             for album in albums_dict.values():
