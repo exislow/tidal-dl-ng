@@ -250,7 +250,15 @@
            </layout>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="verticalLayout_4"/>
+           <layout class="QVBoxLayout" name="lv_mark_explicit">
+            <item>
+             <widget class="QCheckBox" name="cb_mark_explicit">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
