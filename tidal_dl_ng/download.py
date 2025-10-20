@@ -1229,7 +1229,7 @@ class Download:
         target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
         explicit: bool = track.explicit if hasattr(track, "explicit") else False
         title = name_builder_title(track)
-        title += METADATA_EXPLICIT if explicit else ""
+        title += METADATA_EXPLICIT if explicit and self.settings.data.mark_explicit else ""
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
