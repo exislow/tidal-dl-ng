@@ -583,6 +583,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # We build the menu.
         menu = QtWidgets.QMenu()
+
+        media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+        if isinstance(media, Track) and media.album:
+            menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))        
+        
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
@@ -1698,6 +1703,39 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         handling_app.event_abort.set()
 
         event.accept()
+
+    def thread_download_album_from_track(self, point: QtCore.QPoint) -> None:
+        """Starts the download of the full album from a selected track in a new thread.
+
+        Args:
+            point (QPoint): The point in the tree where the user clicked.
+        """
+        self.thread_it(self.on_download_album_from_track, point)
+
+
+    def on_download_album_from_track(self, point: QtCore.QPoint) -> None:
+        """Gets the album from a selected track and adds it to the download queue."""
+        index: QtCore.QModelIndex = self.tr_results.indexAt(point)
+        media_track: Track = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+
+        # Ensure we have a track and an album object with an ID
+        if isinstance(media_track, Track) and media_track.album and media_track.album.id:
+            try:
+                # Use the album ID from the track to fetch the FULL album object from TIDAL
+                full_album_object = self.tidal.session.album(media_track.album.id)
+
+                # Convert the full album object into a queue item
+                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(full_album_object)
+
+                if queue_dl_item:
+                    # Add the item to the download queue
+                    self.queue_download_media(queue_dl_item)
+                else:
+                    logger_gui.warning(f"Failed to create a queue item for album ID: {full_album_object.id}")
+            except Exception as e:
+                logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
+        else:
+            logger_gui.warning("Could not retrieve album information from the selected track.")
 
 
 # TODO: Comment with Google Docstrings.
