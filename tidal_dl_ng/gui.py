@@ -588,10 +588,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # We build the menu.
         menu = QtWidgets.QMenu()
+        media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+
+        if isinstance(media, Track) and media.album:
+            menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))
+
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         # Add "Download Full Album" option if it's a track or video with an album
-        if isinstance(media, (Track, Video)) and hasattr(media, "album") and media.album:
+        if isinstance(media, Track | Video) and hasattr(media, "album") and media.album:
             menu.addAction("Download Full Album", lambda: self.thread_it(self.on_download_album_from_track, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
@@ -623,7 +628,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_queue_download_remove_item(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Remove a specific item from the download queue.
-        
+
         Args:
             item (QTreeWidgetItem): The item to remove.
         """
@@ -642,7 +647,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_download_all_albums_from_playlist(self, point: QtCore.QPoint) -> None:
         """Download all unique albums from tracks in a playlist.
-        
+
         Args:
             point (QPoint): The point in the tree where the playlist was right-clicked.
         """
@@ -650,158 +655,100 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # Get the playlist
             item = self.tr_lists_user.itemAt(point)
             media_list = get_user_list_media_item(item)
-            
-            if not isinstance(media_list, (Playlist, UserPlaylist, Mix)):
+
+            if not isinstance(media_list, Playlist | UserPlaylist | Mix):
                 logger_gui.error("Please select a playlist or mix.")
                 return
-            
+
             # Get all items from the playlist
             logger_gui.info(f"Fetching all tracks from: {media_list.name}")
             media_items = items_results_all(media_list)
-            
+
             # Extract unique album IDs from tracks
             album_ids = {}
             for media_item in media_items:
-                if isinstance(media_item, (Track, Video)) and hasattr(media_item, 'album') and media_item.album:
+                if isinstance(media_item, Track | Video) and hasattr(media_item, "album") and media_item.album:
                     try:
                         # Access album.id carefully as it might trigger API calls
                         album_id = media_item.album.id
                         if album_id:
                             album_ids[album_id] = media_item.album
                     except Exception as e:
-                        logger_gui.debug(f"Skipping track with unavailable album: {str(e)}")
+                        logger_gui.debug(f"Skipping track with unavailable album: {e!s}")
                         continue
-            
+
             if not album_ids:
                 logger_gui.warning("No albums found in this playlist.")
                 return
-            
+
             logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
-            
+
             # Load albums with rate limiting
             albums_dict = {}
-            for idx, (album_id, album_stub) in enumerate(album_ids.items(), start=1):
+            for idx, album_id in enumerate(album_ids.keys(), start=1):
                 try:
                     # Add delay every 20 albums to avoid rate limiting
                     if idx > 1 and (idx - 1) % 20 == 0:
                         logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for 3 seconds...")
                         time.sleep(3)
-                    
+
                     # Check session validity before making API calls
                     if not self.tidal.session.check_login():
                         logger_gui.error("Session expired. Please restart the application and login again.")
                         return
-                    
+
                     # Reload full album object
                     album = self.tidal.session.album(album_id)
                     albums_dict[album.id] = album
-                    logger_gui.debug(f"Loaded album {idx}/{len(album_ids)}: {name_builder_artist(album)} - {album.name}")
-                    
+                    logger_gui.debug(
+                        f"Loaded album {idx}/{len(album_ids)}: {name_builder_artist(album)} - {album.name}"
+                    )
+
                 except Exception as e:
                     error_msg = str(e)
                     # Check for OAuth/authentication errors
                     if "401" in error_msg or "OAuth" in error_msg or "token" in error_msg.lower():
                         logger_gui.error(f"Authentication error: {error_msg}")
                         logger_gui.error("Your session has expired. Please restart the application and login again.")
-                        self.s_statusbar_message.emit(StatusbarMessage(message="Session expired - please restart and login", timeout=5000))
+                        self.s_statusbar_message.emit(
+                            StatusbarMessage(message="Session expired - please restart and login", timeout=5000)
+                        )
                         return
                     logger_gui.warning(f"Failed to load album {album_id}: {error_msg}")
-                    logger_gui.info("Note: Some albums may be unavailable due to region restrictions or removal from TIDAL. This is normal.")
+                    logger_gui.info(
+                        "Note: Some albums may be unavailable due to region restrictions or removal from TIDAL. This is normal."
+                    )
                     continue
-            
+
             if not albums_dict:
                 logger_gui.error("Failed to load any albums from playlist.")
                 return
-            
+
             # Prepare all queue items first
             logger_gui.info(f"Successfully loaded {len(albums_dict)} albums. Preparing queue items...")
-            
+
             queue_items = []
             for album in albums_dict.values():
                 queue_dl_item = self.media_to_queue_download_model(album)
                 if queue_dl_item:
                     queue_items.append((queue_dl_item, album))
                     logger_gui.debug(f"Prepared: {name_builder_artist(album)} - {album.name}")
-            
+
             # Add all items to queue at once
             logger_gui.info(f"Adding {len(queue_items)} albums to queue...")
             for queue_dl_item, album in queue_items:
                 self.queue_download_media(queue_dl_item)
                 logger_gui.info(f"Added: {name_builder_artist(album)} - {album.name}")
-            
+
             # Show confirmation
             message = f"Added {len(queue_items)} albums to download queue"
             self.s_statusbar_message.emit(StatusbarMessage(message=message, timeout=3000))
             logger_gui.info(message)
-            
+
         except Exception as e:
-            error_msg = f"Error downloading albums from playlist: {str(e)}"
+            error_msg = f"Error downloading albums from playlist: {e!s}"
             logger_gui.error(error_msg)
             self.s_statusbar_message.emit(StatusbarMessage(message=error_msg, timeout=3000))
-
-    def on_download_album_from_track(self, point: QtCore.QPoint) -> None:
-        """Download the full album from a selected track.
-
-        Args:
-            point (QPoint): The point in the tree where the track was right-clicked.
-        """
-        try:
-            # Get the selected track/video
-            index = self.tr_results.indexAt(point)
-            
-            if not index.isValid():
-                logger_gui.error("Invalid selection.")
-                return
-            
-            # Get the media item (Track or Video)
-            media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
-            
-            # Verify it's a Track or Video with an album
-            if not isinstance(media, (Track, Video)):
-                logger_gui.error("Selected item is not a track or video.")
-                return
-            
-            if not hasattr(media, 'album') or not media.album:
-                logger_gui.error("Selected track does not have an associated album.")
-                return
-            
-            # Get the album
-            album = media.album
-            
-            # Reload the complete album object from TIDAL's API
-            album = self.tidal.session.album(album.id)
-            
-            # Debug logging for album object
-            logger_gui.info(f"Album object: {album}")
-            logger_gui.info(f"Album name: {album.name}")
-            logger_gui.info(f"Album ID: {album.id}")
-            logger_gui.info(f"Album available: {getattr(album, 'available', 'unknown')}")
-            
-            # Create a queue download item for the album
-            queue_dl_item = self.media_to_queue_download_model(album)
-            
-            if queue_dl_item:
-                # Add to download queue
-                self.queue_download_media(queue_dl_item)
-                
-                # Show confirmation message
-                artist_name = name_builder_artist(album)
-                message = f"Album added to queue: {artist_name} - {album.name}"
-                
-                self.s_statusbar_message.emit(
-                    StatusbarMessage(message=message, timeout=3000)
-                )
-                
-                logger_gui.info(message)
-            else:
-                logger_gui.error(f"Unable to add album to queue: {album.name}")
-                
-        except Exception as e:
-            error_msg = f"Error downloading album from track: {str(e)}"
-            logger_gui.error(error_msg)
-            self.s_statusbar_message.emit(
-                StatusbarMessage(message=error_msg, timeout=3000)
-            )
 
     def on_copy_url_share(
         self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None
@@ -1907,6 +1854,44 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         handling_app.event_abort.set()
 
         event.accept()
+
+    def thread_download_album_from_track(self, point: QtCore.QPoint) -> None:
+        """Starts the download of the full album from a selected track in a new thread.
+
+        Args:
+            point (QPoint): The point in the tree where the user clicked.
+        """
+        self.thread_it(self.on_download_album_from_track, point)
+
+    def on_download_album_from_track(self, point: QtCore.QPoint) -> None:
+        """Adds the album associated with a selected track to the download queue.
+
+        This method retrieves the album from a track selected in the results tree and attempts to add it to the download queue. If the album cannot be retrieved or an error occurs, a warning or error is logged.
+
+        Args:
+            point (QtCore.QPoint): The point in the results tree where the user clicked.
+        """
+        index: QtCore.QModelIndex = self.tr_results.indexAt(point)
+        media_track: Track = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+
+        # Ensure we have a track and an album object with an ID
+        if isinstance(media_track, Track) and media_track.album and media_track.album.id:
+            try:
+                # Use the album ID from the track to fetch the FULL album object from TIDAL
+                full_album_object = self.tidal.session.album(media_track.album.id)
+
+                # Convert the full album object into a queue item
+                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(full_album_object)
+
+                if queue_dl_item:
+                    # Add the item to the download queue
+                    self.queue_download_media(queue_dl_item)
+                else:
+                    logger_gui.warning(f"Failed to create a queue item for album ID: {full_album_object.id}")
+            except Exception as e:
+                logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
+        else:
+            logger_gui.warning("Could not retrieve album information from the selected track.")
 
 
 # TODO: Comment with Google Docstrings.

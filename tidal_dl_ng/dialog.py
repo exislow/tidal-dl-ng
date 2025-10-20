@@ -181,6 +181,7 @@ class DialogPreferences(QtWidgets.QDialog):
             "video_convert_mp4",
             "extract_flac",
             "metadata_cover_embed",
+            "mark_explicit",
             "cover_album_file",
             "skip_existing",
             "symlink_to_track",

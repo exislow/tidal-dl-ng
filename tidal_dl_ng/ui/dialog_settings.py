@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'dialog_settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.10.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -197,6 +197,20 @@ class Ui_DialogSettings:
         self.horizontalLayout_12.addLayout(self.lv_flag_use_primary_album_artist)
 
         self.lv_flags.addLayout(self.horizontalLayout_12)
+
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+
+        self.lv_mark_explicit = QVBoxLayout()
+        self.lv_mark_explicit.setObjectName("lv_mark_explicit")
+        self.cb_mark_explicit = QCheckBox(self.gb_flags)
+        self.cb_mark_explicit.setObjectName("cb_mark_explicit")
+
+        self.lv_mark_explicit.addWidget(self.cb_mark_explicit)
+
+        self.horizontalLayout_13.addLayout(self.lv_mark_explicit)
+
+        self.lv_flags.addLayout(self.horizontalLayout_13)
 
         self.lv_main.addWidget(self.gb_flags)
 
@@ -603,6 +617,7 @@ class Ui_DialogSettings:
         self.cb_skip_existing.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_symlink_to_track.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_playlist_create.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_mark_explicit.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

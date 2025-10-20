@@ -1232,7 +1232,7 @@ class Download:
         target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
         explicit: bool = track.explicit if hasattr(track, "explicit") else False
         title = name_builder_title(track)
-        title += METADATA_EXPLICIT if explicit else ""
+        title += METADATA_EXPLICIT if explicit and self.settings.data.mark_explicit else ""
 
         # `None` values are not allowed.
         m: Metadata = Metadata(
@@ -1564,7 +1564,9 @@ class Download:
                 path_tracks.sort()
             elif not is_album:
                 # If it is not an album sort by creation time
-                path_tracks.sort(key=lambda x: os.path.getctime(x))
+                path_tracks.sort(
+                    key=lambda x: x.stat().st_birthtime if hasattr(x.stat(), "st_birthtime") else x.stat().st_ctime
+                )
 
             # Write data to m3u file
             with path_playlist.open(mode="w", encoding="utf-8") as f:

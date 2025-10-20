@@ -219,7 +219,7 @@ def _format_artist_names(
     """
     if name == "artist_name" and isinstance(media, Track | Video):
         # For folder paths, use album artist if setting is enabled
-        if use_primary_album_artist and hasattr(media, 'album') and media.album and media.album.artists:
+        if use_primary_album_artist and hasattr(media, "album") and media.album and media.album.artists:
             return media.album.artists[0].name
         # Otherwise use track artists as before
         if hasattr(media, "artists"):
