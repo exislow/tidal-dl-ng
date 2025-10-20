@@ -1560,7 +1560,9 @@ class Download:
                 path_tracks.sort()
             elif not is_album:
                 # If it is not an album sort by creation time
-                path_tracks.sort(key=lambda x: x.stat().st_birthtime)
+                path_tracks.sort(
+                    key=lambda x: x.stat().st_birthtime if hasattr(x.stat(), "st_birthtime") else x.stat().st_ctime
+                )
 
             # Write data to m3u file
             with path_playlist.open(mode="w", encoding="utf-8") as f:
