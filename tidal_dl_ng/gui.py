@@ -583,11 +583,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # We build the menu.
         menu = QtWidgets.QMenu()
-
         media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
+
         if isinstance(media, Track) and media.album:
-            menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))        
-        
+            menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))
+
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
@@ -1712,9 +1712,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.thread_it(self.on_download_album_from_track, point)
 
-
     def on_download_album_from_track(self, point: QtCore.QPoint) -> None:
-        """Gets the album from a selected track and adds it to the download queue."""
+        """Adds the album associated with a selected track to the download queue.
+
+        This method retrieves the album from a track selected in the results tree and attempts to add it to the download queue. If the album cannot be retrieved or an error occurs, a warning or error is logged.
+
+        Args:
+            point (QtCore.QPoint): The point in the results tree where the user clicked.
+        """
         index: QtCore.QModelIndex = self.tr_results.indexAt(point)
         media_track: Track = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
 
