@@ -119,7 +119,7 @@ class Download:
 
     def __init__(
         self,
-        tidal_obj: Tidal,
+        tidal_obj: Tidal,  # Required for Atmos session context manager
         path_base: str,
         fn_logger: Callable,
         skip_existing: bool = False,
@@ -132,8 +132,9 @@ class Download:
         """Initialize the Download object and its dependencies.
 
         Args:
-            session (Session): TIDAL session object.
-            tidal_obj (Tidal): The TIDAL object (from config.py)
+            tidal_obj (Tidal): TIDAL configuration object. Required for:
+                - session: Main TIDAL API session
+                - atmos_session_context(): Dolby Atmos credential switching
             path_base (str): Base path for downloads.
             fn_logger (Callable): Logger function or object.
             skip_existing (bool, optional): Whether to skip existing files. Defaults to False.

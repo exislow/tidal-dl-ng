@@ -57,8 +57,6 @@ class Settings:
     filename_delimiter_artist: str = ", "
     filename_delimiter_album_artist: str = ", "
     metadata_target_upc: MetadataTargetUPC = MetadataTargetUPC.UPC
-    api_key_client_id: str = ""
-    api_key_client_secret: str = ""
 
 
 @dataclass_json

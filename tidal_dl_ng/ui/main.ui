@@ -671,11 +671,6 @@
             </property>
             <property name="icon">
              <iconset theme="QIcon::ThemeIcon::MediaPlaybackPause"/>
-<<<<<<< HEAD
-             <iconset theme="QIcon::ThemeIcon::MediaPlaybackStart">
-              <normaloff>.</normaloff>.</iconset>
-=======
->>>>>>> 13dddc7 (Refactor Dolby Atmos feature to be internal and seamless)
             </property>
            </widget>
           </item>

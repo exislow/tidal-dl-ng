@@ -1,4 +1,3 @@
-import base64
 import json
 import os
 import shutil
@@ -10,19 +9,16 @@ from threading import Event
 from typing import Any
 
 import tidalapi
-from tidalapi import Quality
 
+from tidal_dl_ng.constants import (
+    ATMOS_CLIENT_ID,
+    ATMOS_CLIENT_SECRET,
+    ATMOS_REQUEST_QUALITY,
+)
 from tidal_dl_ng.helper.decorator import SingletonMeta
 from tidal_dl_ng.helper.path import path_config_base, path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.cfg import Token as ModelToken
-
-_ATMOS_ID_B64 = "N203QX" + "AwSkM5aj" + "FjT00zbg=="
-_ATMOS_SECRET_B64 = "dlJBZEEx" + "MDh0bHZrSnB" + "Uc0daUzhyR1" + "o3eFRsYkow" + "cWFaMks5c2F" + "FenNnWT0="
-
-_ATMOS_CLIENT_ID = base64.b64decode(_ATMOS_ID_B64).decode("utf-8")
-_ATMOS_CLIENT_SECRET = base64.b64decode(_ATMOS_SECRET_B64).decode("utf-8")
-_ATMOS_REQUEST_QUALITY = Quality.low_320k
 
 
 class BaseConfig:
@@ -177,9 +173,9 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         original_audio_quality = self.session.audio_quality
 
         try:
-            self.session.config.client_id = _ATMOS_CLIENT_ID
-            self.session.config.client_secret = _ATMOS_CLIENT_SECRET
-            self.session.audio_quality = _ATMOS_REQUEST_QUALITY
+            self.session.config.client_id = ATMOS_CLIENT_ID
+            self.session.config.client_secret = ATMOS_CLIENT_SECRET
+            self.session.audio_quality = ATMOS_REQUEST_QUALITY
 
             if not self.login_token(do_pkce=self.is_pkce):
                 print("Warning: Session restore failed.")
