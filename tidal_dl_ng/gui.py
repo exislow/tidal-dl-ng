@@ -89,7 +89,8 @@ except ImportError as e:
     print("Qt dependencies missing. Cannot start GUI. Please read the 'README.md' carefully.")
     sys.exit(1)
 
-import coloredlogs.converter
+
+from ansi2html import Ansi2HTMLConverter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
@@ -143,6 +144,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
+    converter_ansi_html: Ansi2HTMLConverter
 
     def __init__(self, tidal: Tidal | None = None) -> None:
         """Initialize the main window and all components.
@@ -187,6 +189,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.settings.data.window_h,
         )
         self.spinners: dict[QtWidgets.QWidget, QtWaitingSpinner] = {}
+        self.converter_ansi_html: Ansi2HTMLConverter = Ansi2HTMLConverter()
 
     def init_tidal(self, tidal: Tidal | None = None):
         """Initialize Tidal session and handle login flow.
@@ -297,12 +300,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             text (str): Log message.
         """
-        display_msg = coloredlogs.converter.convert(text)
-
         cursor: QtGui.QTextCursor = self.te_debug.textCursor()
-        cursor.movePosition(QtGui.QTextCursor.End)
-        cursor.insertHtml(display_msg)
+        html = self.converter_ansi_html.convert(text)
 
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertHtml(html)
         self.te_debug.setTextCursor(cursor)
         self.te_debug.ensureCursorVisible()
 
