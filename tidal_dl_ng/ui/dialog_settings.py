@@ -198,6 +198,23 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.horizontalLayout_12)
 
+        self.lh_flags_atmos = QHBoxLayout()
+        self.lh_flags_atmos.setObjectName("lh_flags_atmos")
+        self.lv_flag_download_dolby_atmos = QVBoxLayout()
+        self.lv_flag_download_dolby_atmos.setObjectName("lv_flag_download_dolby_atmos")
+        self.cb_download_dolby_atmos = QCheckBox(self.gb_flags)
+        self.cb_download_dolby_atmos.setObjectName("cb_download_dolby_atmos")
+
+        self.lv_flag_download_dolby_atmos.addWidget(self.cb_download_dolby_atmos)
+
+        self.lh_flags_atmos.addLayout(self.lv_flag_download_dolby_atmos)
+
+        self.lv_flag_empty_atmos = QVBoxLayout()
+        self.lv_flag_empty_atmos.setObjectName("lv_flag_empty_atmos")
+        self.lh_flags_atmos.addLayout(self.lv_flag_empty_atmos)
+
+        self.lv_flags.addLayout(self.lh_flags_atmos)
+
         self.lv_main.addWidget(self.gb_flags)
 
         self.gb_choices = QGroupBox(DialogSettings)

@@ -93,6 +93,7 @@ import coloredlogs.converter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
+from tidalapi.media import AudioMode
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
@@ -315,12 +316,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         for item in options:
             ui_target.addItem(item.name, item)
-            
-        # Add our custom Dolby Atmos option to the audio quality dropdown
-        if ui_target == self.cb_quality_audio:
-                # Check if it already exists to be safe
-                if ui_target.findText("DOLBY_ATMOS") == -1:
-                    ui_target.addItem("DOLBY_ATMOS", "DOLBY_ATMOS")
 
     def _populate_search_types(self, ui_target: QtWidgets.QComboBox, options: Iterable[Any]) -> None:
         """Populate a combo box with search type options.
@@ -893,8 +888,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
 
         final_quality = quality_audio_highest(item)
-        if hasattr(item, "audio_modes") and "DOLBY_ATMOS" in item.audio_modes:
-            final_quality = "Dolby Atmos"
+        if hasattr(item, "audio_modes") and AudioMode.dolby_atmos.value in item.audio_modes:
+            final_quality = f"{final_quality} / Dolby Atmos"
 
         return ResultItem(
             position=idx,
@@ -1201,15 +1196,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             index: The index of the selected quality in the combo box.
         """
         quality_data = self.cb_quality_audio.itemData(index)
-
-        # Handle our custom string for Dolby Atmos
-        if isinstance(quality_data, str) and quality_data == "DOLBY_ATMOS":
-            self.settings.data.quality_audio = "DOLBY_ATMOS"
-        else:
-            self.settings.data.quality_audio = Quality(quality_data)
-
+        
+        self.settings.data.quality_audio = Quality(quality_data)
         self.settings.save()
-
+        
         if self.tidal:
             self.tidal.settings_apply()
 

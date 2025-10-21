@@ -23,6 +23,7 @@ class Settings:
     download_base_path: str = "~/download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
+    download_dolby_atmos: bool = False
     format_album: str = (
         "Albums/{album_artist} - {album_title}{album_explicit}/{track_volume_num_optional}"
         "{album_track_num}. {artist_name} - {track_title}{album_explicit}"
@@ -79,6 +80,7 @@ class HelpSettings:
         '"HI_RES_LOSSLESS" (up to 24 Bit, 192 kHz)'
     )
     quality_video: str = 'Desired video download quality: "360", "480", "720", "1080"'
+    download_dolby_atmos: str = "Download Dolby Atmos audio streams if available."
     # TODO: Describe possible variables.
     format_album: str = "Where to download albums and how to name the items."
     format_playlist: str = "Where to download playlists and how to name the items."

@@ -1,19 +1,28 @@
+import base64
 import json
 import os
 import shutil
 from collections.abc import Callable
+from contextlib import contextmanager
 from json import JSONDecodeError
 from pathlib import Path
 from threading import Event
 from typing import Any
 
 import tidalapi
+from tidalapi import Quality
 
 from tidal_dl_ng.helper.decorator import SingletonMeta
 from tidal_dl_ng.helper.path import path_config_base, path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.cfg import Token as ModelToken
 
+_ATMOS_ID_B64 = "N203QX" + "AwSkM5aj" + "FjT00zbg=="
+_ATMOS_SECRET_B64 = "dlJBZEEx" + "MDh0bHZrSnB" + "Uc0daUzhyR1" + "o3eFRsYkow" + "cWFaMks5c2F" + "FenNnWT0="
+
+_ATMOS_CLIENT_ID = base64.b64decode(_ATMOS_ID_B64).decode("utf-8")
+_ATMOS_CLIENT_SECRET = base64.b64decode(_ATMOS_SECRET_B64).decode("utf-8")
+_ATMOS_REQUEST_QUALITY = Quality.low_320k
 
 class BaseConfig:
     data: ModelSettings | ModelToken
@@ -89,7 +98,6 @@ class Settings(BaseConfig, metaclass=SingletonMeta):
 
 class Tidal(BaseConfig, metaclass=SingletonMeta):
     session: tidalapi.Session
-    atmos_session: tidalapi.Session = None
     token_from_storage: bool = False
     settings: Settings
     is_pkce: bool
@@ -111,12 +119,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         if settings:
             self.settings = settings
 
-        # Handle standard qualities and our special Dolby Atmos string
-        if self.settings.data.quality_audio == "DOLBY_ATMOS":
-            self.session.audio_quality = "DOLBY_ATMOS"
-        else:
-            self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
-            self.session.video_quality = tidalapi.VideoQuality.high
+        self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
+        self.session.video_quality = tidalapi.VideoQuality.high
 
         return True
 
@@ -161,31 +165,35 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.set_option("expiry_time", self.session.expiry_time)
         self.save()
 
-    def get_atmos_session(self) -> tidalapi.Session:
-        """
-        Returns the Atmos session. If it doesn't exist, it creates it
-        by logging in with the Fire TV client ID using the main session's token.
-        """
-        if self.atmos_session is None:
-            # This config uses the Fire TV client ID needed for Dolby Atmos.
-            # It is handled internally and not exposed to the user.
-            atmos_config = tidalapi.Config(item_limit=10000)
-            atmos_config.client_id = "7m7Ap0JC9j1cOM3n"
-            atmos_config.client_secret = "vRAdA108tlvkJpTsGZS8rGZ7xTlbJ0qaZ2K9saEzsgY="
+    @contextmanager
+    def atmos_session_context(self):
 
-            self.atmos_session = tidalapi.Session(atmos_config)
+        if not self.session.check_login():
+            print("Not logged in. Cannot switch to Atmos context.")
+            raise ConnectionError("Not logged in. Cannot switch to Atmos context.")
 
-        # Try to log in using the token from the already logged-in main session.
-        if not self.atmos_session.check_login():
-            self.atmos_session.load_oauth_session(
-                self.data.token_type,
-                self.data.access_token,
-                self.data.refresh_token,
-                self.data.expiry_time,
-                is_pkce=self.is_pkce,
-            )
+        original_client_id = self.session.config.client_id
+        original_client_secret = self.session.config.client_secret
+        original_audio_quality = self.session.audio_quality
 
-        return self.atmos_session
+        try:
+            self.session.config.client_id = _ATMOS_CLIENT_ID
+            self.session.config.client_secret = _ATMOS_CLIENT_SECRET
+            self.session.audio_quality = _ATMOS_REQUEST_QUALITY
+
+            if not self.login_token(do_pkce=self.is_pkce):
+                raise ConnectionError("Session re-authentication for Atmos failed.")
+
+            yield
+
+        finally:
+            self.session.config.client_id = original_client_id
+            self.session.config.client_secret = original_client_secret
+            self.session.audio_quality = original_audio_quality
+
+            if not self.login_token(do_pkce=self.is_pkce):
+                print("Warning: Restoring the original session context failed. Please restart the application.")
+
 
     def login(self, fn_print: Callable) -> bool:
         is_token = self.login_token()

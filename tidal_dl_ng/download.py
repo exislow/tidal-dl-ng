@@ -28,7 +28,15 @@ from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.exceptions import TooManyRequests
-from tidalapi.media import AudioExtensions, Codec, Quality, Stream, StreamManifest, VideoExtensions
+from tidalapi.media import (
+    AudioExtensions,
+    AudioMode,
+    Codec,
+    Quality,
+    Stream,
+    StreamManifest,
+    VideoExtensions,
+)
 
 from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import (
@@ -99,7 +107,7 @@ class Download:
     """Main class for managing downloads, segment merging, file operations, and metadata for TIDAL media."""
 
     settings: Settings
-    tidal: "Tidal"  # Using a forward reference for type hinting
+    tidal: "Tidal" 
     session: Session
     skip_existing: bool = False
     fn_logger: Callable
@@ -111,7 +119,7 @@ class Download:
 
     def __init__(
         self,
-        tidal_obj: "Tidal",
+        tidal_obj: Tidal,
         path_base: str,
         fn_logger: Callable,
         skip_existing: bool = False,
@@ -125,6 +133,7 @@ class Download:
 
         Args:
             session (Session): TIDAL session object.
+            tidal_obj (Tidal): The TIDAL object (from config.py)
             path_base (str): Base path for downloads.
             fn_logger (Callable): Logger function or object.
             skip_existing (bool, optional): Whether to skip existing files. Defaults to False.
@@ -785,31 +794,16 @@ class Download:
 
         if isinstance(media, Track):
             try:
-                # Check which quality the user has selected
-                selected_quality = self.settings.data.quality_audio
-
-                if selected_quality == "DOLBY_ATMOS":
-                    # Dolby Atmos requested: use the special Atmos session.
-                    atmos_session = self.tidal.get_atmos_session()
-                
-                    # Store the original quality of the atmos_session to restore it later
-                    original_quality = atmos_session.audio_quality 
-                
-                    try:
-                        # Temporarily set the session to request what Tidal considers "High" (320k AAC).
-                        # This is the key to getting the Atmos stream with the Fire TV client ID.
-                        atmos_session.audio_quality = Quality.low_320k
-                    
-                        # Get the track object from the correct session
-                        atmos_track = atmos_session.track(media.id)
-                    
-                        # Call get_stream() WITHOUT arguments. It will use the quality from the session object.
+                if (
+                    self.settings.data.download_dolby_atmos
+                    and hasattr(media, "audio_modes")
+                    and AudioMode.dolby_atmos.value in media.audio_modes
+                ):
+                    with self.tidal.atmos_session_context():
+                        atmos_track = self.session.track(media.id)
                         media_stream = atmos_track.get_stream()
-                    finally:
-                        # IMPORTANT: Always restore the original quality on the atmos_session
-                        atmos_session.audio_quality = original_quality
                 else:
-                    # Standard behavior: get_stream uses the quality already set on the main session
+                    self.session.audio_quality = Quality(self.settings.data.quality_audio)
                     media_stream = media.get_stream()
             
                 stream_manifest = media_stream.get_stream_manifest()
