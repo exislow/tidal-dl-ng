@@ -728,16 +728,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             dict[int, Album]: Dictionary of successfully loaded full album objects.
         """
         albums_dict = {}
+        batch_size = self.settings.data.api_rate_limit_batch_size
+        delay_sec = self.settings.data.api_rate_limit_delay_sec
 
         for idx, album_id in enumerate(album_ids.keys(), start=1):
             try:
-                # Add delay every 20 albums to avoid rate limiting
-                if idx > 1 and (idx - 1) % 20 == 0:
-                    logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for 3 seconds...")
-                    time.sleep(3)
+                # Add delay every N albums to avoid rate limiting
+                if idx > 1 and (idx - 1) % batch_size == 0:
+                    logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for {delay_sec} seconds...")
+                    time.sleep(delay_sec)
 
                 # Check session validity before making API calls
-                if not self._validate_session():
+                if not self.tidal.validate_session():
+                    logger_gui.error("Session expired. Please restart the application and login again.")
                     return albums_dict
 
                 # Reload full album object
@@ -753,17 +756,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         logger_gui.info(f"Successfully loaded {len(albums_dict)} albums.")
         return albums_dict
 
-    def _validate_session(self) -> bool:
-        """Validate that the TIDAL session is still authenticated.
-
-        Returns:
-            bool: True if session is valid, False otherwise.
-        """
-        if not self.tidal.session.check_login():
-            logger_gui.error("Session expired. Please restart the application and login again.")
-            return False
-        return True
-
     def _handle_album_load_error(self, error: Exception, album_id: int) -> bool:
         """Handle errors that occur when loading an album.
 
@@ -774,10 +766,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             bool: True if processing should continue, False if it should stop.
         """
-        error_msg = str(error)
-
-        # Check for OAuth/authentication errors
-        if "401" in error_msg or "OAuth" in error_msg or "token" in error_msg.lower():
+        # Check for OAuth/authentication errors using Tidal class method
+        if self.tidal.is_authentication_error(error):
+            error_msg = str(error)
             logger_gui.error(f"Authentication error: {error_msg}")
             logger_gui.error("Your session has expired. Please restart the application and login again.")
             self.s_statusbar_message.emit(
@@ -785,7 +776,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             )
             return False
 
-        logger_gui.warning(f"Failed to load album {album_id}: {error_msg}")
+        logger_gui.warning(f"Failed to load album {album_id}: {error!s}")
         logger_gui.info(
             "Note: Some albums may be unavailable due to region restrictions or removal from TIDAL. This is normal."
         )

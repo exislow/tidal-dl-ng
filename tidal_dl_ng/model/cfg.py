@@ -59,6 +59,9 @@ class Settings:
     filename_delimiter_artist: str = ", "
     filename_delimiter_album_artist: str = ", "
     metadata_target_upc: MetadataTargetUPC = MetadataTargetUPC.UPC
+    # Rate limiting for API calls (tweaking variables)
+    api_rate_limit_batch_size: int = 20  # Number of albums to process before applying rate limit delay
+    api_rate_limit_delay_sec: float = 3.0  # Delay in seconds between batches to avoid rate limiting
 
 
 @dataclass_json
@@ -127,6 +130,8 @@ class HelpSettings:
     metadata_target_upc: str = (
         "Select the target metadata tag ('UPC', 'BARCODE', 'EAN') where to write the UPC information to. Default: 'UPC'."
     )
+    api_rate_limit_batch_size: str = "Number of albums to process before applying rate limit delay (tweaking variable)."
+    api_rate_limit_delay_sec: str = "Delay in seconds between batches to avoid API rate limiting (tweaking variable)."
 
 
 @dataclass_json
