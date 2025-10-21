@@ -803,7 +803,6 @@ class Download:
                         atmos_track = self.session.track(media.id)
                         media_stream = atmos_track.get_stream()
                 else:
-                    self.session.audio_quality = Quality(self.settings.data.quality_audio)
                     media_stream = media.get_stream()
 
                 stream_manifest = media_stream.get_stream_manifest()
