@@ -1196,10 +1196,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             index: The index of the selected quality in the combo box.
         """
         quality_data = self.cb_quality_audio.itemData(index)
-        
+
         self.settings.data.quality_audio = Quality(quality_data)
         self.settings.save()
-        
+
         if self.tidal:
             self.tidal.settings_apply()
 

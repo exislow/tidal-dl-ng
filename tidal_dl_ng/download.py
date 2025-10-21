@@ -107,7 +107,7 @@ class Download:
     """Main class for managing downloads, segment merging, file operations, and metadata for TIDAL media."""
 
     settings: Settings
-    tidal: "Tidal" 
+    tidal: "Tidal"
     session: Session
     skip_existing: bool = False
     fn_logger: Callable
@@ -805,10 +805,9 @@ class Download:
                 else:
                     self.session.audio_quality = Quality(self.settings.data.quality_audio)
                     media_stream = media.get_stream()
-            
+
                 stream_manifest = media_stream.get_stream_manifest()
 
-            
             except TooManyRequests:
                 self.fn_logger.exception(
                     f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "

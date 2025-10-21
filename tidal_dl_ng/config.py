@@ -24,6 +24,7 @@ _ATMOS_CLIENT_ID = base64.b64decode(_ATMOS_ID_B64).decode("utf-8")
 _ATMOS_CLIENT_SECRET = base64.b64decode(_ATMOS_SECRET_B64).decode("utf-8")
 _ATMOS_REQUEST_QUALITY = Quality.low_320k
 
+
 class BaseConfig:
     data: ModelSettings | ModelToken
     file_path: str
@@ -169,8 +170,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
     def atmos_session_context(self):
 
         if not self.session.check_login():
-            print("Not logged in. Cannot switch to Atmos context.")
-            raise ConnectionError("Not logged in. Cannot switch to Atmos context.")
+            print("Not logged in.")
 
         original_client_id = self.session.config.client_id
         original_client_secret = self.session.config.client_secret
@@ -182,7 +182,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
             self.session.audio_quality = _ATMOS_REQUEST_QUALITY
 
             if not self.login_token(do_pkce=self.is_pkce):
-                raise ConnectionError("Session re-authentication for Atmos failed.")
+                print("Warning: Session restore failed.")
 
             yield
 
@@ -193,7 +193,6 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
             if not self.login_token(do_pkce=self.is_pkce):
                 print("Warning: Restoring the original session context failed. Please restart the application.")
-
 
     def login(self, fn_print: Callable) -> bool:
         is_token = self.login_token()
