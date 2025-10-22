@@ -166,7 +166,7 @@ class FileSystemHelper:
         try:
             if is_file:
                 # Select the file in Explorer
-                subprocess.Popen(["explorer", f'/select,"{path!s}"'])  # noqa: S603, S607
+                subprocess.Popen(["explorer", "/select,", str(path)])  # noqa: S603, S607
             else:
                 # Open the directory
                 os.startfile(str(path))  # noqa: S606
