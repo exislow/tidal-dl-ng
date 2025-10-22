@@ -187,6 +187,20 @@ class Ui_DialogSettings:
 
         self.horizontalLayout_12.addLayout(self.lv_playlist_create)
 
+        self.lv_flag_use_primary_album_artist = QVBoxLayout()
+        self.lv_flag_use_primary_album_artist.setObjectName("lv_flag_use_primary_album_artist")
+        self.cb_use_primary_album_artist = QCheckBox(self.gb_flags)
+        self.cb_use_primary_album_artist.setObjectName("cb_use_primary_album_artist")
+
+        self.lv_flag_use_primary_album_artist.addWidget(self.cb_use_primary_album_artist)
+
+        self.horizontalLayout_12.addLayout(self.lv_flag_use_primary_album_artist)
+
+        self.lv_flags.addLayout(self.horizontalLayout_12)
+
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+
         self.lv_mark_explicit = QVBoxLayout()
         self.lv_mark_explicit.setObjectName("lv_mark_explicit")
         self.cb_mark_explicit = QCheckBox(self.gb_flags)
@@ -194,9 +208,9 @@ class Ui_DialogSettings:
 
         self.lv_mark_explicit.addWidget(self.cb_mark_explicit)
 
-        self.horizontalLayout_12.addLayout(self.lv_mark_explicit)
+        self.horizontalLayout_13.addLayout(self.lv_mark_explicit)
 
-        self.lv_flags.addLayout(self.horizontalLayout_12)
+        self.lv_flags.addLayout(self.horizontalLayout_13)
 
         self.lh_flags_atmos = QHBoxLayout()
         self.lh_flags_atmos.setObjectName("lh_flags_atmos")
@@ -612,6 +626,7 @@ class Ui_DialogSettings:
         # endif // QT_CONFIG(whatsthis)
         self.cb_lyrics_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_lyrics_file.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_use_primary_album_artist.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_delay.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_extract_flac.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_metadata_cover_embed.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))

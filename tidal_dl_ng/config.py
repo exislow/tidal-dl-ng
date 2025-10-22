@@ -224,6 +224,26 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return True
 
+    def validate_session(self) -> bool:
+        """Validate that the TIDAL session is still authenticated.
+
+        Returns:
+            bool: True if session is valid, False otherwise.
+        """
+        return self.session.check_login()
+
+    def is_authentication_error(self, error: Exception) -> bool:
+        """Check if an error is related to authentication/OAuth issues.
+
+        Args:
+            error (Exception): The exception to check.
+
+        Returns:
+            bool: True if the error is authentication-related, False otherwise.
+        """
+        error_msg = str(error)
+        return "401" in error_msg or "OAuth" in error_msg or "token" in error_msg.lower()
+
 
 class HandlingApp(metaclass=SingletonMeta):
     event_abort: Event = Event()

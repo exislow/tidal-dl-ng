@@ -675,6 +675,7 @@ class Download:
             list_total,
             delimiter_artist=self.settings.data.filename_delimiter_artist,
             delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
 
         path_media_dst: pathlib.Path = (
@@ -697,6 +698,7 @@ class Download:
                     media,
                     delimiter_artist=self.settings.data.filename_delimiter_artist,
                     delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+                    use_primary_album_artist=self.settings.data.use_primary_album_artist,
                 )
                 path_media_track_dir: pathlib.Path = (
                     pathlib.Path(self.path_base).expanduser() / (file_name_track_dir_relative + file_extension_dummy)
@@ -989,6 +991,7 @@ class Download:
             media,
             delimiter_artist=self.settings.data.filename_delimiter_artist,
             delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
         path_media_dst: pathlib.Path = (
             pathlib.Path(self.path_base).expanduser() / (file_name_relative + file_extension)
@@ -1375,6 +1378,7 @@ class Download:
             media,
             delimiter_artist=self.settings.data.filename_delimiter_artist,
             delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
 
         # Get the name of the list and check, if videos should be included.
