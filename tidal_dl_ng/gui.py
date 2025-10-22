@@ -36,7 +36,7 @@
 # nuitka-project: --noinclude-dlls=libQt6Sensors*
 # nuitka-project: --noinclude-dlls=libQt6Test*
 # nuitka-project: --noinclude-dlls=libQt6WebEngine*
-# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon.*=tidal_dl_ng/ui/
+# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon*=tidal_dl_ng/ui/
 # nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/default_album_image.png=tidal_dl_ng/ui/default_album_image.png
 # nuitka-project: --include-data-files=./pyproject.toml=pyproject.toml
 # nuitka-project: --force-stderr-spec="{TEMP}/tidal-dl-ng.err.log"
