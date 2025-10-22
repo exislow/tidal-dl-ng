@@ -28,9 +28,17 @@ from requests.exceptions import HTTPError
 from rich.progress import Progress, TaskID
 from tidalapi import Album, Mix, Playlist, Session, Track, UserPlaylist, Video
 from tidalapi.exceptions import TooManyRequests
-from tidalapi.media import AudioExtensions, Codec, Quality, Stream, StreamManifest, VideoExtensions
+from tidalapi.media import (
+    AudioExtensions,
+    AudioMode,
+    Codec,
+    Quality,
+    Stream,
+    StreamManifest,
+    VideoExtensions,
+)
 
-from tidal_dl_ng.config import Settings
+from tidal_dl_ng.config import Settings, Tidal
 from tidal_dl_ng.constants import (
     CHUNK_SIZE,
     COVER_NAME,
@@ -99,6 +107,7 @@ class Download:
     """Main class for managing downloads, segment merging, file operations, and metadata for TIDAL media."""
 
     settings: Settings
+    tidal: "Tidal"
     session: Session
     skip_existing: bool = False
     fn_logger: Callable
@@ -110,7 +119,7 @@ class Download:
 
     def __init__(
         self,
-        session: Session,
+        tidal_obj: Tidal,  # Required for Atmos session context manager
         path_base: str,
         fn_logger: Callable,
         skip_existing: bool = False,
@@ -123,7 +132,9 @@ class Download:
         """Initialize the Download object and its dependencies.
 
         Args:
-            session (Session): TIDAL session object.
+            tidal_obj (Tidal): TIDAL configuration object. Required for:
+                - session: Main TIDAL API session
+                - atmos_session_context(): Dolby Atmos credential switching
             path_base (str): Base path for downloads.
             fn_logger (Callable): Logger function or object.
             skip_existing (bool, optional): Whether to skip existing files. Defaults to False.
@@ -134,7 +145,8 @@ class Download:
             event_run (Event | None, optional): Run event. Defaults to None.
         """
         self.settings = Settings()
-        self.session = session
+        self.tidal = tidal_obj
+        self.session = tidal_obj.session
         self.skip_existing = skip_existing
         self.fn_logger = fn_logger
         self.progress_gui = progress_gui
@@ -783,8 +795,19 @@ class Download:
 
         if isinstance(media, Track):
             try:
-                media_stream = media.get_stream()
+                if (
+                    self.settings.data.download_dolby_atmos
+                    and hasattr(media, "audio_modes")
+                    and AudioMode.dolby_atmos.value in media.audio_modes
+                ):
+                    with self.tidal.atmos_session_context():
+                        atmos_track = self.session.track(media.id)
+                        media_stream = atmos_track.get_stream()
+                else:
+                    media_stream = media.get_stream()
+
                 stream_manifest = media_stream.get_stream_manifest()
+
             except TooManyRequests:
                 self.fn_logger.exception(
                     f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "

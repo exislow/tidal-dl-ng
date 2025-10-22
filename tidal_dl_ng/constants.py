@@ -1,4 +1,7 @@
+import base64
 from enum import StrEnum
+
+from tidalapi import Quality
 
 CTX_TIDAL: str = "tidal"
 REQUESTS_TIMEOUT_SEC: int = 45
@@ -14,6 +17,14 @@ PLAYLIST_PREFIX: str = "_"
 FILENAME_LENGTH_MAX: int = 255
 FORMAT_TEMPLATE_EXPLICIT: str = " (Explicit)"
 METADATA_EXPLICIT: str = " 🅴"
+
+# Dolby Atmos API credentials (obfuscated)
+ATMOS_ID_B64 = "N203QX" + "AwSkM5aj" + "FjT00zbg=="
+ATMOS_SECRET_B64 = "dlJBZEEx" + "MDh0bHZrSnB" + "Uc0daUzhyR1" + "o3eFRsYkow" + "cWFaMks5c2F" + "FenNnWT0="
+
+ATMOS_CLIENT_ID = base64.b64decode(ATMOS_ID_B64).decode("utf-8")
+ATMOS_CLIENT_SECRET = base64.b64decode(ATMOS_SECRET_B64).decode("utf-8")
+ATMOS_REQUEST_QUALITY = Quality.low_320k
 
 
 class QualityVideo(StrEnum):

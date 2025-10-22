@@ -176,6 +176,7 @@ class DialogPreferences(QtWidgets.QDialog):
             "lyrics_embed",
             "lyrics_file",
             "video_download",
+            "download_dolby_atmos",
             "download_delay",
             "video_convert_mp4",
             "extract_flac",

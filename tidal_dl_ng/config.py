@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 from collections.abc import Callable
+from contextlib import contextmanager
 from json import JSONDecodeError
 from pathlib import Path
 from threading import Event
@@ -9,6 +10,11 @@ from typing import Any
 
 import tidalapi
 
+from tidal_dl_ng.constants import (
+    ATMOS_CLIENT_ID,
+    ATMOS_CLIENT_SECRET,
+    ATMOS_REQUEST_QUALITY,
+)
 from tidal_dl_ng.helper.decorator import SingletonMeta
 from tidal_dl_ng.helper.path import path_config_base, path_file_settings, path_file_token
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
@@ -110,7 +116,7 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         if settings:
             self.settings = settings
 
-        self.session.audio_quality = self.settings.data.quality_audio
+        self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
         self.session.video_quality = tidalapi.VideoQuality.high
 
         return True
@@ -155,6 +161,34 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.set_option("refresh_token", self.session.refresh_token)
         self.set_option("expiry_time", self.session.expiry_time)
         self.save()
+
+    @contextmanager
+    def atmos_session_context(self):
+
+        if not self.session.check_login():
+            print("Not logged in.")
+
+        original_client_id = self.session.config.client_id
+        original_client_secret = self.session.config.client_secret
+        original_audio_quality = self.session.audio_quality
+
+        try:
+            self.session.config.client_id = ATMOS_CLIENT_ID
+            self.session.config.client_secret = ATMOS_CLIENT_SECRET
+            self.session.audio_quality = ATMOS_REQUEST_QUALITY
+
+            if not self.login_token(do_pkce=self.is_pkce):
+                print("Warning: Session restore failed.")
+
+            yield
+
+        finally:
+            self.session.config.client_id = original_client_id
+            self.session.config.client_secret = original_client_secret
+            self.session.audio_quality = original_audio_quality
+
+            if not self.login_token(do_pkce=self.is_pkce):
+                print("Warning: Restoring the original session context failed. Please restart the application.")
 
     def login(self, fn_print: Callable) -> bool:
         is_token = self.login_token()

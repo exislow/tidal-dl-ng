@@ -94,6 +94,7 @@ from ansi2html import Ansi2HTMLConverter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
+from tidalapi.media import AudioMode
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
@@ -254,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         progress: Progress = Progress()
         handling_app: HandlingApp = HandlingApp()
         self.dl = Download(
-            session=self.tidal.session,
+            tidal_obj=self.tidal,
             skip_existing=self.tidal.settings.data.skip_existing,
             path_base=self.settings.data.download_base_path,
             fn_logger=logger_gui,
@@ -887,6 +888,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem: The constructed ResultItem.
         """
+
+        final_quality = quality_audio_highest(item)
+        if hasattr(item, "audio_modes") and AudioMode.dolby_atmos.value in item.audio_modes:
+            final_quality = f"{final_quality} / Dolby Atmos"
+
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -894,7 +900,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             album=item.album.name,
             duration_sec=item.duration,
             obj=item,
-            quality=quality_audio_highest(item),
+            quality=final_quality,
             explicit=bool(item.explicit),
             date_user_added=date_user_added,
             date_release=date_release,
@@ -1191,7 +1197,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             index: The index of the selected quality in the combo box.
         """
-        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
+        quality_data = self.cb_quality_audio.itemData(index)
+
+        self.settings.data.quality_audio = Quality(quality_data)
         self.settings.save()
 
         if self.tidal:
