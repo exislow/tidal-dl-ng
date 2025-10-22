@@ -568,8 +568,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # We build the menu.
         menu = QtWidgets.QMenu()
         menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction(
+            "Download All Albums in Playlist", lambda: self.thread_it(self.on_download_all_albums_from_playlist, point)
+        )
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
-        menu.addAction("Download All Albums", lambda: self.thread_it(self.on_download_all_albums_from_playlist, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
@@ -742,7 +744,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     time.sleep(delay_sec)
 
                 # Check session validity before making API calls
-                if not self.tidal.validate_session():
+                if not self.tidal.session.check_login():
                     logger_gui.error("Session expired. Please restart the application and login again.")
                     return albums_dict
 

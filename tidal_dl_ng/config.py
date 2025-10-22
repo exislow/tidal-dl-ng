@@ -224,14 +224,6 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
 
         return True
 
-    def validate_session(self) -> bool:
-        """Validate that the TIDAL session is still authenticated.
-
-        Returns:
-            bool: True if session is valid, False otherwise.
-        """
-        return self.session.check_login()
-
     def is_authentication_error(self, error: Exception) -> bool:
         """Check if an error is related to authentication/OAuth issues.
 
