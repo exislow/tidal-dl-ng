@@ -203,7 +203,7 @@ class FileSystemHelper:
             subprocess.run(["xdg-open", str(dir_path)], check=True)  # noqa: S603, S607
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
-            # Fallback (esta parte de tu código era excelente)
+            # Fallback
             file_managers = ["nautilus", "dolphin", "thunar", "nemo", "pcmanfm"]
             for manager in file_managers:
                 try:
@@ -1777,15 +1777,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # Dummy values
             result_dl = True
 
-            # Formateamos la plantilla para obtener la ruta del "track"
+            # We format the template to get the "track" path
             formatted_path_str = format_path_media(
                 file_template,
-                media,  # Pasamos el objeto Album/Playlist/Mix
+                media,  # Pass the Album/Playlist/Mix object
                 self.settings.data.album_track_num_pad_min,
                 delimiter_artist=self.settings.data.filename_delimiter_artist,
                 delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
             )
-            # path_file ahora es el padre (el directorio del álbum)
+            # path_file is now the parent (the album directory)
             track_full_path = pathlib.Path(dl.path_base).expanduser() / formatted_path_str
             path_file = track_full_path.parent
 
