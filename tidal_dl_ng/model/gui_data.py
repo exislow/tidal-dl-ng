@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from threading import Lock
 
 from tidalapi.media import Quality
 
@@ -48,3 +49,15 @@ class QueueDownloadItem:
     quality_audio: Quality
     quality_video: QualityVideo
     obj: object
+    _file_path: str | None = field(default=None, init=False, repr=False)
+    _lock: Lock = field(default_factory=Lock, init=False, repr=False)
+
+    def set_file_path(self, path: str) -> None:
+        """Thread-safe setter for file_path."""
+        with self._lock:
+            self._file_path = path
+
+    def get_file_path(self) -> str | None:
+        """Thread-safe getter for file_path."""
+        with self._lock:
+            return self._file_path

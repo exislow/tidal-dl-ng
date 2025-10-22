@@ -45,6 +45,9 @@
 
 
 import math
+import os
+import pathlib
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
@@ -66,7 +69,7 @@ from tidal_dl_ng.helper.gui import (
     set_queue_download_media,
     set_user_list_media,
 )
-from tidal_dl_ng.helper.path import get_format_template, resource_path
+from tidal_dl_ng.helper.path import format_path_media, get_format_template, resource_path
 from tidal_dl_ng.helper.tidal import (
     favorite_function_factory,
     get_tidal_media_id,
@@ -107,6 +110,113 @@ from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
 
 
+class FileSystemHelper:
+    """Helper class for file system operations with proper error handling."""
+
+    @staticmethod
+    def normalize_path(path: str) -> pathlib.Path:
+        """
+        Normalize and validate a file system path.
+        """
+        if not path:
+            raise ValueError("Path cannot be empty")  # noqa: TRY003
+
+        return pathlib.Path(os.path.normpath(path))
+
+    @staticmethod
+    def path_exists(path: pathlib.Path) -> bool:
+        """
+        Check if path exists with proper error handling.
+        """
+        try:
+            return path.exists()
+        except (OSError, PermissionError):
+            logger_gui.exception("Permission error checking path", extra={"path": path})
+            return False
+
+    @staticmethod
+    def open_in_explorer(path: pathlib.Path, logger) -> bool:
+        """
+        Open file explorer at the given path with platform-specific handling.
+        """
+        try:
+            # Validate path exists
+            if not FileSystemHelper.path_exists(path):
+                logger.error(f"The path does not exist: {path}")
+                return False
+
+            # Determine if path is file or directory
+            is_file = path.is_file()
+
+            # Platform-specific handling
+            if sys.platform == "win32":
+                return FileSystemHelper._open_windows(path, is_file, logger)
+            elif sys.platform == "darwin":
+                return FileSystemHelper._open_macos(path, is_file, logger)
+            else:
+                return FileSystemHelper._open_linux(path, is_file, logger)
+
+        except Exception:
+            logger.exception("Could not open explorer")
+            return False
+
+    @staticmethod
+    def _open_windows(path: pathlib.Path, is_file: bool, logger) -> bool:
+        """Open Windows Explorer."""
+        try:
+            if is_file:
+                # Select the file in Explorer
+                subprocess.Popen(["explorer", f'/select,"{path!s}"'])  # noqa: S603, S607
+            else:
+                # Open the directory
+                os.startfile(str(path))  # noqa: S606
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.exception("Windows Explorer failed")
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def _open_macos(path: pathlib.Path, is_file: bool, logger) -> bool:
+        """Open macOS Finder."""
+        try:
+            if is_file:
+                # Reveal the file in Finder
+                subprocess.run(["open", "-R", str(path)], check=True)  # noqa: S603, S607
+            else:
+                # Open the directory
+                subprocess.run(["open", str(path)], check=True)  # noqa: S603, S607
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.exception("macOS Finder failed")
+            return False
+        else:
+            return True
+
+    @staticmethod
+    def _open_linux(path: pathlib.Path, is_file: bool, logger) -> bool:
+        """Open Linux file manager."""
+        try:
+            # Most Linux file managers prefer opening the directory
+            dir_path = path.parent if is_file else path
+
+            # Try xdg-open first (standard)
+            subprocess.run(["xdg-open", str(dir_path)], check=True)  # noqa: S603, S607
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            # Fallback (esta parte de tu código era excelente)
+            file_managers = ["nautilus", "dolphin", "thunar", "nemo", "pcmanfm"]
+            for manager in file_managers:
+                try:
+                    subprocess.run([manager, str(dir_path)], check=True)  # noqa: S603
+                except (subprocess.CalledProcessError, FileNotFoundError):
+                    continue
+
+            logger_gui.exception("No compatible file manager found on Linux")
+            return False
+        else:
+            return True
+
+
 # TODO: Make more use of Exceptions
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     """Main application window for TIDAL Downloader Next Generation.
@@ -141,7 +251,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_update_check: QtCore.Signal = QtCore.Signal(bool)
     s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
     s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
-    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object, str)
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
     converter_ansi_html: Ansi2HTMLConverter
@@ -403,6 +513,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(header, "setSectionResizeMode"):
             header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        tree.customContextMenuRequested.connect(self.menu_context_tree_queue)
 
     def tidal_user_lists(self) -> None:
         """Fetch and emit user playlists, mixes, and favorites from Tidal."""
@@ -1453,6 +1564,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child.setText(3, queue_dl_item.type_media)
         child.setText(4, queue_dl_item.quality_audio)
         child.setText(5, queue_dl_item.quality_video)
+        child.setData(0, QtCore.Qt.ItemDataRole.UserRole, queue_dl_item)
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
@@ -1473,10 +1585,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
-                    result = self.on_queue_download(media, quality_audio=quality_audio, quality_video=quality_video)
+                    result, path_file = self.on_queue_download(
+                        media, quality_audio=quality_audio, quality_video=quality_video
+                    )
 
                     if result == QueueDownloadStatus.Finished:
-                        self.s_queue_download_item_finished.emit(item)
+                        self.s_queue_download_item_finished.emit(item, str(path_file))
                     elif result == QueueDownloadStatus.Skipped:
                         self.s_queue_download_item_skipped.emit(item)
                 except Exception as e:
@@ -1493,13 +1607,23 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
-    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
+    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem, path: str) -> None:
         """Update the status of a queue download item to 'Finished'.
+        Thread-safe implementation with proper path handling.
 
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
         self.queue_download_item_status(item, QueueDownloadStatus.Finished)
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            try:
+                # Normalize and validate path before storing
+                normalized_path = FileSystemHelper.normalize_path(path)
+                model_item.set_file_path(str(normalized_path))
+                model_item.status = QueueDownloadStatus.Finished
+            except ValueError as e:
+                logger_gui.error(f"Invalid path format: {e}")
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Update the status of a queue download item to 'Failed'.
@@ -1531,37 +1655,78 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media: Track | Album | Playlist | Video | Mix | Artist,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download the specified media item(s) and return the result status.
-
-        Args:
-            media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
-            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
-            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
-
-        Returns:
-            QueueDownloadStatus: The status of the download operation.
+    ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
         """
-        result: QueueDownloadStatus
-        items_media: [Track | Album | Playlist | Video | Mix | Artist]
+        Download the specified media item(s) with improved path handling.
+        """
+        result_status: QueueDownloadStatus
+        path_file: pathlib.Path | str
 
+        # Handle Artist downloads
         if isinstance(media, Artist):
-            items_media: [Album] = items_results_all(media)
+            items_media = self._get_artist_albums(media)
+
+            if not items_media:
+                path_file = pathlib.Path(self.dl.path_base).expanduser()
+                result_status = QueueDownloadStatus.Skipped
+                return result_status, path_file
+
+            # Calculate artist path from first album
+            try:
+                path_file = self._calculate_artist_path(items_media[0])
+            except Exception as e:
+                logger_gui.warning(f"Could not deduce artist path. Using base path. Error: {e}")
+                path_file = pathlib.Path(self.dl.path_base).expanduser()
         else:
             items_media = [media]
+            path_file = pathlib.Path()
 
-        download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
+        # Download items
+        download_delay = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
         for item_media in items_media:
-            result = self.download(
+            result_item, path_item = self.download(
                 item_media,
                 self.dl,
                 delay_track=download_delay,
                 quality_audio=quality_audio,
                 quality_video=quality_video,
             )
+            result_status = result_item
 
-        return result
+            # For non-Artist downloads, use the item path
+            if not isinstance(media, Artist):
+                path_file = path_item
+
+        return result_status, path_file
+
+    def _get_artist_albums(self, artist: Artist) -> list[Album]:
+        """Helper to get all albums for an artist."""
+        return items_results_all(artist)
+
+    def _calculate_artist_path(self, first_album: Album) -> pathlib.Path:
+        """
+        Calculate the artist directory path from the first album.
+        This implements the "parent.parent" workaround.
+        """
+        # Get template (which is faulty and returns a track template)
+        album_template = get_format_template(first_album, self.settings)
+
+        # Format path
+        formatted_path_str = format_path_media(
+            album_template,
+            first_album,  # We use the album object
+            self.settings.data.album_track_num_pad_min,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
+
+        # Build full path
+        base_path = pathlib.Path(self.dl.path_base).expanduser()
+        track_full_path = base_path / formatted_path_str
+
+        # Go up two levels (track -> album -> artist)
+        return track_full_path.parent.parent
 
     def download(
         self,
@@ -1570,7 +1735,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         delay_track: bool = False,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
+    ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
         """Download a media item and return the result status.
 
         Args:
@@ -1611,7 +1776,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             # Dummy values
             result_dl = True
-            path_file = "dummy"
+
+            # Formateamos la plantilla para obtener la ruta del "track"
+            formatted_path_str = format_path_media(
+                file_template,
+                media,  # Pasamos el objeto Album/Playlist/Mix
+                self.settings.data.album_track_num_pad_min,
+                delimiter_artist=self.settings.data.filename_delimiter_artist,
+                delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            )
+            # path_file ahora es el padre (el directorio del álbum)
+            track_full_path = pathlib.Path(dl.path_base).expanduser() / formatted_path_str
+            path_file = track_full_path.parent
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
 
@@ -1622,7 +1798,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             result = QueueDownloadStatus.Failed
 
-        return result
+        return result, path_file
 
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest | None = None
@@ -1743,6 +1919,63 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
         else:
             logger_gui.warning("Could not retrieve album information from the selected track.")
+
+    def menu_context_tree_queue(self, point: QtCore.QPoint) -> None:
+        """
+        Show context menu for the download queue tree.
+        Improved validation and error handling.
+        """
+        item = self.tr_queue_download.itemAt(point)
+        if not item:
+            return
+
+        # Retrieve our data model from the GUI item
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+
+        # Verify that it is our model, has a path, and the path exists
+        if not isinstance(model_item, QueueDownloadItem):
+            return
+
+        if model_item.status != QueueDownloadStatus.Finished:
+            return
+
+        file_path = model_item.get_file_path()
+        if not file_path:
+            return
+
+        try:
+            path = FileSystemHelper.normalize_path(file_path)
+            if not FileSystemHelper.path_exists(path):
+                logger_gui.warning(f"File no longer exists: {file_path}. " "It may have been moved or deleted.")
+                return
+        except ValueError:
+            logger_gui.error(f"Invalid path format: {file_path}")
+            return
+
+        menu = QtWidgets.QMenu()
+        action = menu.addAction("Show in Explorer")
+        action.triggered.connect(lambda: self.on_show_in_explorer(file_path))
+        menu.exec(self.tr_queue_download.mapToGlobal(point))
+
+    def on_show_in_explorer(self, path: str) -> None:
+        """
+        Opens the file explorer at the given path.
+        Enhanced with proper validation and error handling.
+        """
+        try:
+            # Normalize and validate path
+            normalized_path = FileSystemHelper.normalize_path(path)
+
+            # Open in explorer with platform-specific handling
+            success = FileSystemHelper.open_in_explorer(normalized_path, logger_gui)
+
+            if success:
+                logger_gui.info(f"Opened explorer at: {normalized_path}")
+
+        except ValueError as e:
+            logger_gui.error(f"Invalid path: {e}")
+        except Exception as e:
+            logger_gui.error(f"Unexpected error opening explorer: {e}")
 
 
 # TODO: Comment with Google Docstrings.
