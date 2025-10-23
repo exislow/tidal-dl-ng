@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>800</height>
+    <height>832</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -253,6 +253,32 @@
            <layout class="QVBoxLayout" name="lv_mark_explicit">
             <item>
              <widget class="QCheckBox" name="cb_mark_explicit">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_13">
+          <item>
+           <layout class="QVBoxLayout" name="lv_use_primary_album_artist">
+            <item>
+             <widget class="QCheckBox" name="cb_use_primary_album_artist">
+              <property name="text">
+               <string>CheckBox</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="lv_download_dolby_atmos">
+            <item>
+             <widget class="QCheckBox" name="cb_download_dolby_atmos">
               <property name="text">
                <string>CheckBox</string>
               </property>

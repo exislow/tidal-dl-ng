@@ -246,7 +246,7 @@ def _download(ctx: typer.Context, urls: list[str], try_login: bool = True) -> bo
     fn_logger = LoggerWrapped(progress.print)
 
     dl = Download(
-        session=ctx.obj[CTX_TIDAL].session,
+        tidal_obj=ctx.obj[CTX_TIDAL],
         skip_existing=settings.data.skip_existing,
         path_base=settings.data.download_base_path,
         fn_logger=fn_logger,

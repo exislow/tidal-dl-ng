@@ -12,6 +12,9 @@ class Settings:
     skip_existing: bool = True
     lyrics_embed: bool = False
     lyrics_file: bool = False
+    use_primary_album_artist: bool = (
+        False  # When True, uses first album artist instead of track artists for folder paths
+    )
     # TODO: Implement API KEY selection.
     # api_key_index: bool = 0
     # TODO: Implement album info download to separate file.
@@ -23,6 +26,7 @@ class Settings:
     download_base_path: str = "~/download"
     quality_audio: Quality = Quality.low_320k
     quality_video: QualityVideo = QualityVideo.P480
+    download_dolby_atmos: bool = False
     format_album: str = (
         "Albums/{album_artist} - {album_title}{album_explicit}/{track_volume_num_optional}"
         "{album_track_num}. {artist_name} - {track_title}{album_explicit}"
@@ -56,6 +60,9 @@ class Settings:
     filename_delimiter_artist: str = ", "
     filename_delimiter_album_artist: str = ", "
     metadata_target_upc: MetadataTargetUPC = MetadataTargetUPC.UPC
+    # Rate limiting for API calls (tweaking variables)
+    api_rate_limit_batch_size: int = 20  # Number of albums to process before applying rate limit delay
+    api_rate_limit_delay_sec: float = 3.0  # Delay in seconds between batches to avoid rate limiting
 
 
 @dataclass_json
@@ -64,6 +71,7 @@ class HelpSettings:
     skip_existing: str = "Skip download if file already exists."
     album_cover_save: str = "Safe cover to album folder."
     lyrics_embed: str = "Embed lyrics in audio file, if lyrics are available."
+    use_primary_album_artist: str = "Use only the primary album artist for folder paths instead of track artists."
     lyrics_file: str = "Save lyrics to separate *.lrc file, if lyrics are available."
     api_key_index: str = "Set the device API KEY."
     album_info_save: str = "Save album info to track?"
@@ -77,6 +85,7 @@ class HelpSettings:
         '"HI_RES_LOSSLESS" (up to 24 Bit, 192 kHz)'
     )
     quality_video: str = 'Desired video download quality: "360", "480", "720", "1080"'
+    download_dolby_atmos: str = "Download Dolby Atmos audio streams if available."
     # TODO: Describe possible variables.
     format_album: str = "Where to download albums and how to name the items."
     format_playlist: str = "Where to download playlists and how to name the items."
@@ -123,6 +132,8 @@ class HelpSettings:
     metadata_target_upc: str = (
         "Select the target metadata tag ('UPC', 'BARCODE', 'EAN') where to write the UPC information to. Default: 'UPC'."
     )
+    api_rate_limit_batch_size: str = "Number of albums to process before applying rate limit delay (tweaking variable)."
+    api_rate_limit_delay_sec: str = "Delay in seconds between batches to avoid API rate limiting (tweaking variable)."
 
 
 @dataclass_json

@@ -175,7 +175,9 @@ class DialogPreferences(QtWidgets.QDialog):
         self.parameters_checkboxes = [
             "lyrics_embed",
             "lyrics_file",
+            "use_primary_album_artist",
             "video_download",
+            "download_dolby_atmos",
             "download_delay",
             "video_convert_mp4",
             "extract_flac",

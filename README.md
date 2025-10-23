@@ -1,7 +1,7 @@
 # 🔰 TIDAL Downloader Next Generation! (tidal-dl-ng)
 
 [![Release](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)
-[![Build status](https://img.shields.io/github/actions/workflow/status/exislow/tidal-dl-ng/on-release-master.yml)](https://github.com/exislow/tidal-dl-ng/actions/workflows/on-release-master.yml)
+[![Build status](https://img.shields.io/github/actions/workflow/status/exislow/tidal-dl-ng/release-or-test-build.yml)](https://github.com/exislow/tidal-dl-ng/actions/workflows/release-or-test-build.yml)
 [![Commit activity](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)](https://img.shields.io/github/commit-activity/m/exislow/tidal-dl-ng)
 [![License](https://img.shields.io/github/license/exislow/tidal-dl-ng)](https://img.shields.io/github/license/exislow/tidal-dl-ng)
 
@@ -9,7 +9,7 @@ This tool allows to download songs and videos from TIDAL. Multithreaded and mult
 
 ⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This is a **false positive**. Please read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md) and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade).
 
-**A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. You can use the command line or GUI version of this tool.
+**A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. Dolby Atmos is supported. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
@@ -136,7 +136,11 @@ To build the project use this command:
 # Install virtual environment and dependencies if not already done
 make install
 # Build macOS GUI
-make gui-macos
+make gui-macos-dmg
+# OR Build macOS GUI
+make gui-windows
+# OR Build macOS GUI
+make gui-linux
 # Check build output
 ls dist/
 ```
@@ -190,6 +194,10 @@ sudo apt install libxcb-cursor0
 Please see this isse [#103](https://github.com/exislow/tidal-dl-ng/issues/103).
 
 This is due to the Python `ffmpeg` library which is used and only happens on windows if `extract_flac` is activated.
+
+### How can I download Dolby Atmos files?
+
+You need to activate `download_dolby_atmos` in the settings. Then, if an item is available in Dolby Atmos, it will be downloaded as an Dolby Atmos file instead of as an stereo audio file. Dolby Atmos ist only available as 320kbps at TIDAL (you cannot adjust the quality for Dolby Atmos downloads). If an item is available in Dolby Atmos the "Quality" column in the GUI will indicate this with `Dolby Atmos`
 
 ## ‼️ Disclaimer
 

@@ -27,7 +27,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 800)
+        DialogSettings.resize(640, 832)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -197,6 +197,28 @@ class Ui_DialogSettings:
         self.horizontalLayout_12.addLayout(self.lv_mark_explicit)
 
         self.lv_flags.addLayout(self.horizontalLayout_12)
+
+        self.horizontalLayout_13 = QHBoxLayout()
+        self.horizontalLayout_13.setObjectName("horizontalLayout_13")
+        self.lv_use_primary_album_artist = QVBoxLayout()
+        self.lv_use_primary_album_artist.setObjectName("lv_use_primary_album_artist")
+        self.cb_use_primary_album_artist = QCheckBox(self.gb_flags)
+        self.cb_use_primary_album_artist.setObjectName("cb_use_primary_album_artist")
+
+        self.lv_use_primary_album_artist.addWidget(self.cb_use_primary_album_artist)
+
+        self.horizontalLayout_13.addLayout(self.lv_use_primary_album_artist)
+
+        self.lv_download_dolby_atmos = QVBoxLayout()
+        self.lv_download_dolby_atmos.setObjectName("lv_download_dolby_atmos")
+        self.cb_download_dolby_atmos = QCheckBox(self.gb_flags)
+        self.cb_download_dolby_atmos.setObjectName("cb_download_dolby_atmos")
+
+        self.lv_download_dolby_atmos.addWidget(self.cb_download_dolby_atmos)
+
+        self.horizontalLayout_13.addLayout(self.lv_download_dolby_atmos)
+
+        self.lv_flags.addLayout(self.horizontalLayout_13)
 
         self.lv_main.addWidget(self.gb_flags)
 
@@ -603,6 +625,8 @@ class Ui_DialogSettings:
         self.cb_symlink_to_track.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_playlist_create.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_mark_explicit.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_use_primary_album_artist.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_download_dolby_atmos.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

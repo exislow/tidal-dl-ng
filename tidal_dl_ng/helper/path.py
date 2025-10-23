@@ -89,6 +89,7 @@ def format_path_media(
     list_total: int = 0,
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
+    use_primary_album_artist: bool = False,
 ) -> str:
     """Formats a media path string using a template and media attributes.
 
@@ -102,6 +103,7 @@ def format_path_media(
         list_total (int, optional): Total items in a list. Defaults to 0.
         delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
         delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
+        use_primary_album_artist (bool, optional): If True, uses first album artist for folder paths. Defaults to False.
 
     Returns:
         str: The formatted and sanitized media path string.
@@ -122,6 +124,7 @@ def format_path_media(
             list_total,
             delimiter_artist=delimiter_artist,
             delimiter_album_artist=delimiter_album_artist,
+            use_primary_album_artist=use_primary_album_artist,
         )
 
         if result_fmt != match.group(1):
@@ -143,6 +146,7 @@ def format_str_media(
     list_total: int = 0,
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
+    use_primary_album_artist: bool = False,
 ) -> str:
     """Formats a string for media attributes based on the provided name.
 
@@ -156,6 +160,7 @@ def format_str_media(
         list_total (int, optional): Total items in a list. Defaults to 0.
         delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
         delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
+        use_primary_album_artist (bool, optional): If True, uses first album artist for folder paths. Defaults to False.
 
     Returns:
         str: The formatted string for the media attribute, or the original name if no formatter matches.
@@ -179,6 +184,7 @@ def format_str_media(
                 list_total,
                 delimiter_artist=delimiter_artist,
                 delimiter_album_artist=delimiter_album_artist,
+                use_primary_album_artist=use_primary_album_artist,
             )
             if result is not None:
                 return result
@@ -195,6 +201,7 @@ def _format_artist_names(
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
     *_args,
+    use_primary_album_artist: bool = False,
     **kwargs,
 ) -> str | None:
     """Handle artist name-related format strings.
@@ -202,12 +209,19 @@ def _format_artist_names(
     Args:
         name (str): The format string name to check.
         media (Track | Album | Playlist | UserPlaylist | Video | Mix): The media object to extract artist information from.
+        delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
+        delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
+        use_primary_album_artist (bool, optional): If True, uses first album artist for folder paths. Defaults to False.
         *_args (Any): Additional arguments (not used).
 
     Returns:
         str | None: The formatted artist name or None if the format string is not artist-related.
     """
     if name == "artist_name" and isinstance(media, Track | Video):
+        # For folder paths, use album artist if setting is enabled
+        if use_primary_album_artist and hasattr(media, "album") and media.album and media.album.artists:
+            return media.album.artists[0].name
+        # Otherwise use track artists as before
         if hasattr(media, "artists"):
             return name_builder_artist(media, delimiter=delimiter_artist)
         elif hasattr(media, "artist"):
@@ -252,6 +266,7 @@ def _format_names(
     *args,
     delimiter_artist: str = ", ",
     delimiter_album_artist: str = ", ",
+    use_primary_album_artist: bool = False,
     **kwargs,
 ) -> str | None:
     """Handles name-related format strings for media.
@@ -264,13 +279,18 @@ def _format_names(
         *args: Additional arguments (not used).
         delimiter_artist (str, optional): Delimiter for artist names. Defaults to ", ".
         delimiter_album_artist (str, optional): Delimiter for album artist names. Defaults to ", ".
+        use_primary_album_artist (bool, optional): If True, uses first album artist for folder paths. Defaults to False.
 
     Returns:
         str | None: The formatted name or None if the format string is not name-related.
     """
     # First try artist name formats
     result = _format_artist_names(
-        name, media, delimiter_artist=delimiter_artist, delimiter_album_artist=delimiter_album_artist
+        name,
+        media,
+        delimiter_artist=delimiter_artist,
+        delimiter_album_artist=delimiter_album_artist,
+        use_primary_album_artist=use_primary_album_artist,
     )
     if result is not None:
         return result

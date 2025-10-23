@@ -36,7 +36,7 @@
 # nuitka-project: --noinclude-dlls=libQt6Sensors*
 # nuitka-project: --noinclude-dlls=libQt6Test*
 # nuitka-project: --noinclude-dlls=libQt6WebEngine*
-# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon.*=tidal_dl_ng/ui/
+# nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/icon*=tidal_dl_ng/ui/
 # nuitka-project: --include-data-files={MAIN_DIRECTORY}/ui/default_album_image.png=tidal_dl_ng/ui/default_album_image.png
 # nuitka-project: --include-data-files=./pyproject.toml=pyproject.toml
 # nuitka-project: --force-stderr-spec="{TEMP}/tidal-dl-ng.err.log"
@@ -96,6 +96,7 @@ from ansi2html import Ansi2HTMLConverter
 from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
+from tidalapi.media import AudioMode
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
@@ -256,7 +257,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         progress: Progress = Progress()
         handling_app: HandlingApp = HandlingApp()
         self.dl = Download(
-            session=self.tidal.session,
+            tidal_obj=self.tidal,
             skip_existing=self.tidal.settings.data.skip_existing,
             path_base=self.settings.data.download_base_path,
             fn_logger=logger_gui,
@@ -405,7 +406,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(header, "setSectionResizeMode"):
             header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree.customContextMenuRequested.connect(self.menu_context_tree_queue)
+        tree.customContextMenuRequested.connect(self.menu_context_queue_download)
 
     def tidal_user_lists(self) -> None:
         """Fetch and emit user playlists, mixes, and favorites from Tidal."""
@@ -569,6 +570,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # We build the menu.
         menu = QtWidgets.QMenu()
         menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
+        menu.addAction(
+            "Download All Albums in Playlist", lambda: self.thread_it(self.on_download_all_albums_from_playlist, point)
+        )
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
@@ -586,16 +590,55 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not index.isValid():
             return
 
-        # We build the menu.
-        menu = QtWidgets.QMenu()
+        # Get the media item at this point
         media = get_results_media_item(index, self.proxy_tr_results, self.model_tr_results)
 
-        if isinstance(media, Track) and media.album:
+        # We build the menu.
+        menu = QtWidgets.QMenu()
+
+        # Add "Download Full Album" option if it's a track or video with an album
+        if isinstance(media, Track | Video) and hasattr(media, "album") and media.album:
             menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))
 
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
+
+    def menu_context_queue_download(self, point: QtCore.QPoint) -> None:
+        """Show context menu for download queue.
+
+        Args:
+            point (QPoint): The point where the menu is requested.
+        """
+        # Get the item at this point
+        item = self.tr_queue_download.itemAt(point)
+
+        if not item:
+            return
+
+        # Build the menu
+        menu = QtWidgets.QMenu()
+
+        # Show remove option for waiting items
+        status = item.text(0)
+        if status == QueueDownloadStatus.Waiting:
+            menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
+
+        if menu.isEmpty():
+            return
+
+        menu.exec(self.tr_queue_download.mapToGlobal(point))
+
+    def on_queue_download_remove_item(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Remove a specific item from the download queue.
+
+        Args:
+            item (QTreeWidgetItem): The item to remove.
+        """
+        index = self.tr_queue_download.indexOfTopLevelItem(item)
+        if index >= 0:
+            self.tr_queue_download.takeTopLevelItem(index)
+            logger_gui.info("Removed item from download queue")
 
     def thread_download_list_media(self, point: QtCore.QPoint) -> None:
         """Start download of a list media item in a thread.
@@ -604,6 +647,168 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             point (QPoint): The point in the tree.
         """
         self.thread_it(self.on_download_list_media, point)
+
+    def on_download_all_albums_from_playlist(self, point: QtCore.QPoint) -> None:
+        """Download all unique albums from tracks in a playlist.
+
+        Args:
+            point (QPoint): The point in the tree where the playlist was right-clicked.
+        """
+        try:
+            # Get and validate the playlist
+            item = self.tr_lists_user.itemAt(point)
+            media_list = get_user_list_media_item(item)
+
+            if not isinstance(media_list, Playlist | UserPlaylist | Mix):
+                logger_gui.error("Please select a playlist or mix.")
+                return
+
+            # Get all items from the playlist
+            logger_gui.info(f"Fetching all tracks from: {media_list.name}")
+            media_items = items_results_all(media_list)
+
+            # Extract unique album IDs from tracks
+            album_ids = self._extract_album_ids_from_tracks(media_items)
+
+            if not album_ids:
+                logger_gui.warning("No albums found in this playlist.")
+                return
+
+            logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
+
+            # Load albums with rate limiting
+            albums_dict = self._load_albums_with_rate_limiting(album_ids)
+
+            if not albums_dict:
+                logger_gui.error("Failed to load any albums from playlist.")
+                return
+
+            # Prepare and queue albums
+            self._queue_loaded_albums(albums_dict)
+
+            # Show confirmation
+            message = f"Added {len(albums_dict)} albums to download queue"
+            self.s_statusbar_message.emit(StatusbarMessage(message=message, timeout=3000))
+            logger_gui.info(message)
+
+        except Exception as e:
+            error_msg = f"Error downloading albums from playlist: {e!s}"
+            logger_gui.error(error_msg)
+            self.s_statusbar_message.emit(StatusbarMessage(message=error_msg, timeout=3000))
+
+    def _extract_album_ids_from_tracks(self, media_items: list) -> dict[int, Album]:
+        """Extract unique album IDs from a list of media items.
+
+        Args:
+            media_items (list): List of media items (tracks/videos) from a playlist.
+
+        Returns:
+            dict[int, Album]: Dictionary mapping album IDs to album stub objects.
+        """
+        album_ids = {}
+
+        for media_item in media_items:
+            if not isinstance(media_item, Track | Video):
+                continue
+
+            if not hasattr(media_item, "album") or not media_item.album:
+                continue
+
+            try:
+                # Access album.id carefully as it might trigger API calls
+                album_id = media_item.album.id
+                if album_id:
+                    album_ids[album_id] = media_item.album
+            except Exception as e:
+                logger_gui.debug(f"Skipping track with unavailable album: {e!s}")
+                continue
+
+        return album_ids
+
+    def _load_albums_with_rate_limiting(self, album_ids: dict[int, Album]) -> dict[int, Album]:
+        """Load full album objects with rate limiting to prevent API throttling.
+
+        Args:
+            album_ids (dict[int, Album]): Dictionary of album IDs to album stubs.
+
+        Returns:
+            dict[int, Album]: Dictionary of successfully loaded full album objects.
+        """
+        albums_dict = {}
+        batch_size = self.settings.data.api_rate_limit_batch_size
+        delay_sec = self.settings.data.api_rate_limit_delay_sec
+
+        for idx, album_id in enumerate(album_ids.keys(), start=1):
+            try:
+                # Add delay every N albums to avoid rate limiting
+                if idx > 1 and (idx - 1) % batch_size == 0:
+                    logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for {delay_sec} seconds...")
+                    time.sleep(delay_sec)
+
+                # Check session validity before making API calls
+                if not self.tidal.session.check_login():
+                    logger_gui.error("Session expired. Please restart the application and login again.")
+                    return albums_dict
+
+                # Reload full album object
+                album = self.tidal.session.album(album_id)
+                albums_dict[album.id] = album
+                logger_gui.debug(f"Loaded album {idx}/{len(album_ids)}: {name_builder_artist(album)} - {album.name}")
+
+            except Exception as e:
+                if not self._handle_album_load_error(e, album_id):
+                    return albums_dict
+                continue
+
+        logger_gui.info(f"Successfully loaded {len(albums_dict)} albums.")
+        return albums_dict
+
+    def _handle_album_load_error(self, error: Exception, album_id: int) -> bool:
+        """Handle errors that occur when loading an album.
+
+        Args:
+            error (Exception): The exception that was raised.
+            album_id (int): The ID of the album that failed to load.
+
+        Returns:
+            bool: True if processing should continue, False if it should stop.
+        """
+        # Check for OAuth/authentication errors using Tidal class method
+        if self.tidal.is_authentication_error(error):
+            error_msg = str(error)
+            logger_gui.error(f"Authentication error: {error_msg}")
+            logger_gui.error("Your session has expired. Please restart the application and login again.")
+            self.s_statusbar_message.emit(
+                StatusbarMessage(message="Session expired - please restart and login", timeout=5000)
+            )
+            return False
+
+        logger_gui.warning(f"Failed to load album {album_id}: {error!s}")
+        logger_gui.info(
+            "Note: Some albums may be unavailable due to region restrictions or removal from TIDAL. This is normal."
+        )
+        return True
+
+    def _queue_loaded_albums(self, albums_dict: dict[int, Album]) -> None:
+        """Prepare and add loaded albums to the download queue.
+
+        Args:
+            albums_dict (dict[int, Album]): Dictionary of successfully loaded albums.
+        """
+        logger_gui.info(f"Preparing queue items for {len(albums_dict)} albums...")
+
+        queue_items = []
+        for album in albums_dict.values():
+            queue_dl_item = self.media_to_queue_download_model(album)
+            if queue_dl_item:
+                queue_items.append((queue_dl_item, album))
+                logger_gui.debug(f"Prepared: {name_builder_artist(album)} - {album.name}")
+
+        # Add all items to queue
+        logger_gui.info(f"Adding {len(queue_items)} albums to queue...")
+        for queue_dl_item, album in queue_items:
+            self.queue_download_media(queue_dl_item)
+            logger_gui.info(f"Added: {name_builder_artist(album)} - {album.name}")
 
     def on_copy_url_share(
         self, tree_target: QtWidgets.QTreeWidget | QtWidgets.QTreeView, point: QtCore.QPoint = None
@@ -890,6 +1095,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem: The constructed ResultItem.
         """
+
+        final_quality = quality_audio_highest(item)
+        if hasattr(item, "audio_modes") and AudioMode.dolby_atmos.value in item.audio_modes:
+            final_quality = f"{final_quality} / Dolby Atmos"
+
         return ResultItem(
             position=idx,
             artist=name_builder_artist(item),
@@ -897,7 +1107,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             album=item.album.name,
             duration_sec=item.duration,
             obj=item,
-            quality=quality_audio_highest(item),
+            quality=final_quality,
             explicit=bool(item.explicit),
             date_user_added=date_user_added,
             date_release=date_release,
@@ -1052,7 +1262,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         explicit: str = ""
 
         # Check if item is available on TIDAL.
-        if hasattr(media, "available") and not media.available:
+        # Note: Some albums have available=None, which should be treated as available
+        if hasattr(media, "available") and media.available is False:
             return False
 
         # Set "Explicit" tag
@@ -1194,7 +1405,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             index: The index of the selected quality in the combo box.
         """
-        self.settings.data.quality_audio = Quality(self.cb_quality_audio.itemData(index))
+        quality_data = self.cb_quality_audio.itemData(index)
+
+        self.settings.data.quality_audio = Quality(quality_data)
         self.settings.save()
 
         if self.tidal:
