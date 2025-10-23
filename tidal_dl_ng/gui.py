@@ -607,6 +607,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def menu_context_queue_download(self, point: QtCore.QPoint) -> None:
         """Show context menu for download queue.
 
+        Provides options like 'Remove from Queue' (for Waiting items)
+        or 'Show in Explorer' (for Finished items).
+
         Args:
             point (QPoint): The point where the menu is requested.
         """
@@ -616,13 +619,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not item:
             return
 
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if not isinstance(model_item, QueueDownloadItem):
+            return
+
         # Build the menu
         menu = QtWidgets.QMenu()
 
+        status = model_item.get_status()
+
         # Show remove option for waiting items
-        status = item.text(0)
         if status == QueueDownloadStatus.Waiting:
             menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
+
+        # Show "Show in Explorer" if "Finished"
+        elif status == QueueDownloadStatus.Finished:
+            file_path = model_item.get_file_path()
+            if file_path:
+                action = menu.addAction("📂 Show in Explorer")
+                action.triggered.connect(lambda: self.on_show_in_explorer(file_path))
 
         if menu.isEmpty():
             return
@@ -2046,37 +2061,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
         else:
             logger_gui.warning("Could not retrieve album information from the selected track.")
-
-    def menu_context_tree_queue(self, point: QtCore.QPoint) -> None:
-        """
-        Show context menu for the download queue tree.
-        Improved validation and error handling.
-        """
-        item = self.tr_queue_download.itemAt(point)
-        if not item:
-            return
-
-        # Retrieve our data model from the GUI item
-        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
-
-        # Verify that it is our model
-        if not isinstance(model_item, QueueDownloadItem):
-            return
-
-        if model_item.get_status() != QueueDownloadStatus.Finished:
-            return
-
-        file_path = model_item.get_file_path()
-        if not file_path:
-            return
-
-        # Path validation is now deferred to on_show_in_explorer
-        # and open_in_explorer, so we don't log warnings prematurely.
-
-        menu = QtWidgets.QMenu()
-        action = menu.addAction("Show in Explorer")
-        action.triggered.connect(lambda: self.on_show_in_explorer(file_path))
-        menu.exec(self.tr_queue_download.mapToGlobal(point))
 
     def on_show_in_explorer(self, path: str) -> None:
         """

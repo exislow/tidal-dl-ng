@@ -24,16 +24,15 @@ class FileSystemHelper:
         """
         if not path:
             raise ValueError("Path cannot be empty")
-            
+
         try:
             normalized = pathlib.Path(path)
             # Resolve to catch issues early (optional, depends on use case)
             # normalized.resolve(strict=False)
             return normalized
-            
+
         except (ValueError, TypeError) as e:
             raise ValueError(f"Invalid path format: {path}") from e
-
 
     @staticmethod
     def path_exists(path: pathlib.Path) -> bool:
