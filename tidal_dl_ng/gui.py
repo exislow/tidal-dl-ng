@@ -45,9 +45,7 @@
 
 
 import math
-import os
 import pathlib
-import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
@@ -58,6 +56,7 @@ from tidalapi.session import LinkLogin
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
+from tidal_dl_ng.helper.filesystem import FileSystemHelper
 from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
@@ -108,113 +107,6 @@ from tidal_dl_ng.model.meta import ReleaseLatest
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
-
-
-class FileSystemHelper:
-    """Helper class for file system operations with proper error handling."""
-
-    @staticmethod
-    def normalize_path(path: str) -> pathlib.Path:
-        """
-        Normalize and validate a file system path.
-        """
-        if not path:
-            raise ValueError("Path cannot be empty")  # noqa: TRY003
-
-        return pathlib.Path(os.path.normpath(path))
-
-    @staticmethod
-    def path_exists(path: pathlib.Path) -> bool:
-        """
-        Check if path exists with proper error handling.
-        """
-        try:
-            return path.exists()
-        except (OSError, PermissionError):
-            logger_gui.exception("Permission error checking path", extra={"path": path})
-            return False
-
-    @staticmethod
-    def open_in_explorer(path: pathlib.Path, logger) -> bool:
-        """
-        Open file explorer at the given path with platform-specific handling.
-        """
-        try:
-            # Validate path exists
-            if not FileSystemHelper.path_exists(path):
-                logger.error(f"The path does not exist: {path}")
-                return False
-
-            # Determine if path is file or directory
-            is_file = path.is_file()
-
-            # Platform-specific handling
-            if sys.platform == "win32":
-                return FileSystemHelper._open_windows(path, is_file, logger)
-            elif sys.platform == "darwin":
-                return FileSystemHelper._open_macos(path, is_file, logger)
-            else:
-                return FileSystemHelper._open_linux(path, is_file, logger)
-
-        except Exception:
-            logger.exception("Could not open explorer")
-            return False
-
-    @staticmethod
-    def _open_windows(path: pathlib.Path, is_file: bool, logger) -> bool:
-        """Open Windows Explorer."""
-        try:
-            if is_file:
-                # Select the file in Explorer
-                subprocess.Popen(["explorer", "/select,", str(path)])  # noqa: S603, S607
-            else:
-                # Open the directory
-                os.startfile(str(path))  # noqa: S606
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            logger.exception("Windows Explorer failed")
-            return False
-        else:
-            return True
-
-    @staticmethod
-    def _open_macos(path: pathlib.Path, is_file: bool, logger) -> bool:
-        """Open macOS Finder."""
-        try:
-            if is_file:
-                # Reveal the file in Finder
-                subprocess.run(["open", "-R", str(path)], check=True)  # noqa: S603, S607
-            else:
-                # Open the directory
-                subprocess.run(["open", str(path)], check=True)  # noqa: S603, S607
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            logger.exception("macOS Finder failed")
-            return False
-        else:
-            return True
-
-    @staticmethod
-    def _open_linux(path: pathlib.Path, is_file: bool, logger) -> bool:
-        """Open Linux file manager."""
-        try:
-            # Most Linux file managers prefer opening the directory
-            dir_path = path.parent if is_file else path
-
-            # Try xdg-open first (standard)
-            subprocess.run(["xdg-open", str(dir_path)], check=True)  # noqa: S603, S607
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            # Fallback
-            file_managers = ["nautilus", "dolphin", "thunar", "nemo", "pcmanfm"]
-            for manager in file_managers:
-                try:
-                    subprocess.run([manager, str(dir_path)], check=True)  # noqa: S603
-                except (subprocess.CalledProcessError, FileNotFoundError):
-                    continue
-
-            logger_gui.exception("No compatible file manager found on Linux")
-            return False
-        else:
-            return True
 
 
 # TODO: Make more use of Exceptions
@@ -1193,7 +1085,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_audio=quality_audio,
                 quality_video=quality_video,
                 type_media=type(media).__name__,
-                status=QueueDownloadStatus.Waiting,
+                status_init=QueueDownloadStatus.Waiting,
                 obj=media,
             )
         else:
@@ -1558,7 +1450,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Populate child
         child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
 
-        child.setText(0, queue_dl_item.status)
+        child.setText(0, queue_dl_item.get_status())
         set_queue_download_media(child, queue_dl_item.obj)
         child.setText(2, queue_dl_item.name)
         child.setText(3, queue_dl_item.type_media)
@@ -1605,6 +1497,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Downloading)
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
     def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem, path: str) -> None:
@@ -1614,16 +1509,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
-        self.queue_download_item_status(item, QueueDownloadStatus.Finished)
         model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
         if isinstance(model_item, QueueDownloadItem):
             try:
                 # Normalize and validate path before storing
                 normalized_path = FileSystemHelper.normalize_path(path)
                 model_item.set_file_path(str(normalized_path))
-                model_item.status = QueueDownloadStatus.Finished
+                model_item.set_status(QueueDownloadStatus.Finished)
+                self.queue_download_item_status(item, QueueDownloadStatus.Finished)
             except ValueError as e:
                 logger_gui.error(f"Invalid path format: {e}")
+                # If the path is invalid, mark as Failed
+                model_item.set_status(QueueDownloadStatus.Failed)
+                self.queue_download_item_status(item, QueueDownloadStatus.Failed)
+                return
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Update the status of a queue download item to 'Failed'.
@@ -1631,6 +1530,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Failed)
         self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
     def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
@@ -1639,6 +1541,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Skipped)
         self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
 
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
@@ -1657,14 +1562,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         quality_video: QualityVideo | None = None,
     ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
         """
-        Download the specified media item(s) with improved path handling.
+        Download the specified media item(s) and return the final status and path.
+
+        This method coordinates the download process for various media types.
+        For Artists, it calculates the artist's root directory. For all
+        other types, it downloads the item(s) and captures the resulting
+        file or directory path.
+
+        Args:
+            media: The TIDAL media object to download (e.g., Track, Album, Artist).
+            quality_audio: The desired audio quality for the download.
+            quality_video: The desired video quality for the download.
+
+        Returns:
+            A tuple containing:
+                - result_status (QueueDownloadStatus): The final status of the
+                  download (e.g., Finished, Skipped, Failed).
+                - path_file (pathlib.Path | str): The final path to the
+                  downloaded file or directory. For Artist downloads, this is
+                  the artist's root folder.
         """
         result_status: QueueDownloadStatus
         path_file: pathlib.Path | str
 
         # Handle Artist downloads
         if isinstance(media, Artist):
-            items_media = self._get_artist_albums(media)
+            items_media = items_results_all(media)
 
             if not items_media:
                 path_file = pathlib.Path(self.dl.path_base).expanduser()
@@ -1699,10 +1622,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 path_file = path_item
 
         return result_status, path_file
-
-    def _get_artist_albums(self, artist: Artist) -> list[Album]:
-        """Helper to get all albums for an artist."""
-        return items_results_all(artist)
 
     def _calculate_artist_path(self, first_album: Album) -> pathlib.Path:
         """
@@ -1765,7 +1684,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
         elif isinstance(media, Album | Playlist | Mix):
-            dl.items(
+            path_album_dir = dl.items(
                 media=media,
                 file_template=file_template,
                 video_download=self.settings.data.video_download,
@@ -1774,20 +1693,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
 
-            # Dummy values
-            result_dl = True
-
-            # We format the template to get the "track" path
-            formatted_path_str = format_path_media(
-                file_template,
-                media,  # Pass the Album/Playlist/Mix object
-                self.settings.data.album_track_num_pad_min,
-                delimiter_artist=self.settings.data.filename_delimiter_artist,
-                delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
-            )
-            # path_file is now the parent (the album directory)
-            track_full_path = pathlib.Path(dl.path_base).expanduser() / formatted_path_str
-            path_file = track_full_path.parent
+            # path_album_dir is the path returned by download.py
+            # Will be None if the download failed or the list was empty
+            if path_album_dir:
+                result_dl = True
+                path_file = path_album_dir
+            else:
+                # Handle the case where the download could have failed within items
+                result_dl = False
+                path_file = ""  # No route to return
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
 
@@ -1932,25 +1846,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Retrieve our data model from the GUI item
         model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
 
-        # Verify that it is our model, has a path, and the path exists
+        # Verify that it is our model
         if not isinstance(model_item, QueueDownloadItem):
             return
 
-        if model_item.status != QueueDownloadStatus.Finished:
+        if model_item.get_status() != QueueDownloadStatus.Finished:
             return
 
         file_path = model_item.get_file_path()
         if not file_path:
             return
 
-        try:
-            path = FileSystemHelper.normalize_path(file_path)
-            if not FileSystemHelper.path_exists(path):
-                logger_gui.warning(f"File no longer exists: {file_path}. " "It may have been moved or deleted.")
-                return
-        except ValueError:
-            logger_gui.error(f"Invalid path format: {file_path}")
-            return
+        # Path validation is now deferred to on_show_in_explorer
+        # and open_in_explorer, so we don't log warnings prematurely.
 
         menu = QtWidgets.QMenu()
         action = menu.addAction("Show in Explorer")
