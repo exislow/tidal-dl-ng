@@ -452,6 +452,11 @@ def _format_metadata(
         name == "album_explicit" and isinstance(media, Album)
     ):
         return FORMAT_TEMPLATE_EXPLICIT if media.explicit else ""
+    elif name == "media_type":
+        if isinstance(media, Album):
+            return media.type
+        elif isinstance(media, Track):
+            return media.album.type
     return None
 
 
