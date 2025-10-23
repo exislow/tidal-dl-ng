@@ -45,6 +45,7 @@
 
 
 import math
+import pathlib
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
@@ -55,6 +56,7 @@ from tidalapi.session import LinkLogin
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
+from tidal_dl_ng.helper.filesystem import FileSystemHelper
 from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
@@ -66,7 +68,7 @@ from tidal_dl_ng.helper.gui import (
     set_queue_download_media,
     set_user_list_media,
 )
-from tidal_dl_ng.helper.path import get_format_template, resource_path
+from tidal_dl_ng.helper.path import format_path_media, get_format_template, resource_path
 from tidal_dl_ng.helper.tidal import (
     favorite_function_factory,
     get_tidal_media_id,
@@ -142,7 +144,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_update_check: QtCore.Signal = QtCore.Signal(bool)
     s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
     s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
-    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object, str)
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
     converter_ansi_html: Ansi2HTMLConverter
@@ -605,6 +607,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def menu_context_queue_download(self, point: QtCore.QPoint) -> None:
         """Show context menu for download queue.
 
+        Provides options like 'Remove from Queue' (for Waiting items)
+        or 'Show in Explorer' (for Finished items).
+
         Args:
             point (QPoint): The point where the menu is requested.
         """
@@ -614,13 +619,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not item:
             return
 
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if not isinstance(model_item, QueueDownloadItem):
+            return
+
         # Build the menu
         menu = QtWidgets.QMenu()
 
+        status = model_item.get_status()
+
         # Show remove option for waiting items
-        status = item.text(0)
         if status == QueueDownloadStatus.Waiting:
             menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
+
+        # Show "Show in Explorer" if "Finished"
+        elif status == QueueDownloadStatus.Finished:
+            file_path = model_item.get_file_path()
+            if file_path:
+                action = menu.addAction("📂 Show in Explorer")
+                action.triggered.connect(lambda: self.on_show_in_explorer(file_path))
 
         if menu.isEmpty():
             return
@@ -1294,7 +1311,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_audio=quality_audio,
                 quality_video=quality_video,
                 type_media=type(media).__name__,
-                status=QueueDownloadStatus.Waiting,
+                status_init=QueueDownloadStatus.Waiting,
                 obj=media,
             )
         else:
@@ -1661,12 +1678,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Populate child
         child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
 
-        child.setText(0, queue_dl_item.status)
+        child.setText(0, queue_dl_item.get_status())
         set_queue_download_media(child, queue_dl_item.obj)
         child.setText(2, queue_dl_item.name)
         child.setText(3, queue_dl_item.type_media)
         child.setText(4, queue_dl_item.quality_audio)
         child.setText(5, queue_dl_item.quality_video)
+        child.setData(0, QtCore.Qt.ItemDataRole.UserRole, queue_dl_item)
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
@@ -1687,10 +1705,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
-                    result = self.on_queue_download(media, quality_audio=quality_audio, quality_video=quality_video)
+                    result, path_file = self.on_queue_download(
+                        media, quality_audio=quality_audio, quality_video=quality_video
+                    )
 
                     if result == QueueDownloadStatus.Finished:
-                        self.s_queue_download_item_finished.emit(item)
+                        self.s_queue_download_item_finished.emit(item, str(path_file))
                     elif result == QueueDownloadStatus.Skipped:
                         self.s_queue_download_item_skipped.emit(item)
                 except Exception as e:
@@ -1705,15 +1725,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Downloading)
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
-    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
+    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem, path: str) -> None:
         """Update the status of a queue download item to 'Finished'.
+        Thread-safe implementation with proper path handling.
 
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
-        self.queue_download_item_status(item, QueueDownloadStatus.Finished)
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            try:
+                # Normalize and validate path before storing
+                normalized_path = FileSystemHelper.normalize_path(path)
+                model_item.set_file_path(str(normalized_path))
+                model_item.set_status(QueueDownloadStatus.Finished)
+                self.queue_download_item_status(item, QueueDownloadStatus.Finished)
+            except ValueError as e:
+                logger_gui.error(f"Invalid path format: {e}")
+                # If the path is invalid, mark as Failed
+                model_item.set_status(QueueDownloadStatus.Failed)
+                self.queue_download_item_status(item, QueueDownloadStatus.Failed)
+                return
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Update the status of a queue download item to 'Failed'.
@@ -1721,6 +1758,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Failed)
         self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
     def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
@@ -1729,6 +1769,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.set_status(QueueDownloadStatus.Skipped)
         self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
 
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
@@ -1745,37 +1788,92 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media: Track | Album | Playlist | Video | Mix | Artist,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download the specified media item(s) and return the result status.
+    ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
+        """
+        Download the specified media item(s) and return the final status and path.
+
+        This method coordinates the download process for various media types.
+        For Artists, it calculates the artist's root directory. For all
+        other types, it downloads the item(s) and captures the resulting
+        file or directory path.
 
         Args:
-            media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
-            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
-            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
+            media: The TIDAL media object to download (e.g., Track, Album, Artist).
+            quality_audio: The desired audio quality for the download.
+            quality_video: The desired video quality for the download.
 
         Returns:
-            QueueDownloadStatus: The status of the download operation.
+            A tuple containing:
+                - result_status (QueueDownloadStatus): The final status of the
+                  download (e.g., Finished, Skipped, Failed).
+                - path_file (pathlib.Path | str): The final path to the
+                  downloaded file or directory. For Artist downloads, this is
+                  the artist's root folder.
         """
-        result: QueueDownloadStatus
-        items_media: [Track | Album | Playlist | Video | Mix | Artist]
+        result_status: QueueDownloadStatus
+        path_file: pathlib.Path | str
 
+        # Handle Artist downloads
         if isinstance(media, Artist):
-            items_media: [Album] = items_results_all(media)
+            items_media = items_results_all(media)
+
+            if not items_media:
+                path_file = pathlib.Path(self.dl.path_base).expanduser()
+                result_status = QueueDownloadStatus.Skipped
+                return result_status, path_file
+
+            # Calculate artist path from first album
+            try:
+                path_file = self._calculate_artist_path(items_media[0])
+            except Exception as e:
+                logger_gui.warning(f"Could not deduce artist path. Using base path. Error: {e}")
+                path_file = pathlib.Path(self.dl.path_base).expanduser()
         else:
             items_media = [media]
+            path_file = pathlib.Path()
 
-        download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
+        # Download items
+        download_delay = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
 
         for item_media in items_media:
-            result = self.download(
+            result_item, path_item = self.download(
                 item_media,
                 self.dl,
                 delay_track=download_delay,
                 quality_audio=quality_audio,
                 quality_video=quality_video,
             )
+            result_status = result_item
 
-        return result
+            # For non-Artist downloads, use the item path
+            if not isinstance(media, Artist):
+                path_file = path_item
+
+        return result_status, path_file
+
+    def _calculate_artist_path(self, first_album: Album) -> pathlib.Path:
+        """
+        Calculate the artist directory path from the first album.
+        This implements the "parent.parent" workaround.
+        """
+        # Get template (which is faulty and returns a track template)
+        album_template = get_format_template(first_album, self.settings)
+
+        # Format path
+        formatted_path_str = format_path_media(
+            album_template,
+            first_album,  # We use the album object
+            self.settings.data.album_track_num_pad_min,
+            delimiter_artist=self.settings.data.filename_delimiter_artist,
+            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+        )
+
+        # Build full path
+        base_path = pathlib.Path(self.dl.path_base).expanduser()
+        track_full_path = base_path / formatted_path_str
+
+        # Go up two levels (track -> album -> artist)
+        return track_full_path.parent.parent
 
     def download(
         self,
@@ -1784,7 +1882,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         delay_track: bool = False,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
+    ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
         """Download a media item and return the result status.
 
         Args:
@@ -1814,7 +1912,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
         elif isinstance(media, Album | Playlist | Mix):
-            dl.items(
+            path_album_dir = dl.items(
                 media=media,
                 file_template=file_template,
                 video_download=self.settings.data.video_download,
@@ -1823,9 +1921,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
 
-            # Dummy values
-            result_dl = True
-            path_file = "dummy"
+            # path_album_dir is the path returned by download.py
+            # Will be None if the download failed or the list was empty
+            if path_album_dir:
+                result_dl = True
+                path_file = path_album_dir
+            else:
+                # Handle the case where the download could have failed within items
+                result_dl = False
+                path_file = ""  # No route to return
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
 
@@ -1836,7 +1940,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             result = QueueDownloadStatus.Failed
 
-        return result
+        return result, path_file
 
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest | None = None
@@ -1957,6 +2061,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
         else:
             logger_gui.warning("Could not retrieve album information from the selected track.")
+
+    def on_show_in_explorer(self, path: str) -> None:
+        """
+        Opens the file explorer at the given path.
+        Enhanced with proper validation and error handling.
+        """
+        try:
+            # Normalize and validate path
+            normalized_path = FileSystemHelper.normalize_path(path)
+
+            # Open in explorer with platform-specific handling
+            success = FileSystemHelper.open_in_explorer(normalized_path, logger_gui)
+
+            if success:
+                logger_gui.info(f"Opened explorer at: {normalized_path}")
+
+        except ValueError as e:
+            logger_gui.error(f"Invalid path: {e}")
+        except Exception as e:
+            logger_gui.error(f"Unexpected error opening explorer: {e}")
 
 
 # TODO: Comment with Google Docstrings.
