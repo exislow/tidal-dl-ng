@@ -45,8 +45,8 @@ def name_builder_album_artist(media: Track | Album, first_only: bool = False, de
         if Role.main in artist.roles:
             artists_tmp.append(artist.name)
 
-        if first_only:
-            break
+            if first_only:
+                break
 
     return delimiter.join(artists_tmp)
 
