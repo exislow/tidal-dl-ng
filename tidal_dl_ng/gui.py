@@ -581,13 +581,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not index.isValid() or not index.parent().data():
             return
 
+        # Get the media item to determine type
+        item = self.tr_lists_user.itemAt(point)
+        media = get_user_list_media_item(item)
+
         # We build the menu.
         menu = QtWidgets.QMenu()
-        menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
-        menu.addAction(
-            "Download All Albums in Playlist", lambda: self.thread_it(self.on_download_all_albums_from_playlist, point)
-        )
-        menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
+
+        if isinstance(media, Folder):
+            # Folder-specific menu items
+            menu.addAction(
+                "Download All Playlists in Folder", lambda: self.thread_it(self.on_download_folder_playlists, point)
+            )
+            menu.addAction(
+                "Download All Albums from Folder", lambda: self.thread_it(self.on_download_folder_albums, point)
+            )
+        else:
+            # Playlist/Mix menu items (existing)
+            menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
+            menu.addAction(
+                "Download All Albums in Playlist",
+                lambda: self.thread_it(self.on_download_all_albums_from_playlist, point),
+            )
+            menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
 
         menu.exec(self.tr_lists_user.mapToGlobal(point))
 
@@ -871,6 +887,111 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             if queue_dl_item:
                 self.queue_download_media(queue_dl_item)
+
+    def on_download_folder_playlists(self, point: QtCore.QPoint) -> None:
+        """Download all playlists in a folder.
+
+        Args:
+            point (QPoint): The point in the tree where the folder was right-clicked.
+        """
+        try:
+            # Get and validate the folder
+            item = self.tr_lists_user.itemAt(point)
+            media = get_user_list_media_item(item)
+
+            if not isinstance(media, Folder):
+                logger_gui.error("Please select a folder.")
+                return
+
+            # Fetch all playlists in the folder
+            logger_gui.info(f"Fetching playlists from folder: {media.name}")
+            playlists = self._get_folder_playlists(media)
+
+            if not playlists:
+                logger_gui.info(f"No playlists found in folder: {media.name}")
+                return
+
+            # Queue each playlist for download
+            logger_gui.info(f"Queueing {len(playlists)} playlists from folder: {media.name}")
+
+            for playlist in playlists:
+                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(playlist)
+
+                if queue_dl_item:
+                    self.queue_download_media(queue_dl_item)
+
+            logger_gui.info(f"✅ Successfully queued {len(playlists)} playlists from folder: {media.name}")
+
+        except Exception as e:
+            logger_gui.exception(f"Error downloading playlists from folder: {e}")
+            logger_gui.error("Failed to download playlists from folder. See log for details.")
+
+    def on_download_folder_albums(self, point: QtCore.QPoint) -> None:
+        """Download all unique albums from all playlists in a folder.
+
+        Args:
+            point (QPoint): The point in the tree where the folder was right-clicked.
+        """
+        try:
+            # Get and validate the folder
+            item = self.tr_lists_user.itemAt(point)
+            media = get_user_list_media_item(item)
+
+            if not isinstance(media, Folder):
+                logger_gui.error("Please select a folder.")
+                return
+
+            # Fetch all playlists in the folder
+            logger_gui.info(f"Fetching playlists from folder: {media.name}")
+            playlists = self._get_folder_playlists(media)
+
+            if not playlists:
+                logger_gui.info(f"No playlists found in folder: {media.name}")
+                return
+
+            logger_gui.info(f"Found {len(playlists)} playlists in folder: {media.name}")
+
+            # Collect all tracks from all playlists
+            all_tracks: list[Track] = []
+
+            for playlist in playlists:
+                try:
+                    tracks = self._get_playlist_tracks(playlist)
+                    all_tracks.extend(tracks)
+                    logger_gui.debug(f"Collected {len(tracks)} tracks from playlist: {playlist.name}")
+                except Exception as e:
+                    logger_gui.error(f"Error getting tracks from playlist '{playlist.name}': {e}")
+                    continue
+
+            if not all_tracks:
+                logger_gui.info(f"No tracks found in folder playlists: {media.name}")
+                return
+
+            logger_gui.info(f"Collected {len(all_tracks)} total tracks from all playlists")
+
+            # Extract unique album IDs
+            album_ids = self._extract_album_ids_from_tracks(all_tracks)
+            logger_gui.info(f"Found {len(album_ids)} unique albums across all playlists in folder: {media.name}")
+
+            if not album_ids:
+                logger_gui.info("No albums found to download.")
+                return
+
+            # Load full album objects with rate limiting
+            albums_dict = self._load_albums_with_rate_limiting(album_ids)
+
+            if not albums_dict:
+                logger_gui.error("Failed to load any albums.")
+                return
+
+            # Queue the albums for download
+            self._queue_loaded_albums(albums_dict)
+
+            logger_gui.info(f"✅ Successfully queued {len(albums_dict)} unique albums from folder: {media.name}")
+
+        except Exception as e:
+            logger_gui.exception(f"Error downloading albums from folder: {e}")
+            logger_gui.error("Failed to download albums from folder. See log for details.")
 
     def search_populate_results(self, query: str, type_media: Any) -> None:
         """Populate the results tree with search results.
@@ -1571,6 +1692,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             offset += limit
 
         return folders, playlists
+
+    def _get_folder_playlists(self, folder: Folder) -> list[Playlist]:
+        """Fetch all playlists from a folder.
+
+        Args:
+            folder (Folder): The folder to fetch playlists from.
+
+        Returns:
+            list[Playlist]: List of playlists in the folder.
+        """
+        # Use existing method to fetch folder contents
+        # Since folders can't contain folders, we ignore the folders return value
+        _, playlists = self._fetch_folder_contents(folder)
+
+        logger_gui.debug(f"Found {len(playlists)} playlists in folder: {folder.name}")
+
+        return playlists
+
+    def _get_playlist_tracks(self, playlist: Playlist | UserPlaylist | Mix) -> list[Track]:
+        """Fetch all tracks from a playlist.
+
+        Args:
+            playlist (Playlist | UserPlaylist | Mix): The playlist to fetch tracks from.
+
+        Returns:
+            list[Track]: List of tracks in the playlist.
+        """
+        playlist_name = getattr(playlist, "name", "unknown")
+        logger_gui.debug(f"Fetching tracks from playlist: {playlist_name}")
+        media_items = items_results_all(playlist)
+
+        # Filter for Track objects only (items_results_all may return Videos too)
+        tracks = [item for item in media_items if isinstance(item, Track)]
+
+        logger_gui.debug(f"Found {len(tracks)} tracks in playlist: {playlist_name}")
+
+        return tracks
 
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Show the items in the selected playlist or mix.
