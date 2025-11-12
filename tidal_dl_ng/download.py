@@ -16,6 +16,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from concurrent import futures
+from dataclasses import dataclass
 from threading import Event
 from uuid import uuid4
 
@@ -73,6 +74,16 @@ from tidal_dl_ng.helper.tidal import (
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.downloader import DownloadSegmentResult
 from tidal_dl_ng.model.gui_data import ProgressBars
+
+
+@dataclass
+class TrackStreamInfo:
+    """Container for track stream information."""
+
+    stream_manifest: StreamManifest | None
+    file_extension: str
+    requires_flac_extraction: bool
+    media_stream: Stream | None
 
 
 # TODO: Set appropriate client string and use it for video download.
@@ -134,7 +145,8 @@ class Download:
         Args:
             tidal_obj (Tidal): TIDAL configuration object. Required for:
                 - session: Main TIDAL API session
-                - atmos_session_context(): Dolby Atmos credential switching
+                - switch_to_atmos_session(): Dolby Atmos credential switching
+                - restore_normal_session(): Restore original session credentials
             path_base (str): Base path for downloads.
             fn_logger (Callable): Logger function or object.
             skip_existing (bool, optional): Whether to skip existing files. Defaults to False.
@@ -789,7 +801,7 @@ class Download:
             media (Track | Video): Media item.
 
         Returns:
-            tuple[StreamManifest | None, str, bool, Stream | None]: Stream info.
+        tuple[StreamManifest | None, str, bool, Stream | None]: Stream info.
         """
         stream_manifest: StreamManifest | None = None
         media_stream: Stream | None = None
@@ -821,9 +833,15 @@ class Download:
         with self.tidal.stream_lock:
             try:
                 if isinstance(media, Track):
-                    stream_manifest, file_extension, do_flac_extract, media_stream = self._get_track_stream_info(media)
-                    if stream_manifest is None:
+                    track_info = self._get_track_stream_info(media)
+
+                    if track_info.stream_manifest is None:
                         return None, "", False, None
+
+                    stream_manifest = track_info.stream_manifest
+                    file_extension = track_info.file_extension
+                    do_flac_extract = track_info.requires_flac_extraction
+                    media_stream = track_info.media_stream
 
                 elif isinstance(media, Video):
                     # Videos always require the normal session
@@ -854,10 +872,17 @@ class Download:
 
         return stream_manifest, file_extension, do_flac_extract, media_stream
 
-    def _get_track_stream_info(self, media: Track) -> tuple[StreamManifest | None, str, bool, Stream | None]:
+    def _get_track_stream_info(self, media: Track) -> TrackStreamInfo:
         """
         Gets stream info for a Track, handling Atmos/Normal session switching.
-        This is a helper for _get_stream_info to reduce complexity.
+
+        Args:
+            media: The track to get stream information for.
+
+        Returns:
+            TrackStreamInfo: Container with stream manifest, file extension,
+                            FLAC extraction flag, and media stream object.
+                            Returns TrackStreamInfo with None/empty values if fails.
         """
         want_atmos = (
             self.settings.data.download_dolby_atmos
@@ -868,25 +893,30 @@ class Download:
         if want_atmos:
             if not self.tidal.switch_to_atmos_session():
                 self.fn_logger.error(f"Failed to switch to Atmos session for track: {media.id}")
-                return None, "", False, None
+                return TrackStreamInfo(None, "", False, None)
         else:
             if not self.tidal.restore_normal_session():
                 self.fn_logger.error(f"Failed to restore normal session for track: {media.id}")
-                return None, "", False, None
+                return TrackStreamInfo(None, "", False, None)
 
         media_stream = self.session.track(media.id).get_stream() if want_atmos else media.get_stream()
 
         stream_manifest = media_stream.get_stream_manifest()
         file_extension = stream_manifest.file_extension
-        do_flac_extract = False
+        requires_flac_extraction = False
 
         if self.settings.data.extract_flac and (
             stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC
         ):
             file_extension = AudioExtensions.FLAC
-            do_flac_extract = True
+            requires_flac_extraction = True
 
-        return stream_manifest, file_extension, do_flac_extract, media_stream
+        return TrackStreamInfo(
+            stream_manifest=stream_manifest,
+            file_extension=file_extension,
+            requires_flac_extraction=requires_flac_extraction,
+            media_stream=media_stream,
+        )
 
     def _perform_actual_download(
         self,

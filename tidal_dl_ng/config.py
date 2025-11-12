@@ -179,6 +179,9 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         """
         Switches the shared session to Dolby Atmos credentials.
         Only re-authenticates if not already in Atmos mode.
+
+        Returns:
+            bool: True if successful or already in Atmos mode, False otherwise.
         """
         # If we are already in Atmos mode, do nothing.
         if self.is_atmos_session:
@@ -204,6 +207,12 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         """
         Restores the shared session to the original user credentials.
         Only re-authenticates if not already in Normal mode.
+
+        Args:
+            force: If True, forces restoration even if already in Normal mode.
+
+        Returns:
+            bool: True if successful or already in Normal mode, False otherwise.
         """
         # If we are already in Normal mode (and not forced), do nothing.
         if not self.is_atmos_session and not force:
@@ -213,8 +222,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.session.config.client_id = self.original_client_id
         self.session.config.client_secret = self.original_client_secret
 
-        # Re-apply user's quality setting
-        self.settings_apply()
+        # Explicitly restore audio quality to user's configured setting
+        self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
 
         # Re-login with original credentials
         if not self.login_token(do_pkce=self.is_pkce):
