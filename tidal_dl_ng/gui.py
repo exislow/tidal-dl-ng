@@ -95,6 +95,7 @@ from rich.progress import Progress
 from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
 from tidalapi.media import AudioMode
+from tidalapi.playlist import Folder
 from tidalapi.session import SearchTypes
 
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
@@ -134,7 +135,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     pb_list: QtWidgets.QProgressBar
     s_list_advance: QtCore.Signal = QtCore.Signal(float)
     s_pb_reset: QtCore.Signal = QtCore.Signal()
-    s_populate_tree_lists: QtCore.Signal = QtCore.Signal(list)
+    s_populate_tree_lists: QtCore.Signal = QtCore.Signal(dict)
+    s_populate_folder_children: QtCore.Signal = QtCore.Signal(object, list, list)
     s_statusbar_message: QtCore.Signal = QtCore.Signal(object)
     s_tr_results_add_top_level_item: QtCore.Signal = QtCore.Signal(object)
     s_settings_save: QtCore.Signal = QtCore.Signal()
@@ -412,15 +414,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_spinner_start.emit(self.tr_lists_user)
         self.s_pb_reload_status.emit(False)
 
-        user_all: list[Any] = user_media_lists(self.tidal.session)
+        user_all: dict[str, list] = user_media_lists(self.tidal.session)
 
         self.s_populate_tree_lists.emit(user_all)
 
-    def on_populate_tree_lists(self, user_lists: list[Playlist | UserPlaylist | Mix]) -> None:
+    def on_populate_tree_lists(self, user_lists: dict[str, list]) -> None:
         """Populate the user lists tree with playlists, mixes, and favorites.
 
         Args:
-            user_lists (list[Playlist | UserPlaylist | Mix]): List of user playlists, mixes, and favorites.
+            user_lists (dict[str, list]): Dictionary with 'playlists' (Folder/Playlist) and 'mixes' lists.
         """
         twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
             TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
@@ -437,23 +439,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             for i in reversed(range(twi.childCount())):
                 twi.removeChild(twi.child(i))
 
-        # Populate dynamic user lists
-        for item in user_lists:
-            if isinstance(item, UserPlaylist | Playlist):
+        # Populate playlists (including folders)
+        for item in user_lists.get("playlists", []):
+            if isinstance(item, Folder):
+                twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
+                name: str = f"📁 {item.name}"
+                info: str = f"({item.total_number_of_items} items)" if item.total_number_of_items else ""
+                twi_child.setText(0, name)
+                set_user_list_media(twi_child, item)
+                twi_child.setText(2, info)
+
+                # Add disabled dummy child to show expansion arrow
+                dummy_child = QtWidgets.QTreeWidgetItem(twi_child)
+                dummy_child.setDisabled(True)
+            elif isinstance(item, UserPlaylist | Playlist):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
                 name: str = item.name if getattr(item, "name", None) is not None else ""
                 description: str = f" {item.description}" if item.description else ""
                 info: str = f"({item.num_tracks + item.num_videos} Tracks){description}"
-            elif isinstance(item, Mix):
+                twi_child.setText(0, name)
+                set_user_list_media(twi_child, item)
+                twi_child.setText(2, info)
+
+        # Populate mixes
+        for item in user_lists.get("mixes", []):
+            if isinstance(item, Mix):
                 twi_child = QtWidgets.QTreeWidgetItem(twi_mixes)
                 name: str = item.title
                 info: str = item.sub_title
-            else:
-                continue
-
-            twi_child.setText(0, name)
-            set_user_list_media(twi_child, item)
-            twi_child.setText(2, info)
+                twi_child.setText(0, name)
+                set_user_list_media(twi_child, item)
+                twi_child.setText(2, info)
 
         # Remove all children from favorites to avoid duplication
         for i in reversed(range(twi_favorites.childCount())):
@@ -1026,38 +1042,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem | None: The converted ResultItem or None if not valid.
         """
-        if not item:
+        if not item or (hasattr(item, "available") and not item.available):
             return None
 
-        if hasattr(item, "available") and not item.available:
-            return None
-
-        explicit: str = ""
-        if isinstance(item, Track | Video | Album):
-            explicit = " 🅴" if item.explicit else ""
-
-        date_user_added: str = (
+        # Prepare common data
+        explicit = " 🅴" if isinstance(item, Track | Video | Album) and item.explicit else ""
+        date_user_added = (
             item.user_date_added.strftime("%Y-%m-%d_%H:%M") if getattr(item, "user_date_added", None) else ""
         )
-        date_release: str = self._get_date_release(item)
+        date_release = self._get_date_release(item)
 
-        if isinstance(item, Track):
-            return self._result_item_from_track(idx, item, explicit, date_user_added, date_release)
+        # Map item types to their conversion methods
+        type_handlers = {
+            Track: lambda: self._result_item_from_track(idx, item, explicit, date_user_added, date_release),
+            Video: lambda: self._result_item_from_video(idx, item, explicit, date_user_added, date_release),
+            Playlist: lambda: self._result_item_from_playlist(idx, item, date_user_added, date_release),
+            Album: lambda: self._result_item_from_album(idx, item, explicit, date_user_added, date_release),
+            Mix: lambda: self._result_item_from_mix(idx, item, date_user_added, date_release),
+            Artist: lambda: self._result_item_from_artist(idx, item, date_user_added, date_release),
+            Folder: lambda: self._result_item_from_folder(idx, item, date_user_added),
+        }
 
-        if isinstance(item, Video):
-            return self._result_item_from_video(idx, item, explicit, date_user_added, date_release)
-
-        if isinstance(item, Playlist):
-            return self._result_item_from_playlist(idx, item, date_user_added, date_release)
-
-        if isinstance(item, Album):
-            return self._result_item_from_album(idx, item, explicit, date_user_added, date_release)
-
-        if isinstance(item, Mix):
-            return self._result_item_from_mix(idx, item, date_user_added, date_release)
-
-        if isinstance(item, Artist):
-            return self._result_item_from_artist(idx, item, date_user_added, date_release)
+        # Find and execute the appropriate handler
+        for item_type, handler in type_handlers.items():
+            if isinstance(item, item_type):
+                return handler()
 
         return None
 
@@ -1242,6 +1251,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             date_release=date_release,
         )
 
+    def _result_item_from_folder(self, idx: int, item: Folder, date_user_added: str) -> ResultItem:
+        """Create a ResultItem from a Folder.
+
+        Args:
+            idx (int): Index of the item.
+            item (Folder): The Folder item.
+            date_user_added (str): Date user added.
+
+        Returns:
+            ResultItem: The constructed ResultItem.
+        """
+        total_items: int = item.total_number_of_items if hasattr(item, "total_number_of_items") else 0
+        return ResultItem(
+            position=idx,
+            artist="",
+            title=f"📁 {item.name} ({total_items} items)",
+            album="",
+            duration_sec=-1,
+            obj=item,
+            quality="",
+            explicit=False,
+            date_user_added=date_user_added,
+            date_release="",
+        )
+
     def media_to_queue_download_model(
         self, media: Artist | Track | Video | Album | Playlist | Mix
     ) -> QueueDownloadItem | bool:
@@ -1320,6 +1354,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
         self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
         self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
+        self.tr_lists_user.itemExpanded.connect(self.on_tr_lists_user_expanded)
         self.s_spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
         self.s_spinner_stop.connect(self.on_spinner_stop)
         self.s_item_advance.connect(self.on_progress_item)
@@ -1328,6 +1363,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_list_advance.connect(self.on_progress_list)
         self.s_pb_reset.connect(self.on_progress_reset)
         self.s_populate_tree_lists.connect(self.on_populate_tree_lists)
+        self.s_populate_folder_children.connect(self.on_populate_folder_children)
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
         self.s_settings_save.connect(self.on_settings_save)
@@ -1423,6 +1459,119 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.tidal:
             self.tidal.settings_apply()
 
+    def on_tr_lists_user_expanded(self, item: QtWidgets.QTreeWidgetItem) -> None:
+        """Handle expansion of folders in the user lists tree.
+
+        Args:
+            item (QTreeWidgetItem): The expanded tree item.
+        """
+        # Check if it's a first-time expansion (has disabled dummy child)
+        if item.childCount() > 0 and item.child(0).isDisabled():
+            # Run in thread to avoid blocking UI
+            self.thread_it(self.tr_lists_user_load_folder_children, item)
+
+    def tr_lists_user_load_folder_children(self, parent_item: QtWidgets.QTreeWidgetItem) -> None:
+        """Load and display children of a folder in the user lists tree.
+
+        Args:
+            parent_item (QTreeWidgetItem): The parent folder item.
+        """
+        folder: Folder | None = get_user_list_media_item(parent_item)
+
+        if not isinstance(folder, Folder):
+            return
+
+        # Show spinner while loading
+        self.s_spinner_start.emit(self.tr_lists_user)
+
+        try:
+            # Fetch folder contents
+            folders, playlists = self._fetch_folder_contents(folder)
+
+            # Emit signal to populate in main thread
+            self.s_populate_folder_children.emit(parent_item, folders, playlists)
+
+        finally:
+            self.s_spinner_stop.emit()
+
+    def on_populate_folder_children(
+        self, parent_item: QtWidgets.QTreeWidgetItem, folders: list[Folder], playlists: list[Playlist]
+    ) -> None:
+        """Populate folder children in the main thread (signal handler).
+
+        Args:
+            parent_item (QTreeWidgetItem): The parent folder item.
+            folders (list[Folder]): List of sub-folders.
+            playlists (list[Playlist]): List of playlists.
+        """
+        # Remove dummy child
+        parent_item.takeChild(0)
+
+        # Add sub-folders as children
+        for sub_folder in folders:
+            twi_child = QtWidgets.QTreeWidgetItem(parent_item)
+            twi_child.setText(0, f"📁 {sub_folder.name}")
+            set_user_list_media(twi_child, sub_folder)
+            info = f"({sub_folder.total_number_of_items} items)" if sub_folder.total_number_of_items else ""
+            twi_child.setText(2, info)
+
+            # Add dummy child for potential sub-folders
+            dummy = QtWidgets.QTreeWidgetItem(twi_child)
+            dummy.setDisabled(True)
+
+        # Add playlists as children
+        for playlist in playlists:
+            twi_child = QtWidgets.QTreeWidgetItem(parent_item)
+            name = playlist.name if playlist.name else ""
+            twi_child.setText(0, name)
+            set_user_list_media(twi_child, playlist)
+            info = f"({playlist.num_tracks + playlist.num_videos} Tracks)"
+            if playlist.description:
+                info += f" {playlist.description}"
+            twi_child.setText(2, info)
+
+    def _fetch_folder_contents(self, folder: Folder) -> tuple[list[Folder], list[Playlist]]:
+        """Fetch contents (sub-folders and playlists) of a folder.
+
+        Args:
+            folder (Folder): The folder to fetch contents for.
+
+        Returns:
+            tuple[list[Folder], list[Playlist]]: Sub-folders and playlists within the folder.
+        """
+        folder_id = folder.id if folder.id else "root"
+
+        # Fetch sub-folders with manual pagination
+        offset = 0
+        limit = 50
+        folders = []
+
+        while True:
+            batch = self.tidal.session.user.favorites.playlist_folders(
+                limit=limit, offset=offset, parent_folder_id=folder_id
+            )
+            if not batch:
+                break
+            folders.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+
+        # Fetch playlists in this folder using folder.items() method
+        offset = 0
+        playlists = []
+
+        while True:
+            batch = folder.items(offset=offset, limit=limit)
+            if not batch:
+                break
+            playlists.extend(batch)
+            if len(batch) < limit:
+                break
+            offset += limit
+
+        return folders, playlists
+
     def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
         """Show the items in the selected playlist or mix.
 
@@ -1432,19 +1581,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.thread_it(self.list_items_show, item)
 
     def list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Fetch and display the items in a playlist or mix.
+        """Fetch and display the items in a playlist, mix, or folder.
 
         Args:
-            item (QtWidgets.QTreeWidgetItem): The tree widget item representing a playlist or mix.
+            item (QtWidgets.QTreeWidgetItem): The tree widget item representing a playlist, mix, or folder.
         """
-        media_list: Album | Playlist | str = get_user_list_media_item(item)
+        media_list: Album | Playlist | Folder | str = get_user_list_media_item(item)
 
         # Only if clicked item is not a top level item.
         if media_list:
             # Show spinner while loading list
             self.s_spinner_start.emit(self.tr_results)
             try:
-                if isinstance(media_list, str) and media_list.startswith("fav_"):
+                if isinstance(media_list, Folder):
+                    # Show folder contents
+                    self._show_folder_contents(media_list)
+                elif isinstance(media_list, str) and media_list.startswith("fav_"):
                     function_list = favorite_function_factory(self.tidal, media_list)
                     self.list_items_show_result(favorite_function=function_list)
                 else:
@@ -1453,6 +1605,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     self.thread_it(self.cover_show, media_list)
             finally:
                 self.s_spinner_stop.emit()
+
+    def _show_folder_contents(self, folder: Folder) -> None:
+        """Display folder contents (nested playlists/folders) in results pane.
+
+        Args:
+            folder (Folder): The folder to display contents for.
+        """
+        # Fetch folder contents using the shared helper method
+        folders, playlists = self._fetch_folder_contents(folder)
+
+        # Combine folders and playlists
+        items = folders + playlists
+
+        # Convert to ResultItems and display
+        result = self.search_result_to_model(items)
+        self.populate_tree_results(result)
 
     def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
         """Handle the event when a result item is clicked.
