@@ -193,12 +193,42 @@ def paginate_results(func_get_items_media: [Callable]) -> [Track | Video | Album
     return result
 
 
-def user_media_lists(session: Session) -> [Playlist | UserPlaylist | Mix]:
-    user_playlists: [Playlist | UserPlaylist] = paginate_results([session.user.playlist_and_favorite_playlists])
-    user_mixes: [Mix] = session.mixes().categories[0].items
-    result: [Playlist | UserPlaylist | Mix] = user_playlists + user_mixes
+def user_media_lists(session: Session) -> dict[str, list]:
+    """Fetch user media lists using tidalapi's built-in pagination where available.
 
-    return result
+    Returns a dictionary with 'playlists' and 'mixes' keys containing lists of media items.
+    For playlists, includes both Folder and Playlist objects at the root level.
+
+    Args:
+        session (Session): TIDAL session object.
+
+    Returns:
+        dict[str, list]: Dictionary with 'playlists' (includes Folder and Playlist) and 'mixes' lists.
+    """
+    # Use built-in pagination for playlists (root level only)
+    playlists = session.user.favorites.playlists_paginated()
+
+    # Fetch root-level folders manually (no paginated version available)
+    folders = []
+    offset = 0
+    limit = 50
+
+    while True:
+        batch = session.user.favorites.playlist_folders(limit=limit, offset=offset, parent_folder_id="root")
+        if not batch:
+            break
+        folders.extend(batch)
+        if len(batch) < limit:
+            break
+        offset += limit
+
+    # Combine folders and playlists
+    all_playlists = folders + playlists
+
+    # Get mixes
+    user_mixes = session.mixes().categories[0].items
+
+    return {"playlists": all_playlists, "mixes": user_mixes}
 
 
 def instantiate_media(

@@ -5,6 +5,7 @@ from PySide6 import QtCore, QtGui, QtWidgets
 from tidalapi import Album, Mix, Playlist, Track, UserPlaylist, Video
 from tidalapi.artist import Artist
 from tidalapi.media import Quality
+from tidalapi.playlist import Folder
 
 from tidal_dl_ng.constants import QualityVideo
 
@@ -33,8 +34,8 @@ def get_results_media_item(
     return result
 
 
-def get_user_list_media_item(item: QtWidgets.QTreeWidgetItem) -> Mix | Playlist | UserPlaylist:
-    result: Mix | Playlist | UserPlaylist = get_table_data(item, 1)
+def get_user_list_media_item(item: QtWidgets.QTreeWidgetItem) -> Mix | Playlist | UserPlaylist | Folder | str:
+    result: Mix | Playlist | UserPlaylist | Folder | str = get_table_data(item, 1)
 
     return result
 
@@ -73,7 +74,9 @@ def get_queue_download_quality_video(
 
 
 def set_table_data(
-    item: QtWidgets.QTreeWidgetItem, data: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist, column: int
+    item: QtWidgets.QTreeWidgetItem,
+    data: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist | Folder | str,
+    column: int,
 ):
     item.setData(column, QtCore.Qt.ItemDataRole.UserRole, data)
 
@@ -83,7 +86,8 @@ def set_results_media(item: QtWidgets.QTreeWidgetItem, media: Track | Video | Al
 
 
 def set_user_list_media(
-    item: QtWidgets.QTreeWidgetItem, media: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist
+    item: QtWidgets.QTreeWidgetItem,
+    media: Track | Video | Album | Artist | Mix | Playlist | UserPlaylist | Folder | str,
 ):
     set_table_data(item, media, 1)
 
