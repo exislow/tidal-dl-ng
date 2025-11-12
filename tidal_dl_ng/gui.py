@@ -599,6 +599,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif isinstance(media, str):
             # Favorites items (stored as string keys like "fav_tracks", "fav_albums")
             menu.addAction("Download All Items", lambda: self.thread_it(self.on_download_favorites, point))
+            menu.addAction(
+                "Download All Albums from Items", lambda: self.thread_it(self.on_download_albums_from_favorites, point)
+            )
         else:
             # Playlist/Mix menu items (existing)
             menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
@@ -1042,6 +1045,118 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except Exception as e:
             logger_gui.exception(f"Error downloading favorites: {e}")
             logger_gui.error("Failed to download favorites. See log for details.")
+
+    def _download_albums_from_favorites_albums(self, media_items: list, favorite_name: str) -> None:
+        """Download albums from favorite albums list.
+
+        Args:
+            media_items (list): List of favorite albums.
+            favorite_name (str): Name of the favorites category for logging.
+        """
+        logger_gui.info(f"Queueing {len(media_items)} albums from favorites: {favorite_name}")
+        albums_dict = {album.id: album for album in media_items if isinstance(album, Album) and album.id}
+        self._queue_loaded_albums(albums_dict)
+        logger_gui.info(f"✅ Successfully queued {len(albums_dict)} albums from favorites: {favorite_name}")
+
+    def _download_albums_from_favorites_artists(self, media_items: list, favorite_name: str) -> None:
+        """Download albums from favorite artists list.
+
+        Args:
+            media_items (list): List of favorite artists.
+            favorite_name (str): Name of the favorites category for logging.
+        """
+        logger_gui.info(f"Fetching albums from {len(media_items)} artists...")
+        all_albums = {}
+
+        for artist in media_items:
+            if isinstance(artist, Artist):
+                try:
+                    artist_albums = items_results_all(artist)
+                    for album in artist_albums:
+                        if isinstance(album, Album) and album.id:
+                            all_albums[album.id] = album
+                    logger_gui.debug(f"Found {len(artist_albums)} albums from artist: {artist.name}")
+                except Exception as e:
+                    logger_gui.error(f"Error getting albums from artist '{artist.name}': {e}")
+                    continue
+
+        if not all_albums:
+            logger_gui.info("No albums found from favorite artists.")
+            return
+
+        logger_gui.info(f"Found {len(all_albums)} unique albums from favorite artists")
+        self._queue_loaded_albums(all_albums)
+        logger_gui.info(f"✅ Successfully queued {len(all_albums)} albums from favorites: {favorite_name}")
+
+    def _download_albums_from_favorites_tracks(self, media_items: list, favorite_name: str) -> None:
+        """Download albums from favorite tracks/videos/mixes list.
+
+        Args:
+            media_items (list): List of favorite tracks/videos/mixes.
+            favorite_name (str): Name of the favorites category for logging.
+        """
+        logger_gui.info("Extracting albums from tracks...")
+        album_ids = self._extract_album_ids_from_tracks(media_items)
+
+        if not album_ids:
+            logger_gui.info(f"No albums found in favorites: {favorite_name}")
+            return
+
+        logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
+
+        # Load full album objects with rate limiting
+        albums_dict = self._load_albums_with_rate_limiting(album_ids)
+
+        if not albums_dict:
+            logger_gui.error("Failed to load any albums from favorites.")
+            return
+
+        # Queue the albums for download
+        self._queue_loaded_albums(albums_dict)
+        logger_gui.info(f"✅ Successfully queued {len(albums_dict)} unique albums from favorites: {favorite_name}")
+
+    def on_download_albums_from_favorites(self, point: QtCore.QPoint) -> None:
+        """Download all unique albums from items in a Favorites category.
+
+        Args:
+            point (QPoint): The point in the tree where the favorites item was right-clicked.
+        """
+        try:
+            # Get and validate the favorites item
+            item = self.tr_lists_user.itemAt(point)
+            media = get_user_list_media_item(item)
+
+            if not isinstance(media, str):
+                logger_gui.error("Please select a favorites category.")
+                return
+
+            # Get the favorites category name for logging
+            favorite_name = FAVORITES.get(media, {}).get("name", media)
+            logger_gui.info(f"Fetching all items from favorites: {favorite_name}")
+
+            # Use the factory to get the appropriate favorites function
+            favorite_function = favorite_function_factory(self.tidal, media)
+
+            # Fetch all items from this favorites category
+            media_items = favorite_function()
+
+            if not media_items:
+                logger_gui.info(f"No items found in favorites: {favorite_name}")
+                return
+
+            logger_gui.info(f"Found {len(media_items)} items in favorites: {favorite_name}")
+
+            # Delegate to appropriate handler based on favorites type
+            if media == "fav_albums":
+                self._download_albums_from_favorites_albums(media_items, favorite_name)
+            elif media == "fav_artists":
+                self._download_albums_from_favorites_artists(media_items, favorite_name)
+            else:
+                self._download_albums_from_favorites_tracks(media_items, favorite_name)
+
+        except Exception as e:
+            logger_gui.exception(f"Error downloading albums from favorites: {e}")
+            logger_gui.error("Failed to download albums from favorites. See log for details.")
 
     def search_populate_results(self, query: str, type_media: Any) -> None:
         """Populate the results tree with search results.
