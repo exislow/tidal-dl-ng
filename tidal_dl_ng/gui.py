@@ -596,6 +596,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             menu.addAction(
                 "Download All Albums from Folder", lambda: self.thread_it(self.on_download_folder_albums, point)
             )
+        elif isinstance(media, str):
+            # Favorites items (stored as string keys like "fav_tracks", "fav_albums")
+            menu.addAction("Download All Items", lambda: self.thread_it(self.on_download_favorites, point))
         else:
             # Playlist/Mix menu items (existing)
             menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
@@ -992,6 +995,53 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except Exception as e:
             logger_gui.exception(f"Error downloading albums from folder: {e}")
             logger_gui.error("Failed to download albums from folder. See log for details.")
+
+    def on_download_favorites(self, point: QtCore.QPoint) -> None:
+        """Download all items from a Favorites category.
+
+        Args:
+            point (QPoint): The point in the tree where the favorites item was right-clicked.
+        """
+        try:
+            # Get and validate the favorites item
+            item = self.tr_lists_user.itemAt(point)
+            media = get_user_list_media_item(item)
+
+            if not isinstance(media, str):
+                logger_gui.error("Please select a favorites category.")
+                return
+
+            # Get the favorites category name for logging
+            favorite_name = FAVORITES.get(media, {}).get("name", media)
+            logger_gui.info(f"Fetching all items from favorites: {favorite_name}")
+
+            # Use the factory to get the appropriate favorites function
+            favorite_function = favorite_function_factory(self.tidal, media)
+
+            # Fetch all items from this favorites category
+            media_items = favorite_function()
+
+            if not media_items:
+                logger_gui.info(f"No items found in favorites: {favorite_name}")
+                return
+
+            logger_gui.info(f"Found {len(media_items)} items in favorites: {favorite_name}")
+
+            # Queue each item for download
+            queued_count = 0
+
+            for media_item in media_items:
+                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(media_item)
+
+                if queue_dl_item:
+                    self.queue_download_media(queue_dl_item)
+                    queued_count += 1
+
+            logger_gui.info(f"✅ Successfully queued {queued_count} items from favorites: {favorite_name}")
+
+        except Exception as e:
+            logger_gui.exception(f"Error downloading favorites: {e}")
+            logger_gui.error("Failed to download favorites. See log for details.")
 
     def search_populate_results(self, query: str, type_media: Any) -> None:
         """Populate the results tree with search results.
