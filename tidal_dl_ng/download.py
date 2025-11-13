@@ -16,6 +16,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from concurrent import futures
+from dataclasses import dataclass
 from threading import Event
 from uuid import uuid4
 
@@ -73,6 +74,16 @@ from tidal_dl_ng.helper.tidal import (
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.downloader import DownloadSegmentResult
 from tidal_dl_ng.model.gui_data import ProgressBars
+
+
+@dataclass
+class TrackStreamInfo:
+    """Container for track stream information."""
+
+    stream_manifest: StreamManifest | None
+    file_extension: str
+    requires_flac_extraction: bool
+    media_stream: Stream | None
 
 
 # TODO: Set appropriate client string and use it for video download.
@@ -134,7 +145,8 @@ class Download:
         Args:
             tidal_obj (Tidal): TIDAL configuration object. Required for:
                 - session: Main TIDAL API session
-                - atmos_session_context(): Dolby Atmos credential switching
+                - switch_to_atmos_session(): Dolby Atmos credential switching
+                - restore_normal_session(): Restore original session credentials
             path_base (str): Base path for downloads.
             fn_logger (Callable): Logger function or object.
             skip_existing (bool, optional): Whether to skip existing files. Defaults to False.
@@ -789,50 +801,122 @@ class Download:
             media (Track | Video): Media item.
 
         Returns:
-            tuple[StreamManifest | None, str, bool, Stream | None]: Stream info.
+        tuple[StreamManifest | None, str, bool, Stream | None]: Stream info.
         """
         stream_manifest: StreamManifest | None = None
         media_stream: Stream | None = None
         do_flac_extract: bool = False
+        file_extension: str = ""
 
-        if isinstance(media, Track):
+        # CRITICAL: This lock is intentionally broad and serializes all
+        # stream-fetching (Phase 1) to prevent a critical race condition.
+        #
+        # THE PROBLEM:
+        # The single, shared session (self.tidal.session) must change its
+        # credentials to switch between Atmos and Hi-Res/Normal streams.
+        #
+        # THE RACE CONDITION IT FIXES:
+        # If this lock is released *before* get_stream() is called,
+        # another thread could change the session (e.g., back to "Normal")
+        # right after this thread switched it to "Atmos". This would
+        # cause this thread to call get_stream() with the wrong credentials,
+        # resulting in the API returning AAC 320 instead of Atmos.
+        #
+        # THE TRADEOFF:
+        # This creates a "tollbooth" bottleneck, serializing the get_stream()
+        # calls. However, the *actual* segment downloads (Phase 2)
+        # still run in parallel, governed by `downloads_concurrent_max`.
+        #
+        # DO NOT "OPTIMIZE" THIS by making the lock more granular.
+        # Correctness > Performance.
+
+        with self.tidal.stream_lock:
             try:
-                if (
-                    self.settings.data.download_dolby_atmos
-                    and hasattr(media, "audio_modes")
-                    and AudioMode.dolby_atmos.value in media.audio_modes
-                ):
-                    with self.tidal.atmos_session_context():
-                        atmos_track = self.session.track(media.id)
-                        media_stream = atmos_track.get_stream()
-                else:
-                    media_stream = media.get_stream()
+                if isinstance(media, Track):
+                    track_info = self._get_track_stream_info(media)
 
-                stream_manifest = media_stream.get_stream_manifest()
+                    if track_info.stream_manifest is None:
+                        return None, "", False, None
+
+                    stream_manifest = track_info.stream_manifest
+                    file_extension = track_info.file_extension
+                    do_flac_extract = track_info.requires_flac_extraction
+                    media_stream = track_info.media_stream
+
+                elif isinstance(media, Video):
+                    # Videos always require the normal session
+                    if not self.tidal.restore_normal_session():
+                        self.fn_logger.error(f"Failed to restore normal session for video: {media.id}")
+                        return None, "", False, None
+
+                    file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
+
+                    stream_manifest = None
+                    media_stream = None
+                    do_flac_extract = False
+
+                else:
+                    self.fn_logger.error(f"Unknown media type for stream info: {type(media)}")
+                    return None, "", False, None
 
             except TooManyRequests:
                 self.fn_logger.exception(
                     f"Too many requests against TIDAL backend. Skipping '{name_builder_item(media)}'. "
                     f"Consider to activate delay between downloads."
                 )
-
                 return None, "", False, None
+
             except Exception:
                 self.fn_logger.exception(f"Something went wrong. Skipping '{name_builder_item(media)}'.")
-
                 return None, "", False, None
 
-            file_extension = stream_manifest.file_extension
-
-            if self.settings.data.extract_flac and (
-                stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC
-            ):
-                file_extension = AudioExtensions.FLAC
-                do_flac_extract = True
-        elif isinstance(media, Video):
-            file_extension = AudioExtensions.MP4 if self.settings.data.video_convert_mp4 else VideoExtensions.TS
-
         return stream_manifest, file_extension, do_flac_extract, media_stream
+
+    def _get_track_stream_info(self, media: Track) -> TrackStreamInfo:
+        """
+        Gets stream info for a Track, handling Atmos/Normal session switching.
+
+        Args:
+            media: The track to get stream information for.
+
+        Returns:
+            TrackStreamInfo: Container with stream manifest, file extension,
+                            FLAC extraction flag, and media stream object.
+                            Returns TrackStreamInfo with None/empty values if fails.
+        """
+        want_atmos = (
+            self.settings.data.download_dolby_atmos
+            and hasattr(media, "audio_modes")
+            and AudioMode.dolby_atmos.value in media.audio_modes
+        )
+
+        if want_atmos:
+            if not self.tidal.switch_to_atmos_session():
+                self.fn_logger.error(f"Failed to switch to Atmos session for track: {media.id}")
+                return TrackStreamInfo(None, "", False, None)
+        else:
+            if not self.tidal.restore_normal_session():
+                self.fn_logger.error(f"Failed to restore normal session for track: {media.id}")
+                return TrackStreamInfo(None, "", False, None)
+
+        media_stream = self.session.track(media.id).get_stream() if want_atmos else media.get_stream()
+
+        stream_manifest = media_stream.get_stream_manifest()
+        file_extension = stream_manifest.file_extension
+        requires_flac_extraction = False
+
+        if self.settings.data.extract_flac and (
+            stream_manifest.codecs.upper() == Codec.FLAC and file_extension != AudioExtensions.FLAC
+        ):
+            file_extension = AudioExtensions.FLAC
+            requires_flac_extraction = True
+
+        return TrackStreamInfo(
+            stream_manifest=stream_manifest,
+            file_extension=file_extension,
+            requires_flac_extraction=requires_flac_extraction,
+            media_stream=media_stream,
+        )
 
     def _perform_actual_download(
         self,
