@@ -2,10 +2,9 @@ import json
 import os
 import shutil
 from collections.abc import Callable
-from contextlib import contextmanager
 from json import JSONDecodeError
 from pathlib import Path
-from threading import Event
+from threading import Event, Lock
 from typing import Any
 
 import tidalapi
@@ -103,6 +102,19 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.cls_model = ModelToken
         tidal_config: tidalapi.Config = tidalapi.Config(item_limit=10000)
         self.session = tidalapi.Session(tidal_config)
+        self.original_client_id = self.session.config.client_id
+        self.original_client_secret = self.session.config.client_secret
+        # Lock to ensure session-switching is thread-safe.
+        # This lock protects against a race condition where one thread
+        # changes the session credentials while another is using them.
+        # It is intentionally held by Download._get_stream_info
+        # for the *entire* duration of the credential switch AND
+        # the get_stream() call.
+        self.stream_lock = Lock()
+        # State-tracking flag to prevent redundant, expensive
+        # session re-authentication when the session is already in the
+        # correct mode (Atmos or Normal).
+        self.is_atmos_session = False
         # self.session.config.client_id = "km8T1xS355y7dd3H"
         # self.session.config.client_secret = "vcmeGW1OuZ0fWYMCSZ6vNvSLJlT3XEpW0ambgYt5ZuI="
         self.file_path = path_file_token()
@@ -116,7 +128,8 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         if settings:
             self.settings = settings
 
-        self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
+        if not self.is_atmos_session:
+            self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
         self.session.video_quality = tidalapi.VideoQuality.high
 
         return True
@@ -162,33 +175,64 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.set_option("expiry_time", self.session.expiry_time)
         self.save()
 
-    @contextmanager
-    def atmos_session_context(self):
+    def switch_to_atmos_session(self) -> bool:
+        """
+        Switches the shared session to Dolby Atmos credentials.
+        Only re-authenticates if not already in Atmos mode.
 
-        if not self.session.check_login():
-            print("Not logged in.")
+        Returns:
+            bool: True if successful or already in Atmos mode, False otherwise.
+        """
+        # If we are already in Atmos mode, do nothing.
+        if self.is_atmos_session:
+            return True
 
-        original_client_id = self.session.config.client_id
-        original_client_secret = self.session.config.client_secret
-        original_audio_quality = self.session.audio_quality
+        print("Switching session context to Dolby Atmos...")
+        self.session.config.client_id = ATMOS_CLIENT_ID
+        self.session.config.client_secret = ATMOS_CLIENT_SECRET
+        self.session.audio_quality = ATMOS_REQUEST_QUALITY
 
-        try:
-            self.session.config.client_id = ATMOS_CLIENT_ID
-            self.session.config.client_secret = ATMOS_CLIENT_SECRET
-            self.session.audio_quality = ATMOS_REQUEST_QUALITY
+        # Re-login with new credentials
+        if not self.login_token(do_pkce=self.is_pkce):
+            print("Warning: Atmos session authentication failed.")
+            # Try to switch back to normal to be safe
+            self.restore_normal_session(force=True)
+            return False
 
-            if not self.login_token(do_pkce=self.is_pkce):
-                print("Warning: Session restore failed.")
+        self.is_atmos_session = True  # Set the flag
+        print("Session is now in Atmos mode.")
+        return True
 
-            yield
+    def restore_normal_session(self, force: bool = False) -> bool:
+        """
+        Restores the shared session to the original user credentials.
+        Only re-authenticates if not already in Normal mode.
 
-        finally:
-            self.session.config.client_id = original_client_id
-            self.session.config.client_secret = original_client_secret
-            self.session.audio_quality = original_audio_quality
+        Args:
+            force: If True, forces restoration even if already in Normal mode.
 
-            if not self.login_token(do_pkce=self.is_pkce):
-                print("Warning: Restoring the original session context failed. Please restart the application.")
+        Returns:
+            bool: True if successful or already in Normal mode, False otherwise.
+        """
+        # If we are already in Normal mode (and not forced), do nothing.
+        if not self.is_atmos_session and not force:
+            return True
+
+        print("Restoring session context to Normal...")
+        self.session.config.client_id = self.original_client_id
+        self.session.config.client_secret = self.original_client_secret
+
+        # Explicitly restore audio quality to user's configured setting
+        self.session.audio_quality = tidalapi.Quality(self.settings.data.quality_audio)
+
+        # Re-login with original credentials
+        if not self.login_token(do_pkce=self.is_pkce):
+            print("Warning: Restoring the original session context failed. Please restart the application.")
+            return False
+
+        self.is_atmos_session = False  # Set the flag
+        print("Session is now in Normal mode.")
+        return True
 
     def login(self, fn_print: Callable) -> bool:
         is_token = self.login_token()

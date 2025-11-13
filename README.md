@@ -1,4 +1,4 @@
-# 🔰 TIDAL Downloader Next Generation! (tidal-dl-ng)
+# ![](./tidal_dl_ng/ui/icon32.png) TIDAL Downloader Next Generation! (tidal-dl-ng)
 
 [![Release](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)](https://img.shields.io/github/v/release/exislow/tidal-dl-ng)
 [![Build status](https://img.shields.io/github/actions/workflow/status/exislow/tidal-dl-ng/release-or-test-build.yml)](https://github.com/exislow/tidal-dl-ng/actions/workflows/release-or-test-build.yml)
@@ -42,7 +42,7 @@ If you like this projects and want to support it, feel free to buy me a coffee �
 
 ## 💻 Installation / Upgrade
 
-**Requirements**: Python version 3.12 (other versions might work but are not tested!)
+**Requirements**: Python version 3.12 / 3.13 (other versions might work but are not tested!)
 
 ```bash
 pip install --upgrade tidal-dl-ng
