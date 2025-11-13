@@ -16,7 +16,6 @@ import tempfile
 import time
 from collections.abc import Callable
 from concurrent import futures
-from dataclasses import dataclass
 from threading import Event
 from uuid import uuid4
 
@@ -72,18 +71,8 @@ from tidal_dl_ng.helper.tidal import (
     name_builder_title,
 )
 from tidal_dl_ng.metadata import Metadata
-from tidal_dl_ng.model.downloader import DownloadSegmentResult
+from tidal_dl_ng.model.downloader import DownloadSegmentResult, TrackStreamInfo
 from tidal_dl_ng.model.gui_data import ProgressBars
-
-
-@dataclass
-class TrackStreamInfo:
-    """Container for track stream information."""
-
-    stream_manifest: StreamManifest | None
-    file_extension: str
-    requires_flac_extraction: bool
-    media_stream: Stream | None
 
 
 # TODO: Set appropriate client string and use it for video download.
