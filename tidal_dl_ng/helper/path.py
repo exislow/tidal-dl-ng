@@ -364,6 +364,10 @@ def _format_ids(
     # Handle ISRC
     elif name == "isrc" and isinstance(media, Track):
         return media.isrc
+    elif name == "album_artist_id" and isinstance(media, Album):
+        return str(media.artist.id)
+    elif name == "track_artist_id" and isinstance(media, Track):
+        return str(media.album.artist.id)
     return None
 
 
