@@ -1000,31 +1000,36 @@ class Download:
     def _perform_post_processing(
         self,
         media: Track | Video,
-        path_media_dst: pathlib.Path,
+        path_media_src: pathlib.Path,
         quality_audio: Quality | None,
         quality_video: QualityVideo | None,
         quality_audio_old: Quality | None,
         quality_video_old: QualityVideo | None,
         download_delay: bool,
         skip_file: bool,
-    ) -> None:
+    ) -> pathlib.Path | None:
         """Perform post-processing tasks.
 
         Args:
             media (Track | Video): Media item.
-            path_media_dst (pathlib.Path): Destination file path.
+            path_media_src (pathlib.Path): Source file path.
             quality_audio (Quality | None): Audio quality setting.
             quality_video (QualityVideo | None): Video quality setting.
             quality_audio_old (Quality | None): Previous audio quality.
             quality_video_old (QualityVideo | None): Previous video quality.
             download_delay (bool): Whether to apply download delay.
             skip_file (bool): Whether file was skipped.
+
+        Returns:
+            pathlib.Path | None: The final path if the file was moved, otherwise None.
         """
+        new_path: pathlib.Path | None = None
+
         # If files needs to be symlinked, do postprocessing here.
         if self.settings.data.symlink_to_track and not isinstance(media, Video):
             # Determine file extension for symlink
-            file_extension = path_media_dst.suffix
-            self.media_move_and_symlink(media, path_media_dst, file_extension)
+            file_extension = path_media_src.suffix
+            new_path = self.media_move_and_symlink(media, path_media_src, file_extension)
 
         # Reset quality settings
         if quality_audio_old is not None:
@@ -1044,6 +1049,8 @@ class Download:
 
             self.fn_logger.debug(f"Next download will start in {time_sleep} seconds.")
             time.sleep(time_sleep)
+
+        return new_path
 
     def media_move_and_symlink(
         self, media: Track | Video, path_media_src: pathlib.Path, file_extension: str
@@ -1374,7 +1381,7 @@ class Download:
         download_delay: bool = True,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> None:
+    ) -> pathlib.Path | None:
         """Download all items in an album, playlist, or mix.
 
         Args:
@@ -1386,6 +1393,9 @@ class Download:
             download_delay (bool, optional): Whether to delay between downloads. Defaults to True.
             quality_audio (Quality | None, optional): Audio quality. Defaults to None.
             quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
+
+        Returns:
+            pathlib.Path | None: The path to the created album/playlist directory, or None if failed.
         """
         # Validate and prepare media collection
         validated_media = self._validate_and_prepare_media(media, media_id, media_type, video_download)
@@ -1428,6 +1438,11 @@ class Download:
             self.playlist_populate(set(result_dirs), list_media_name, is_album, sort_by_track_num)
 
         self.fn_logger.info(f"Finished list '{list_media_name}'.")
+
+        # Return the path to the album/playlist directory
+        if result_dirs:
+            return result_dirs[0]  # All paths should share the same parent
+        return None
 
     def _setup_collection_download_context(
         self,

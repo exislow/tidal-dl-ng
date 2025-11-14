@@ -45,6 +45,8 @@
 
 
 import math
+import pathlib
+import subprocess
 import sys
 import time
 from collections.abc import Callable, Iterable, Sequence
@@ -144,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_update_check: QtCore.Signal = QtCore.Signal(bool)
     s_update_show: QtCore.Signal = QtCore.Signal(bool, bool, object)
     s_queue_download_item_downloading: QtCore.Signal = QtCore.Signal(object)
-    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object)
+    s_queue_download_item_finished: QtCore.Signal = QtCore.Signal(object, object)
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
     converter_ansi_html: Ansi2HTMLConverter
@@ -652,13 +654,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not item:
             return
 
+        # Get the underlying QueueDownloadItem object
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if not isinstance(model_item, QueueDownloadItem):
+            return
+
         # Build the menu
         menu = QtWidgets.QMenu()
 
         # Show remove option for waiting items
-        status = item.text(0)
-        if status == QueueDownloadStatus.Waiting:
+        if model_item.status == QueueDownloadStatus.Waiting:
             menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
+
+        # Show "Show in Explorer" if finished and path exists
+        elif model_item.status == QueueDownloadStatus.Finished and model_item.file_path:
+            action = menu.addAction("📂 Show in Explorer")
+            action.triggered.connect(lambda: self.on_show_in_explorer(model_item.file_path))
 
         if menu.isEmpty():
             return
@@ -2158,6 +2169,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         child.setText(3, queue_dl_item.type_media)
         child.setText(4, queue_dl_item.quality_audio)
         child.setText(5, queue_dl_item.quality_video)
+        child.setData(0, QtCore.Qt.ItemDataRole.UserRole, queue_dl_item)
         self.tr_queue_download.addTopLevelItem(child)
 
     def watcher_queue_download(self) -> None:
@@ -2178,10 +2190,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 try:
                     self.s_queue_download_item_downloading.emit(item)
-                    result = self.on_queue_download(media, quality_audio=quality_audio, quality_video=quality_video)
+                    result, path_file = self.on_queue_download(
+                        media, quality_audio=quality_audio, quality_video=quality_video
+                    )
 
                     if result == QueueDownloadStatus.Finished:
-                        self.s_queue_download_item_finished.emit(item)
+                        self.s_queue_download_item_finished.emit(item, path_file)
                     elif result == QueueDownloadStatus.Skipped:
                         self.s_queue_download_item_skipped.emit(item)
                 except Exception as e:
@@ -2196,14 +2210,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.status = QueueDownloadStatus.Downloading
         self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
 
-    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Update the status of a queue download item to 'Finished'.
+    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem, path: pathlib.Path | str) -> None:
+        """Update the status of a queue download item to 'Finished' and store the file path.
 
         Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
+            item: The tree widget item representing the download.
+            path: Path to the downloaded file or directory.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.file_path = pathlib.Path(path) if path else None
+            model_item.status = QueueDownloadStatus.Finished
         self.queue_download_item_status(item, QueueDownloadStatus.Finished)
 
     def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
@@ -2212,6 +2234,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.status = QueueDownloadStatus.Failed
         self.queue_download_item_status(item, QueueDownloadStatus.Failed)
 
     def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
@@ -2220,6 +2245,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             item (QtWidgets.QTreeWidgetItem): The item to update.
         """
+        model_item = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+        if isinstance(model_item, QueueDownloadItem):
+            model_item.status = QueueDownloadStatus.Skipped
         self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
 
     def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
@@ -2236,8 +2264,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         media: Track | Album | Playlist | Video | Mix | Artist,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download the specified media item(s) and return the result status.
+    ) -> tuple[QueueDownloadStatus, pathlib.Path]:
+        """Download the specified media item(s) and return the result status and path.
 
         Args:
             media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
@@ -2245,28 +2273,52 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
 
         Returns:
-            QueueDownloadStatus: The status of the download operation.
+            tuple[QueueDownloadStatus, pathlib.Path]: Tuple of (download status, path to downloaded file/directory).
+                For Artists, returns the artist's root directory.
+                For Albums/Playlists, returns the album/playlist directory.
+                For Tracks/Videos, returns the file path.
         """
-        result: QueueDownloadStatus
-        items_media: [Track | Album | Playlist | Video | Mix | Artist]
+        result_status: QueueDownloadStatus
+        path_file: pathlib.Path = pathlib.Path()
 
+        # Handle Artist downloads
         if isinstance(media, Artist):
-            items_media: [Album] = items_results_all(media)
+            items_media = items_results_all(media)
+
+            if not items_media:
+                return QueueDownloadStatus.Skipped, pathlib.Path(self.dl.path_base).expanduser()
+
+            first_album_path: pathlib.Path | None = None
+
+            for item_media in items_media:
+                result_item, path_item = self.download(
+                    item_media,
+                    self.dl,
+                    delay_track=False,
+                    quality_audio=quality_audio,
+                    quality_video=quality_video,
+                )
+                result_status = result_item
+
+                if first_album_path is None and path_item and path_item != pathlib.Path():
+                    first_album_path = path_item
+
+            # Artist path is parent of first album
+            path_file = first_album_path.parent if first_album_path else pathlib.Path(self.dl.path_base).expanduser()
+
         else:
-            items_media = [media]
+            # For non-Artist media
+            download_delay = isinstance(media, Track | Video) and self.settings.data.download_delay
 
-        download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
-
-        for item_media in items_media:
-            result = self.download(
-                item_media,
+            result_status, path_file = self.download(
+                media,
                 self.dl,
                 delay_track=download_delay,
                 quality_audio=quality_audio,
                 quality_video=quality_video,
             )
 
-        return result
+        return result_status, path_file
 
     def download(
         self,
@@ -2275,8 +2327,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         delay_track: bool = False,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download a media item and return the result status.
+    ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
+        """Download a media item and return the result status and path.
 
         Args:
             media (Track | Album | Playlist | Video | Mix | Artist): The media item to download.
@@ -2286,10 +2338,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
 
         Returns:
-            QueueDownloadStatus: The status of the download operation.
+            tuple[QueueDownloadStatus, pathlib.Path | str]: The status and the final file path.
         """
         result_dl: bool
-        path_file: str
+        path_file: str | pathlib.Path = ""
         result: QueueDownloadStatus
         self.s_pb_reset.emit()
         self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
@@ -2305,7 +2357,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
         elif isinstance(media, Album | Playlist | Mix):
-            dl.items(
+            path_album_dir = dl.items(
                 media=media,
                 file_template=file_template,
                 video_download=self.settings.data.video_download,
@@ -2314,9 +2366,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 quality_video=quality_video,
             )
 
-            # Dummy values
-            result_dl = True
-            path_file = "dummy"
+            if path_album_dir:
+                result_dl = True
+                path_file = path_album_dir
+            else:
+                result_dl = False
+                path_file = ""  # No route to return
 
         self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
 
@@ -2327,7 +2382,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         else:
             result = QueueDownloadStatus.Failed
 
-        return result
+        return result, path_file
 
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest | None = None
@@ -2448,6 +2503,80 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 logger_gui.error(f"Could not fetch the full album from TIDAL. Error: {e}")
         else:
             logger_gui.warning("Could not retrieve album information from the selected track.")
+
+    def on_show_in_explorer(self, path: pathlib.Path | None) -> None:
+        """Open the containing folder and (when possible) select/reveal the file in the OS file manager.
+
+        Args:
+            path: Path to the file or directory to show in explorer.
+        """
+        if not path:
+            logger_gui.error("Attempted to show in explorer but no path was provided")
+            return
+
+        resolved_path = self._resolve_path(path)
+        if not resolved_path:
+            return
+
+        self._open_in_file_manager(resolved_path)
+
+    def _resolve_path(self, path: pathlib.Path) -> pathlib.Path | None:
+        """Expand and resolve path, log errors if invalid.
+
+        Args:
+            path: The path to resolve.
+
+        Returns:
+            The resolved path, or None if invalid.
+        """
+        try:
+            return path.expanduser().resolve()
+        except (OSError, RuntimeError) as e:
+            logger_gui.error(f"Invalid path cannot be resolved: {path!s} → {e}")
+            return None
+
+    def _open_in_file_manager(self, path: pathlib.Path) -> None:
+        """Open path in system file manager with platform-specific command.
+
+        Args:
+            path: The resolved path to open.
+        """
+        try:
+            if sys.platform == "win32":
+                self._open_windows(path)
+            elif sys.platform == "darwin":
+                self._open_macos(path)
+            else:
+                self._open_linux(path)
+        except Exception:
+            logger_gui.exception(f"Unexpected error opening file manager for {path}")
+
+    def _open_windows(self, path: pathlib.Path) -> None:
+        """Open path in Windows Explorer.
+
+        Args:
+            path: The path to open.
+        """
+        cmd = ["explorer", "/select,", str(path)] if path.is_file() else ["explorer", str(path)]
+        subprocess.Popen(cmd, shell=True)  # noqa: S602  # Required for /select, on Windows; path is trusted
+
+    def _open_macos(self, path: pathlib.Path) -> None:
+        """Open path in macOS Finder.
+
+        Args:
+            path: The path to open.
+        """
+        cmd = ["open", "-R", str(path)] if path.is_file() else ["open", str(path)]
+        subprocess.run(cmd, check=True)  # noqa: S603  # `open` is trusted system command
+
+    def _open_linux(self, path: pathlib.Path) -> None:
+        """Open path in Linux file manager.
+
+        Args:
+            path: The path to open.
+        """
+        target = path.parent if path.is_file() else path
+        subprocess.run(["xdg-open", str(target)], check=True)  # noqa: S603, S607 # `xdg-open` is trusted system utility
 
 
 # TODO: Comment with Google Docstrings.
