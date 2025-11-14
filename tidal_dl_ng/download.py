@@ -1012,7 +1012,7 @@ class Download:
 
         Args:
             media (Track | Video): Media item.
-            path_media_dst (pathlib.Path): Destination file path.
+            path_media_src (pathlib.Path): Source file path.
             quality_audio (Quality | None): Audio quality setting.
             quality_video (QualityVideo | None): Video quality setting.
             quality_audio_old (Quality | None): Previous audio quality.

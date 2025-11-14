@@ -2265,18 +2265,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ) -> tuple[QueueDownloadStatus, pathlib.Path]:
-        """Download media item(s) and return status and path.
+        """Download the specified media item(s) and return the result status and path.
 
         Args:
-            media: The TIDAL media object to download.
-            quality_audio: Desired audio quality for the download.
-            quality_video: Desired video quality for the download.
+            media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
+            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
 
         Returns:
-            Tuple of (download status, path to downloaded file/directory).
-            For Artists, returns the artist's root directory.
-            For Albums/Playlists, returns the album/playlist directory.
-            For Tracks/Videos, returns the file path.
+            tuple[QueueDownloadStatus, pathlib.Path]: Tuple of (download status, path to downloaded file/directory).
+                For Artists, returns the artist's root directory.
+                For Albums/Playlists, returns the album/playlist directory.
+                For Tracks/Videos, returns the file path.
         """
         result_status: QueueDownloadStatus
         path_file: pathlib.Path = pathlib.Path()
@@ -2328,17 +2328,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
     ) -> tuple[QueueDownloadStatus, pathlib.Path | str]:
-        """Download a media item and return the result status.
+        """Download a media item and return the result status and path.
 
         Args:
-            media: The media item to download.
-            dl: The Download object to use.
-            delay_track: Whether to apply download delay.
-            quality_audio: Desired audio quality.
-            quality_video: Desired video quality.
+            media (Track | Album | Playlist | Video | Mix | Artist): The media item to download.
+            dl (Download): The Download object to use.
+            delay_track (bool, optional): Whether to apply download delay. Defaults to False.
+            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
+            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
 
         Returns:
-            (QueueDownloadStatus, path_file): The status and the final file path.
+            tuple[QueueDownloadStatus, pathlib.Path | str]: The status and the final file path.
         """
         result_dl: bool
         path_file: str | pathlib.Path = ""
@@ -2505,7 +2505,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             logger_gui.warning("Could not retrieve album information from the selected track.")
 
     def on_show_in_explorer(self, path: pathlib.Path | None) -> None:
-        """Open the containing folder and (when possible) select/reveal the file in the OS file manager."""
+        """Open the containing folder and (when possible) select/reveal the file in the OS file manager.
+
+        Args:
+            path: Path to the file or directory to show in explorer.
+        """
         if not path:
             logger_gui.error("Attempted to show in explorer but no path was provided")
             return
@@ -2517,7 +2521,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._open_in_file_manager(resolved_path)
 
     def _resolve_path(self, path: pathlib.Path) -> pathlib.Path | None:
-        """Expand and resolve path, log errors if invalid."""
+        """Expand and resolve path, log errors if invalid.
+
+        Args:
+            path: The path to resolve.
+
+        Returns:
+            The resolved path, or None if invalid.
+        """
         try:
             return path.expanduser().resolve()
         except (OSError, RuntimeError) as e:
@@ -2525,7 +2536,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return None
 
     def _open_in_file_manager(self, path: pathlib.Path) -> None:
-        """Open path in system file manager with platform-specific command."""
+        """Open path in system file manager with platform-specific command.
+
+        Args:
+            path: The resolved path to open.
+        """
         try:
             if sys.platform == "win32":
                 self._open_windows(path)
@@ -2537,14 +2552,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             logger_gui.exception(f"Unexpected error opening file manager for {path}")
 
     def _open_windows(self, path: pathlib.Path) -> None:
+        """Open path in Windows Explorer.
+
+        Args:
+            path: The path to open.
+        """
         cmd = ["explorer", "/select,", str(path)] if path.is_file() else ["explorer", str(path)]
         subprocess.Popen(cmd, shell=True)  # noqa: S602  # Required for /select, on Windows; path is trusted
 
     def _open_macos(self, path: pathlib.Path) -> None:
+        """Open path in macOS Finder.
+
+        Args:
+            path: The path to open.
+        """
         cmd = ["open", "-R", str(path)] if path.is_file() else ["open", str(path)]
         subprocess.run(cmd, check=True)  # noqa: S603  # `open` is trusted system command
 
     def _open_linux(self, path: pathlib.Path) -> None:
+        """Open path in Linux file manager.
+
+        Args:
+            path: The path to open.
+        """
         target = path.parent if path.is_file() else path
         subprocess.run(["xdg-open", str(target)], check=True)  # noqa: S603, S607 # `xdg-open` is trusted system utility
 
