@@ -1,9 +1,10 @@
-from dataclasses import InitVar, dataclass, field
+import pathlib
+from dataclasses import dataclass, field
 from threading import Lock
 
 from tidalapi.media import Quality
 
-from tidal_dl_ng.constants import QualityVideo, QueueDownloadStatus
+from tidal_dl_ng.constants import QualityVideo
 
 try:
     from PySide6 import QtCore
@@ -43,36 +44,23 @@ class StatusbarMessage:
 
 @dataclass
 class QueueDownloadItem:
+    status: str
     name: str
     type_media: str
     quality_audio: Quality
     quality_video: QualityVideo
     obj: object
-    status_init: InitVar[str] = QueueDownloadStatus.Waiting
-    _status: str = field(init=False)
-    _file_path: str | None = field(default=None, init=False, repr=False)
+    _file_path: pathlib.Path | None = field(default=None, init=False, repr=False)
     _lock: Lock = field(default_factory=Lock, init=False, repr=False)
 
-    def __post_init__(self, status_init: str):
-        """Assigns the initial state after creation."""
-        self._status = status_init
-
-    def set_file_path(self, path: str) -> None:
-        """Thread-safe setter for file_path."""
-        with self._lock:
-            self._file_path = path
-
-    def get_file_path(self) -> str | None:
-        """Thread-safe getter for file_path."""
+    @property
+    def file_path(self) -> pathlib.Path | None:
+        """Get the downloaded file path (thread-safe)."""
         with self._lock:
             return self._file_path
 
-    def set_status(self, status: str) -> None:
-        """Thread-safe setter for status."""
+    @file_path.setter
+    def file_path(self, path: pathlib.Path | None) -> None:
+        """Set the downloaded file path (thread-safe)."""
         with self._lock:
-            self._status = status
-
-    def get_status(self) -> str:
-        """Thread-safe getter for status."""
-        with self._lock:
-            return self._status
+            self._file_path = path

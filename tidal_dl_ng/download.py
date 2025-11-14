@@ -571,12 +571,9 @@ class Download:
         )
 
         # Step 5: Post-processing
-
-        final_path = path_media_dst  # Path before potential move
-
-        new_path_if_moved = self._perform_post_processing(
+        self._perform_post_processing(
             media,
-            final_path,
+            path_media_dst,
             quality_audio,
             quality_video,
             quality_audio_old,
@@ -585,11 +582,7 @@ class Download:
             skip_file,
         )
 
-        # If post-processing moved the file, update the final_path to the new location
-        if new_path_if_moved:
-            final_path = new_path_if_moved
-
-        return download_success, final_path
+        return download_success, path_media_dst
 
     def _validate_and_prepare_media(
         self,
@@ -1019,7 +1012,7 @@ class Download:
 
         Args:
             media (Track | Video): Media item.
-            path_media_src (pathlib.Path): The source file path (before potential move).
+            path_media_dst (pathlib.Path): Destination file path.
             quality_audio (Quality | None): Audio quality setting.
             quality_video (QualityVideo | None): Video quality setting.
             quality_audio_old (Quality | None): Previous audio quality.
@@ -1028,7 +1021,7 @@ class Download:
             skip_file (bool): Whether file was skipped.
 
         Returns:
-            pathlib.Path | None: The new path if the file was moved, otherwise None.
+            pathlib.Path | None: The final path if the file was moved, otherwise None.
         """
         new_path: pathlib.Path | None = None
 
@@ -1402,12 +1395,12 @@ class Download:
             quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
 
         Returns:
-            pathlib.Path | None: The path to the downloaded album/playlist directory, or None on failure.
+            pathlib.Path | None: The path to the created album/playlist directory, or None if failed.
         """
         # Validate and prepare media collection
         validated_media = self._validate_and_prepare_media(media, media_id, media_type, video_download)
         if validated_media is None or not isinstance(validated_media, Album | Playlist | UserPlaylist | Mix):
-            return None
+            return
 
         media = validated_media
 
