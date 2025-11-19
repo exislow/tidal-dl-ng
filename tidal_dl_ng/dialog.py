@@ -10,7 +10,7 @@ from tidalapi import Quality as QualityAudio
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import Settings
-from tidal_dl_ng.constants import CoverDimensions, QualityVideo
+from tidal_dl_ng.constants import ArtistSeparator, CoverDimensions, QualityVideo
 from tidal_dl_ng.model.cfg import HelpSettings
 from tidal_dl_ng.model.cfg import Settings as ModelSettings
 from tidal_dl_ng.model.meta import ReleaseLatest
@@ -169,6 +169,10 @@ class DialogPreferences(QtWidgets.QDialog):
             ("quality_audio", QualityAudio),
             ("quality_video", QualityVideo),
             ("metadata_cover_dimension", CoverDimensions),
+            ("metadata_artist_separator", ArtistSeparator),
+            ("metadata_album_artist_separator", ArtistSeparator),
+            ("filename_artist_separator", ArtistSeparator),
+            ("filename_album_artist_separator", ArtistSeparator),
         ]
 
     def _init_checkboxes(self):
@@ -187,6 +191,14 @@ class DialogPreferences(QtWidgets.QDialog):
             "skip_existing",
             "symlink_to_track",
             "playlist_create",
+            "metadata_artist_space_before",
+            "metadata_artist_space_after",
+            "metadata_album_artist_space_before",
+            "metadata_album_artist_space_after",
+            "filename_artist_space_before",
+            "filename_artist_space_after",
+            "filename_album_artist_space_before",
+            "filename_album_artist_space_after",
         ]
 
     def gui_populate(self):
@@ -251,6 +263,8 @@ class DialogPreferences(QtWidgets.QDialog):
         )
 
     def populate_combo(self):
+        from tidal_dl_ng.constants import ArtistSeparator as ArtistSeparatorEnum
+
         for p in self.parameters_combo:
             pn: str = p[0]
             values: Enum = p[1]
@@ -263,8 +277,16 @@ class DialogPreferences(QtWidgets.QDialog):
             label_icon.setToolTip(getattr(self.help_settings, pn))
             label.setText(pn)
 
+            # Check if this is an ArtistSeparator to display symbols instead of names
+            is_artist_separator = "separator" in pn and values is ArtistSeparatorEnum
+
             for index, v in enumerate(values):
-                combo.addItem(v.name, v)
+                if is_artist_separator:
+                    # Display the symbol directly with name in parentheses
+                    display_name = f'"{v.value}" ({v.name.capitalize()})'
+                    combo.addItem(display_name, v)
+                else:
+                    combo.addItem(v.name, v)
 
                 if v == setting_current:
                     combo.setCurrentIndex(index)

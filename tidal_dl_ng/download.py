@@ -674,8 +674,8 @@ class Download:
             self.settings.data.album_track_num_pad_min,
             list_position,
             list_total,
-            delimiter_artist=self.settings.data.filename_delimiter_artist,
-            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            delimiter_artist=self.settings.get_filename_artist_delimiter(),
+            delimiter_album_artist=self.settings.get_filename_album_artist_delimiter(),
             use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
 
@@ -697,8 +697,8 @@ class Download:
                 file_name_track_dir_relative: str = format_path_media(
                     self.settings.data.format_track,
                     media,
-                    delimiter_artist=self.settings.data.filename_delimiter_artist,
-                    delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+                    delimiter_artist=self.settings.get_filename_artist_delimiter(),
+                    delimiter_album_artist=self.settings.get_filename_album_artist_delimiter(),
                     use_primary_album_artist=self.settings.data.use_primary_album_artist,
                 )
                 path_media_track_dir: pathlib.Path = (
@@ -1062,8 +1062,8 @@ class Download:
         file_name_relative: str = format_path_media(
             self.settings.data.format_track,
             media,
-            delimiter_artist=self.settings.data.filename_delimiter_artist,
-            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            delimiter_artist=self.settings.get_filename_artist_delimiter(),
+            delimiter_album_artist=self.settings.get_filename_album_artist_delimiter(),
             use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
         path_media_dst: pathlib.Path = (
@@ -1338,12 +1338,12 @@ class Download:
             lyrics_unsynced=lyrics_unsynced,
             copy_right=copy_right,
             title=title,
-            artists=name_builder_artist(track, delimiter=self.settings.data.metadata_delimiter_artist),
+            artists=name_builder_artist(track, delimiter=self.settings.get_metadata_artist_delimiter()),
             album=track.album.name if track.album else "",
             tracknumber=track.track_num,
             date=release_date,
             isrc=isrc,
-            albumartist=name_builder_album_artist(track, delimiter=self.settings.data.metadata_delimiter_album_artist),
+            albumartist=name_builder_album_artist(track, delimiter=self.settings.get_metadata_album_artist_delimiter()),
             totaltrack=track.album.num_tracks if track.album and track.album.num_tracks else 1,
             totaldisc=track.album.num_volumes if track.album and track.album.num_volumes else 1,
             discnumber=track.volume_num if track.volume_num else 1,
@@ -1449,8 +1449,8 @@ class Download:
         file_name_relative: str = format_path_media(
             file_template,
             media,
-            delimiter_artist=self.settings.data.filename_delimiter_artist,
-            delimiter_album_artist=self.settings.data.filename_delimiter_album_artist,
+            delimiter_artist=self.settings.get_filename_artist_delimiter(),
+            delimiter_album_artist=self.settings.get_filename_album_artist_delimiter(),
             use_primary_album_artist=self.settings.data.use_primary_album_artist,
         )
 
