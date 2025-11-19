@@ -6,7 +6,11 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, Qt
+from PySide6.QtCore import (
+    QCoreApplication,
+    QMetaObject,
+    Qt,
+)
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -27,7 +31,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 832)
+        DialogSettings.resize(640, 935)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -316,6 +320,146 @@ class Ui_DialogSettings:
         self.lv_choices.addLayout(self.lh_choices_cover_dimension)
 
         self.lv_main.addWidget(self.gb_choices)
+
+        self.gb_artist_delimiters = QGroupBox(DialogSettings)
+        self.gb_artist_delimiters.setObjectName("gb_artist_delimiters")
+        sizePolicy3.setHeightForWidth(self.gb_artist_delimiters.sizePolicy().hasHeightForWidth())
+        self.gb_artist_delimiters.setSizePolicy(sizePolicy3)
+        self.lv_artist_delimiters = QVBoxLayout(self.gb_artist_delimiters)
+        self.lv_artist_delimiters.setObjectName("lv_artist_delimiters")
+        self.lh_metadata_artist_delimiter = QHBoxLayout()
+        self.lh_metadata_artist_delimiter.setObjectName("lh_metadata_artist_delimiter")
+        self.l_icon_metadata_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_icon_metadata_artist_separator.setObjectName("l_icon_metadata_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_icon_metadata_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_icon_metadata_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_metadata_artist_delimiter.addWidget(self.l_icon_metadata_artist_separator)
+
+        self.l_metadata_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_metadata_artist_separator.setObjectName("l_metadata_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_metadata_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_metadata_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_metadata_artist_delimiter.addWidget(self.l_metadata_artist_separator)
+
+        self.cb_metadata_artist_space_before = QCheckBox(self.gb_artist_delimiters)
+        self.cb_metadata_artist_space_before.setObjectName("cb_metadata_artist_space_before")
+
+        self.lh_metadata_artist_delimiter.addWidget(self.cb_metadata_artist_space_before)
+
+        self.c_metadata_artist_separator = QComboBox(self.gb_artist_delimiters)
+        self.c_metadata_artist_separator.setObjectName("c_metadata_artist_separator")
+
+        self.lh_metadata_artist_delimiter.addWidget(self.c_metadata_artist_separator)
+
+        self.cb_metadata_artist_space_after = QCheckBox(self.gb_artist_delimiters)
+        self.cb_metadata_artist_space_after.setObjectName("cb_metadata_artist_space_after")
+
+        self.lh_metadata_artist_delimiter.addWidget(self.cb_metadata_artist_space_after)
+
+        self.lv_artist_delimiters.addLayout(self.lh_metadata_artist_delimiter)
+
+        self.lh_metadata_album_artist_delimiter = QHBoxLayout()
+        self.lh_metadata_album_artist_delimiter.setObjectName("lh_metadata_album_artist_delimiter")
+        self.l_icon_metadata_album_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_icon_metadata_album_artist_separator.setObjectName("l_icon_metadata_album_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_icon_metadata_album_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_icon_metadata_album_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_metadata_album_artist_delimiter.addWidget(self.l_icon_metadata_album_artist_separator)
+
+        self.l_metadata_album_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_metadata_album_artist_separator.setObjectName("l_metadata_album_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_metadata_album_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_metadata_album_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_metadata_album_artist_delimiter.addWidget(self.l_metadata_album_artist_separator)
+
+        self.cb_metadata_album_artist_space_before = QCheckBox(self.gb_artist_delimiters)
+        self.cb_metadata_album_artist_space_before.setObjectName("cb_metadata_album_artist_space_before")
+
+        self.lh_metadata_album_artist_delimiter.addWidget(self.cb_metadata_album_artist_space_before)
+
+        self.c_metadata_album_artist_separator = QComboBox(self.gb_artist_delimiters)
+        self.c_metadata_album_artist_separator.setObjectName("c_metadata_album_artist_separator")
+
+        self.lh_metadata_album_artist_delimiter.addWidget(self.c_metadata_album_artist_separator)
+
+        self.cb_metadata_album_artist_space_after = QCheckBox(self.gb_artist_delimiters)
+        self.cb_metadata_album_artist_space_after.setObjectName("cb_metadata_album_artist_space_after")
+
+        self.lh_metadata_album_artist_delimiter.addWidget(self.cb_metadata_album_artist_space_after)
+
+        self.lv_artist_delimiters.addLayout(self.lh_metadata_album_artist_delimiter)
+
+        self.lh_filename_artist_delimiter = QHBoxLayout()
+        self.lh_filename_artist_delimiter.setObjectName("lh_filename_artist_delimiter")
+        self.l_icon_filename_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_icon_filename_artist_separator.setObjectName("l_icon_filename_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_icon_filename_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_icon_filename_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_filename_artist_delimiter.addWidget(self.l_icon_filename_artist_separator)
+
+        self.l_filename_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_filename_artist_separator.setObjectName("l_filename_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_filename_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_filename_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_filename_artist_delimiter.addWidget(self.l_filename_artist_separator)
+
+        self.cb_filename_artist_space_before = QCheckBox(self.gb_artist_delimiters)
+        self.cb_filename_artist_space_before.setObjectName("cb_filename_artist_space_before")
+
+        self.lh_filename_artist_delimiter.addWidget(self.cb_filename_artist_space_before)
+
+        self.c_filename_artist_separator = QComboBox(self.gb_artist_delimiters)
+        self.c_filename_artist_separator.setObjectName("c_filename_artist_separator")
+
+        self.lh_filename_artist_delimiter.addWidget(self.c_filename_artist_separator)
+
+        self.cb_filename_artist_space_after = QCheckBox(self.gb_artist_delimiters)
+        self.cb_filename_artist_space_after.setObjectName("cb_filename_artist_space_after")
+
+        self.lh_filename_artist_delimiter.addWidget(self.cb_filename_artist_space_after)
+
+        self.lv_artist_delimiters.addLayout(self.lh_filename_artist_delimiter)
+
+        self.lh_filename_album_artist_delimiter = QHBoxLayout()
+        self.lh_filename_album_artist_delimiter.setObjectName("lh_filename_album_artist_delimiter")
+        self.l_icon_filename_album_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_icon_filename_album_artist_separator.setObjectName("l_icon_filename_album_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_icon_filename_album_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_icon_filename_album_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_filename_album_artist_delimiter.addWidget(self.l_icon_filename_album_artist_separator)
+
+        self.l_filename_album_artist_separator = QLabel(self.gb_artist_delimiters)
+        self.l_filename_album_artist_separator.setObjectName("l_filename_album_artist_separator")
+        sizePolicy4.setHeightForWidth(self.l_filename_album_artist_separator.sizePolicy().hasHeightForWidth())
+        self.l_filename_album_artist_separator.setSizePolicy(sizePolicy4)
+
+        self.lh_filename_album_artist_delimiter.addWidget(self.l_filename_album_artist_separator)
+
+        self.cb_filename_album_artist_space_before = QCheckBox(self.gb_artist_delimiters)
+        self.cb_filename_album_artist_space_before.setObjectName("cb_filename_album_artist_space_before")
+
+        self.lh_filename_album_artist_delimiter.addWidget(self.cb_filename_album_artist_space_before)
+
+        self.c_filename_album_artist_separator = QComboBox(self.gb_artist_delimiters)
+        self.c_filename_album_artist_separator.setObjectName("c_filename_album_artist_separator")
+
+        self.lh_filename_album_artist_delimiter.addWidget(self.c_filename_album_artist_separator)
+
+        self.cb_filename_album_artist_space_after = QCheckBox(self.gb_artist_delimiters)
+        self.cb_filename_album_artist_space_after.setObjectName("cb_filename_album_artist_space_after")
+
+        self.lh_filename_album_artist_delimiter.addWidget(self.cb_filename_album_artist_space_after)
+
+        self.lv_artist_delimiters.addLayout(self.lh_filename_album_artist_delimiter)
+
+        self.lv_main.addWidget(self.gb_artist_delimiters)
 
         self.gb_numbers = QGroupBox(DialogSettings)
         self.gb_numbers.setObjectName("gb_numbers")
@@ -634,6 +778,35 @@ class Ui_DialogSettings:
         self.l_quality_video.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_metadata_cover_dimension.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_metadata_cover_dimension.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.gb_artist_delimiters.setTitle(QCoreApplication.translate("DialogSettings", "Artist Delimiters", None))
+        self.l_icon_metadata_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_metadata_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.cb_metadata_artist_space_before.setText(QCoreApplication.translate("DialogSettings", "Space Before", None))
+        self.cb_metadata_artist_space_after.setText(QCoreApplication.translate("DialogSettings", "Space After", None))
+        self.l_icon_metadata_album_artist_separator.setText(
+            QCoreApplication.translate("DialogSettings", "TextLabel", None)
+        )
+        self.l_metadata_album_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.cb_metadata_album_artist_space_before.setText(
+            QCoreApplication.translate("DialogSettings", "Space Before", None)
+        )
+        self.cb_metadata_album_artist_space_after.setText(
+            QCoreApplication.translate("DialogSettings", "Space After", None)
+        )
+        self.l_icon_filename_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_filename_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.cb_filename_artist_space_before.setText(QCoreApplication.translate("DialogSettings", "Space Before", None))
+        self.cb_filename_artist_space_after.setText(QCoreApplication.translate("DialogSettings", "Space After", None))
+        self.l_icon_filename_album_artist_separator.setText(
+            QCoreApplication.translate("DialogSettings", "TextLabel", None)
+        )
+        self.l_filename_album_artist_separator.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.cb_filename_album_artist_space_before.setText(
+            QCoreApplication.translate("DialogSettings", "Space Before", None)
+        )
+        self.cb_filename_album_artist_space_after.setText(
+            QCoreApplication.translate("DialogSettings", "Space After", None)
+        )
         self.gb_numbers.setTitle(QCoreApplication.translate("DialogSettings", "Numbers", None))
         self.l_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_icon_album_track_num_pad_min.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

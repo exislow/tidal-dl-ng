@@ -224,14 +224,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                     if d_login.return_code == 1:
                         try:
+                            logger_gui.debug("Processing link login...")
                             self.tidal.session.process_link_login(link_login, until_expiry=False)
-                            self.tidal.login_finalize()
 
-                            result = True
-                            logger_gui.info("Login successful. Have fun!")
-                        except (HTTPError, Exception):
-                            hint = "Something was wrong with your redirect url. Please try again!"
-                            logger_gui.warning("Login not successful. Try again...")
+                            logger_gui.debug("Finalizing login...")
+                            login_finalized = self.tidal.login_finalize()
+
+                            if login_finalized:
+                                result = True
+                                logger_gui.info("Login successful. Have fun!")
+                            else:
+                                hint = "Login finalization failed. Please try again!"
+                                logger_gui.warning("Login finalization failed. Check your internet connection.")
+                        except HTTPError as e:
+                            hint = f"HTTP Error during login: {e}. Please try again!"
+                            logger_gui.error(f"Login failed with HTTP error: {e}")
+                            logger_gui.debug(f"HTTPError details: {e.__class__.__name__}: {e!s}")
+                        except Exception as e:
+                            hint = f"Login error: {type(e).__name__}. Please check logs and try again!"
+                            logger_gui.error(f"Login failed with exception: {type(e).__name__}: {e!s}")
+                            logger_gui.debug("Full exception details:", exc_info=True)
                     else:
                         # If user has pressed cancel.
                         sys.exit(1)
