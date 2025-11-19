@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>640</width>
-    <height>832</height>
+    <height>935</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -407,6 +407,209 @@
               <horstretch>10</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="gb_artist_delimiters">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="title">
+        <string>Artist Delimiters</string>
+       </property>
+       <layout class="QVBoxLayout" name="lv_artist_delimiters">
+        <item>
+         <layout class="QHBoxLayout" name="lh_metadata_artist_delimiter">
+          <item>
+           <widget class="QLabel" name="l_icon_metadata_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="l_metadata_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_metadata_artist_space_before">
+            <property name="text">
+             <string>Space Before</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="c_metadata_artist_separator"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_metadata_artist_space_after">
+            <property name="text">
+             <string>Space After</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="lh_metadata_album_artist_delimiter">
+          <item>
+           <widget class="QLabel" name="l_icon_metadata_album_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="l_metadata_album_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_metadata_album_artist_space_before">
+            <property name="text">
+             <string>Space Before</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="c_metadata_album_artist_separator"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_metadata_album_artist_space_after">
+            <property name="text">
+             <string>Space After</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="lh_filename_artist_delimiter">
+          <item>
+           <widget class="QLabel" name="l_icon_filename_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="l_filename_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_filename_artist_space_before">
+            <property name="text">
+             <string>Space Before</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="c_filename_artist_separator"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_filename_artist_space_after">
+            <property name="text">
+             <string>Space After</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="lh_filename_album_artist_delimiter">
+          <item>
+           <widget class="QLabel" name="l_icon_filename_album_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="l_filename_album_artist_separator">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_filename_album_artist_space_before">
+            <property name="text">
+             <string>Space Before</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="c_filename_album_artist_separator"/>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="cb_filename_album_artist_space_after">
+            <property name="text">
+             <string>Space After</string>
             </property>
            </widget>
           </item>

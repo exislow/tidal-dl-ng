@@ -90,6 +90,211 @@ class Settings(BaseConfig, metaclass=SingletonMeta):
         self.cls_model = ModelSettings
         self.file_path = path_file_settings()
         self.read(self.file_path)
+        # Migrate legacy delimiter fields to new atomic parameters if needed
+        self._migrate_legacy_delimiters()
+        # Save after migration to persist the new atomic parameters
+        self.save()
+
+    def _sync_legacy_delimiters(self) -> None:
+        """Synchronize legacy delimiter fields from atomic parameters.
+
+        This ensures that the legacy fields are always up-to-date with the
+        atomic parameters when saving configuration.
+        """
+        # Sync legacy fields from atomic parameters
+        self.data.metadata_delimiter_artist = self.get_metadata_artist_delimiter()
+        self.data.metadata_delimiter_album_artist = self.get_metadata_album_artist_delimiter()
+        self.data.filename_delimiter_artist = self.get_filename_artist_delimiter()
+        self.data.filename_delimiter_album_artist = self.get_filename_album_artist_delimiter()
+
+    def save(self, config_to_compare: str = None) -> None:
+        """Save settings to file, ensuring legacy fields are synchronized.
+
+        Args:
+            config_to_compare (str, optional): Previous config to compare against.
+        """
+        # Sync legacy delimiter fields before saving
+        self._sync_legacy_delimiters()
+        # Call parent save method
+        super().save(config_to_compare)
+
+    def _migrate_legacy_delimiters(self) -> None:
+        """Migrate old delimiter format to new atomic parameters.
+
+        This ensures backward compatibility when loading old configuration files
+        that only have the legacy `metadata_delimiter_artist` style fields.
+        """
+
+        # Always sync legacy fields to new fields if they differ from computed values
+        # This handles both fresh installs and migrations from old configs
+
+        # Metadata Artist
+        computed: str = self._build_delimiter(
+            self.data.metadata_artist_separator,
+            self.data.metadata_artist_space_before,
+            self.data.metadata_artist_space_after,
+        )
+        if self.data.metadata_delimiter_artist != computed:
+            self._parse_legacy_delimiter(
+                self.data.metadata_delimiter_artist,
+                "metadata_artist_separator",
+                "metadata_artist_space_before",
+                "metadata_artist_space_after",
+            )
+
+        # Metadata Album Artist
+        computed = self._build_delimiter(
+            self.data.metadata_album_artist_separator,
+            self.data.metadata_album_artist_space_before,
+            self.data.metadata_album_artist_space_after,
+        )
+        if self.data.metadata_delimiter_album_artist != computed:
+            self._parse_legacy_delimiter(
+                self.data.metadata_delimiter_album_artist,
+                "metadata_album_artist_separator",
+                "metadata_album_artist_space_before",
+                "metadata_album_artist_space_after",
+            )
+
+        # Filename Artist
+        computed = self._build_delimiter(
+            self.data.filename_artist_separator,
+            self.data.filename_artist_space_before,
+            self.data.filename_artist_space_after,
+        )
+        if self.data.filename_delimiter_artist != computed:
+            self._parse_legacy_delimiter(
+                self.data.filename_delimiter_artist,
+                "filename_artist_separator",
+                "filename_artist_space_before",
+                "filename_artist_space_after",
+            )
+
+        # Filename Album Artist
+        computed = self._build_delimiter(
+            self.data.filename_album_artist_separator,
+            self.data.filename_album_artist_space_before,
+            self.data.filename_album_artist_space_after,
+        )
+        if self.data.filename_delimiter_album_artist != computed:
+            self._parse_legacy_delimiter(
+                self.data.filename_delimiter_album_artist,
+                "filename_album_artist_separator",
+                "filename_album_artist_space_before",
+                "filename_album_artist_space_after",
+            )
+
+    def _parse_legacy_delimiter(
+        self, legacy_value: str, sep_attr: str, space_before_attr: str, space_after_attr: str
+    ) -> None:
+        """Parse a legacy delimiter string into atomic components.
+
+        Args:
+            legacy_value: The old delimiter string (e.g., " ; ", ", ", "/")
+            sep_attr: Attribute name for separator symbol
+            space_before_attr: Attribute name for space_before boolean
+            space_after_attr: Attribute name for space_after boolean
+        """
+        import logging
+
+        from tidal_dl_ng.constants import ArtistSeparator
+
+        logger = logging.getLogger(__name__)
+
+        # Detect space before
+        space_before: bool = legacy_value.startswith(" ") if legacy_value else False
+        # Detect space after
+        space_after: bool = legacy_value.endswith(" ") if legacy_value else False
+        # Extract core symbol
+        core_symbol: str = legacy_value.strip() if legacy_value else ","
+
+        # Validate against whitelist
+        try:
+            separator_enum = ArtistSeparator(core_symbol)
+        except ValueError:
+            # Invalid separator, fallback to comma with warning
+            logger.warning(f"Invalid separator '{core_symbol}' found in legacy config. Falling back to comma.")
+            separator_enum = ArtistSeparator.COMMA
+
+        # Apply parsed values
+        setattr(self.data, sep_attr, separator_enum)
+        setattr(self.data, space_before_attr, space_before)
+        setattr(self.data, space_after_attr, space_after)
+
+    def get_metadata_artist_delimiter(self) -> str:
+        """Construct the metadata artist delimiter from atomic parameters.
+
+        Returns:
+            str: The complete delimiter string (e.g., " ; ", ", ", "/")
+        """
+        return self._build_delimiter(
+            self.data.metadata_artist_separator,
+            self.data.metadata_artist_space_before,
+            self.data.metadata_artist_space_after,
+        )
+
+    def get_metadata_album_artist_delimiter(self) -> str:
+        """Construct the metadata album artist delimiter from atomic parameters.
+
+        Returns:
+            str: The complete delimiter string (e.g., " ; ", ", ", "/")
+        """
+        return self._build_delimiter(
+            self.data.metadata_album_artist_separator,
+            self.data.metadata_album_artist_space_before,
+            self.data.metadata_album_artist_space_after,
+        )
+
+    def get_filename_artist_delimiter(self) -> str:
+        """Construct the filename artist delimiter from atomic parameters.
+
+        Returns:
+            str: The complete delimiter string (e.g., " ; ", ", ", "/")
+        """
+        return self._build_delimiter(
+            self.data.filename_artist_separator,
+            self.data.filename_artist_space_before,
+            self.data.filename_artist_space_after,
+        )
+
+    def get_filename_album_artist_delimiter(self) -> str:
+        """Construct the filename album artist delimiter from atomic parameters.
+
+        Returns:
+            str: The complete delimiter string (e.g., " ; ", ", ", "/")
+        """
+        return self._build_delimiter(
+            self.data.filename_album_artist_separator,
+            self.data.filename_album_artist_space_before,
+            self.data.filename_album_artist_space_after,
+        )
+
+    @staticmethod
+    def _build_delimiter(separator: str, space_before: bool, space_after: bool) -> str:
+        """Build a delimiter string from atomic components.
+
+        Constructs the final delimiter string by combining the separator symbol
+        with optional leading and/or trailing spaces based on configuration.
+
+        Args:
+            separator (str): The core separator symbol (e.g., ',', ';', '/').
+            space_before (bool): Whether to add a space before the separator.
+            space_after (bool): Whether to add a space after the separator.
+
+        Returns:
+            str: The complete delimiter string (e.g., " ; ", ", ", "/").
+
+        Examples:
+            >>> Settings._build_delimiter(",", False, True)
+            ', '
+            >>> Settings._build_delimiter(";", True, True)
+            ' ; '
+            >>> Settings._build_delimiter("/", False, False)
+            '/'
+        """
+        space_prefix: str = " " if space_before else ""
+        space_suffix: str = " " if space_after else ""
+        return f"{space_prefix}{separator}{space_suffix}"
 
 
 class Tidal(BaseConfig, metaclass=SingletonMeta):
@@ -135,11 +340,23 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         return True
 
     def login_token(self, do_pkce: bool = False) -> bool:
+        """Attempt to login using stored token.
+
+        Args:
+            do_pkce (bool): Whether to use PKCE authorization. Defaults to False.
+
+        Returns:
+            bool: True if login successful, False otherwise.
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
         result = False
         self.is_pkce = do_pkce
 
         if self.token_from_storage:
             try:
+                logger.debug(f"Attempting to load OAuth session from stored token (PKCE: {do_pkce})")
                 result = self.session.load_oauth_session(
                     self.data.token_type,
                     self.data.access_token,
@@ -147,24 +364,48 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
                     self.data.expiry_time,
                     is_pkce=do_pkce,
                 )
+
+                if result:
+                    logger.info("Successfully loaded OAuth session from stored token")
+                else:
+                    logger.warning("Failed to load OAuth session - token might be expired")
+
             except Exception:
                 result = False
+                logger.exception("Exception during token login")
+
                 # Remove token file. Probably corrupt or invalid.
                 if os.path.exists(self.file_path):
+                    logger.info(f"Removing potentially corrupt token file: {self.file_path}")
                     os.remove(self.file_path)
 
                 print(
                     "Either there is something wrong with your credentials / account or some server problems on TIDALs "
                     "side. Anyway... Try to login again by re-starting this app."
                 )
+        else:
+            logger.debug("No stored token found, fresh login required")
 
         return result
 
     def login_finalize(self) -> bool:
+        """Finalize login by checking session and persisting token.
+
+        Returns:
+            bool: True if login check successful, False otherwise.
+        """
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        logger.debug("Checking login status...")
         result = self.session.check_login()
 
         if result:
+            logger.info("Login check successful, persisting token")
             self.token_persist()
+        else:
+            logger.warning("Login check failed - session not authenticated")
 
         return result
 

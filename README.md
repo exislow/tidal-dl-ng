@@ -86,7 +86,11 @@ If you like to have the GUI version only as a binary, have a look at the
 
 - Download tracks, videos, albums, playlists, your favorites etc.
 - Multithreaded and multi-chunked downloads
-- Metadata for songs
+- Metadata for songs with **customizable artist separators**:
+  - Choose how multiple artists are displayed (`, ` vs `;` etc.)
+  - Separate settings for metadata tags and filenames
+  - Perfect for Jellyfin/Emby servers that prefer semicolon separators
+  - Configure spacing independently (before/after separator)
 - Adjustable audio and video download quality.
 - FLAC extraction from MP4 containers
 - Lyrics and album art / cover download

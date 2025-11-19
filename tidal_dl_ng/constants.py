@@ -90,6 +90,24 @@ class MetadataTargetUPC(StrEnum):
     EAN = "EAN"
 
 
+class ArtistSeparator(StrEnum):
+    """Whitelist of allowed separator symbols for multi-artist concatenation.
+
+    This enum ensures security by preventing arbitrary character injection
+    into filenames and metadata tags. Only these validated separators are allowed.
+
+    Note: Characters like '/' and '|' are avoided as they can be interpreted
+    as path separators or shell commands by different operating systems.
+    """
+
+    COMMA = ","
+    SEMICOLON = ";"
+    AMPERSAND = "&"
+    PLUS = "+"
+    HYPHEN = "-"
+    BULLET = "•"
+
+
 METADATA_LOOKUP_UPC: dict[str, dict[str, str]] = {
     "UPC": {"MP3": "UPC", "MP4": "UPC", "FLAC": "UPC"},
     "BARCODE": {"MP3": "BARCODE", "MP4": "BARCODE", "FLAC": "BARCODE"},

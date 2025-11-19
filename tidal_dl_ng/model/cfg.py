@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from dataclasses_json import dataclass_json
 from tidalapi import Quality
 
-from tidal_dl_ng.constants import CoverDimensions, MetadataTargetUPC, QualityVideo
+from tidal_dl_ng.constants import ArtistSeparator, CoverDimensions, MetadataTargetUPC, QualityVideo
 
 
 @dataclass_json
@@ -55,6 +55,20 @@ class Settings:
     window_y: int = 50
     window_w: int = 1200
     window_h: int = 800
+    # Artist separator configuration (atomic parameters for full control)
+    metadata_artist_separator: ArtistSeparator = ArtistSeparator.COMMA
+    metadata_artist_space_before: bool = False
+    metadata_artist_space_after: bool = True
+    metadata_album_artist_separator: ArtistSeparator = ArtistSeparator.COMMA
+    metadata_album_artist_space_before: bool = False
+    metadata_album_artist_space_after: bool = True
+    filename_artist_separator: ArtistSeparator = ArtistSeparator.COMMA
+    filename_artist_space_before: bool = False
+    filename_artist_space_after: bool = True
+    filename_album_artist_separator: ArtistSeparator = ArtistSeparator.COMMA
+    filename_album_artist_space_before: bool = False
+    filename_album_artist_space_after: bool = True
+    # Legacy fields kept for backward compatibility (read-only, will be migrated)
     metadata_delimiter_artist: str = ", "
     metadata_delimiter_album_artist: str = ", "
     filename_delimiter_artist: str = ", "
@@ -125,10 +139,28 @@ class HelpSettings:
     window_y: str = "Y-Coordinate of saved window location."
     window_w: str = "Width of saved window size."
     window_h: str = "Height of saved window size."
-    metadata_delimiter_artist: str = "Metadata tag delimiter for multiple artists. Default: ', '"
-    metadata_delimiter_album_artist: str = "Metadata tag delimiter for multiple album artists. Default: ', '"
-    filename_delimiter_artist: str = "Filename delimiter for multiple artists. Default: ', '"
-    filename_delimiter_album_artist: str = "Filename delimiter for multiple album artists. Default: ', '"
+    # Artist separator configuration help
+    metadata_artist_separator: str = "Separator symbol for multiple artists in metadata tags. Choose from: , ; / & |"
+    metadata_artist_space_before: str = "Add space before the artist separator in metadata tags."
+    metadata_artist_space_after: str = "Add space after the artist separator in metadata tags."
+    metadata_album_artist_separator: str = (
+        "Separator symbol for multiple album artists in metadata tags. Choose from: , ; / & |"
+    )
+    metadata_album_artist_space_before: str = "Add space before the album artist separator in metadata tags."
+    metadata_album_artist_space_after: str = "Add space after the album artist separator in metadata tags."
+    filename_artist_separator: str = "Separator symbol for multiple artists in filenames. Choose from: , ; / & |"
+    filename_artist_space_before: str = "Add space before the artist separator in filenames."
+    filename_artist_space_after: str = "Add space after the artist separator in filenames."
+    filename_album_artist_separator: str = (
+        "Separator symbol for multiple album artists in filenames. Choose from: , ; / & |"
+    )
+    filename_album_artist_space_before: str = "Add space before the album artist separator in filenames."
+    filename_album_artist_space_after: str = "Add space after the album artist separator in filenames."
+    # Legacy fields (deprecated but kept for migration)
+    metadata_delimiter_artist: str = "[DEPRECATED] Use metadata_artist_separator instead. Default: ', '"
+    metadata_delimiter_album_artist: str = "[DEPRECATED] Use metadata_album_artist_separator instead. Default: ', '"
+    filename_delimiter_artist: str = "[DEPRECATED] Use filename_artist_separator instead. Default: ', '"
+    filename_delimiter_album_artist: str = "[DEPRECATED] Use filename_album_artist_separator instead. Default: ', '"
     metadata_target_upc: str = (
         "Select the target metadata tag ('UPC', 'BARCODE', 'EAN') where to write the UPC information to. Default: 'UPC'."
     )
