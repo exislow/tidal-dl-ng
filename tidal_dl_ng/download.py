@@ -1692,6 +1692,8 @@ class Download:
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
             .option("y")
+            .option("hide_banner")
+            .option("nostdin")
             .input(url=path_file)
             .output(url=path_file_out, codec="copy", map=0, loglevel="quiet")
         )
@@ -1712,6 +1714,8 @@ class Download:
         path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
+            .option("hide_banner")
+            .option("nostdin")
             .input(url=path_media_src)
             .output(
                 url=path_media_out,
