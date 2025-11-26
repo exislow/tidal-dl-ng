@@ -43,8 +43,8 @@ class Settings:
     cover_album_file: bool = True
     extract_flac: bool = True
     downloads_simultaneous_per_track_max: int = 20
-    download_delay_sec_min: float = 1.0
-    download_delay_sec_max: float = 3.0
+    download_delay_sec_min: float = 3.0
+    download_delay_sec_max: float = 5.0
     album_track_num_pad_min: int = 1
     downloads_concurrent_max: int = 3
     symlink_to_track: bool = False
