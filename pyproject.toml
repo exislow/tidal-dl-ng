@@ -2,7 +2,7 @@
 name = "tidal-dl-ng"
 authors = [{ name = "Robert Honz", email = "<cen.sored@gmail.com>" }]
 version = "0.31.4"
-description = "TIDAL Medial Downloader Next Generation!"
+description = "TIDAL Media Downloader Next Generation!"
 readme = "README.md"
 license = "AGPL-3.0-only"
 license-files = ["LICENSE"]
@@ -132,7 +132,7 @@ ignore = [
   # Do not use bare `except`
   "E722",
   # PEP 484 prohibits implicit `Optional`
-  # Disabled only temporarely.
+  # Disabled only temporarily.
   "RUF013",
 ]
 
