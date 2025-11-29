@@ -1,7 +1,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.9.0
+## Created by: Qt User Interface Compiler version 6.10.0
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -11,6 +11,7 @@ from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
+    QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QStatusBar,
+    QTabWidget,
     QTreeView,
     QTreeWidget,
     QTreeWidgetItem,
@@ -146,9 +148,7 @@ class Ui_MainWindow:
         self.horizontalLayout.addLayout(self.lv_list_user)
 
         self.lv_search_result = QVBoxLayout()
-        # ifndef Q_OS_MAC
-        self.lv_search_result.setSpacing(-1)
-        # endif
+        self.lv_search_result.setSpacing(6)
         self.lv_search_result.setObjectName("lv_search_result")
         self.lh_search = QHBoxLayout()
         self.lh_search.setObjectName("lh_search")
@@ -403,21 +403,182 @@ class Ui_MainWindow:
         self.lv_info_item.setObjectName("lv_info_item")
         self.horizontalLayout_2 = QHBoxLayout()
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
-        self.l_pm_cover = QLabel(self.w_central)
-        self.l_pm_cover.setObjectName("l_pm_cover")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.tabWidget = QTabWidget(self.w_central)
+        self.tabWidget.setObjectName("tabWidget")
+        self.tabWidget.setEnabled(True)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         sizePolicy3.setHorizontalStretch(0)
         sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.l_pm_cover.sizePolicy().hasHeightForWidth())
-        self.l_pm_cover.setSizePolicy(sizePolicy3)
+        sizePolicy3.setHeightForWidth(self.tabWidget.sizePolicy().hasHeightForWidth())
+        self.tabWidget.setSizePolicy(sizePolicy3)
+        self.tabWidget.setMinimumSize(QSize(300, 300))
+        self.tabWidget.setMaximumSize(QSize(600, 16777215))
+        self.tabWidget.setUsesScrollButtons(True)
+        self.tabWidget.setDocumentMode(False)
+        self.tabWidget.setTabsClosable(False)
+        self.tabWidget.setMovable(True)
+        self.tabWidget.setTabBarAutoHide(False)
+        self.tab = QWidget()
+        self.tab.setObjectName("tab")
+        self.details_vlayout = QVBoxLayout(self.tab)
+        self.details_vlayout.setSpacing(4)
+        self.details_vlayout.setObjectName("details_vlayout")
+        self.formLayout_details = QFormLayout()
+        self.formLayout_details.setObjectName("formLayout_details")
+        self.formLayout_details.setLabelAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTrailing | Qt.AlignmentFlag.AlignVCenter
+        )
+        self.formLayout_details.setHorizontalSpacing(2)
+        self.formLayout_details.setVerticalSpacing(2)
+        self.l_label_title = QLabel(self.tab)
+        self.l_label_title.setObjectName("l_label_title")
+
+        self.formLayout_details.setWidget(0, QFormLayout.ItemRole.LabelRole, self.l_label_title)
+
+        self.lbl_title = QLabel(self.tab)
+        self.lbl_title.setObjectName("lbl_title")
+        self.lbl_title.setWordWrap(True)
+
+        self.formLayout_details.setWidget(0, QFormLayout.ItemRole.FieldRole, self.lbl_title)
+
+        self.l_label_version = QLabel(self.tab)
+        self.l_label_version.setObjectName("l_label_version")
+
+        self.formLayout_details.setWidget(1, QFormLayout.ItemRole.LabelRole, self.l_label_version)
+
+        self.lbl_version = QLabel(self.tab)
+        self.lbl_version.setObjectName("lbl_version")
+
+        self.formLayout_details.setWidget(1, QFormLayout.ItemRole.FieldRole, self.lbl_version)
+
+        self.l_label_artists = QLabel(self.tab)
+        self.l_label_artists.setObjectName("l_label_artists")
+
+        self.formLayout_details.setWidget(2, QFormLayout.ItemRole.LabelRole, self.l_label_artists)
+
+        self.lbl_artists = QLabel(self.tab)
+        self.lbl_artists.setObjectName("lbl_artists")
+        self.lbl_artists.setWordWrap(True)
+
+        self.formLayout_details.setWidget(2, QFormLayout.ItemRole.FieldRole, self.lbl_artists)
+
+        self.l_label_track_number = QLabel(self.tab)
+        self.l_label_track_number.setObjectName("l_label_track_number")
+
+        self.formLayout_details.setWidget(3, QFormLayout.ItemRole.LabelRole, self.l_label_track_number)
+
+        self.lbl_track_number = QLabel(self.tab)
+        self.lbl_track_number.setObjectName("lbl_track_number")
+
+        self.formLayout_details.setWidget(3, QFormLayout.ItemRole.FieldRole, self.lbl_track_number)
+
+        self.l_label_album = QLabel(self.tab)
+        self.l_label_album.setObjectName("l_label_album")
+
+        self.formLayout_details.setWidget(4, QFormLayout.ItemRole.LabelRole, self.l_label_album)
+
+        self.lbl_album = QLabel(self.tab)
+        self.lbl_album.setObjectName("lbl_album")
+
+        self.formLayout_details.setWidget(4, QFormLayout.ItemRole.FieldRole, self.lbl_album)
+
+        self.l_label_duration = QLabel(self.tab)
+        self.l_label_duration.setObjectName("l_label_duration")
+
+        self.formLayout_details.setWidget(5, QFormLayout.ItemRole.LabelRole, self.l_label_duration)
+
+        self.lbl_duration = QLabel(self.tab)
+        self.lbl_duration.setObjectName("lbl_duration")
+
+        self.formLayout_details.setWidget(5, QFormLayout.ItemRole.FieldRole, self.lbl_duration)
+
+        self.l_label_codec = QLabel(self.tab)
+        self.l_label_codec.setObjectName("l_label_codec")
+
+        self.formLayout_details.setWidget(6, QFormLayout.ItemRole.LabelRole, self.l_label_codec)
+
+        self.lbl_codec = QLabel(self.tab)
+        self.lbl_codec.setObjectName("lbl_codec")
+
+        self.formLayout_details.setWidget(6, QFormLayout.ItemRole.FieldRole, self.lbl_codec)
+
+        self.l_label_bitrate = QLabel(self.tab)
+        self.l_label_bitrate.setObjectName("l_label_bitrate")
+
+        self.formLayout_details.setWidget(7, QFormLayout.ItemRole.LabelRole, self.l_label_bitrate)
+
+        self.lbl_bitrate = QLabel(self.tab)
+        self.lbl_bitrate.setObjectName("lbl_bitrate")
+
+        self.formLayout_details.setWidget(7, QFormLayout.ItemRole.FieldRole, self.lbl_bitrate)
+
+        self.l_label_release_date = QLabel(self.tab)
+        self.l_label_release_date.setObjectName("l_label_release_date")
+
+        self.formLayout_details.setWidget(8, QFormLayout.ItemRole.LabelRole, self.l_label_release_date)
+
+        self.lbl_release_date = QLabel(self.tab)
+        self.lbl_release_date.setObjectName("lbl_release_date")
+
+        self.formLayout_details.setWidget(8, QFormLayout.ItemRole.FieldRole, self.lbl_release_date)
+
+        self.l_label_popularity = QLabel(self.tab)
+        self.l_label_popularity.setObjectName("l_label_popularity")
+
+        self.formLayout_details.setWidget(9, QFormLayout.ItemRole.LabelRole, self.l_label_popularity)
+
+        self.lbl_popularity = QLabel(self.tab)
+        self.lbl_popularity.setObjectName("lbl_popularity")
+
+        self.formLayout_details.setWidget(9, QFormLayout.ItemRole.FieldRole, self.lbl_popularity)
+
+        self.l_label_bpm = QLabel(self.tab)
+        self.l_label_bpm.setObjectName("l_label_bpm")
+
+        self.formLayout_details.setWidget(10, QFormLayout.ItemRole.LabelRole, self.l_label_bpm)
+
+        self.lbl_bpm = QLabel(self.tab)
+        self.lbl_bpm.setObjectName("lbl_bpm")
+
+        self.formLayout_details.setWidget(10, QFormLayout.ItemRole.FieldRole, self.lbl_bpm)
+
+        self.l_label_isrc = QLabel(self.tab)
+        self.l_label_isrc.setObjectName("l_label_isrc")
+
+        self.formLayout_details.setWidget(11, QFormLayout.ItemRole.LabelRole, self.l_label_isrc)
+
+        self.lbl_isrc = QLabel(self.tab)
+        self.lbl_isrc.setObjectName("lbl_isrc")
+
+        self.formLayout_details.setWidget(11, QFormLayout.ItemRole.FieldRole, self.lbl_isrc)
+
+        self.details_vlayout.addLayout(self.formLayout_details)
+
+        self.tabWidget.addTab(self.tab, "")
+        self.tab_2 = QWidget()
+        self.tab_2.setObjectName("tab_2")
+        self.cover_vlayout = QVBoxLayout(self.tab_2)
+        self.cover_vlayout.setSpacing(2)
+        self.cover_vlayout.setObjectName("cover_vlayout")
+        self.l_pm_cover = QLabel(self.tab_2)
+        self.l_pm_cover.setObjectName("l_pm_cover")
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.l_pm_cover.sizePolicy().hasHeightForWidth())
+        self.l_pm_cover.setSizePolicy(sizePolicy4)
+        self.l_pm_cover.setMinimumSize(QSize(280, 280))
         self.l_pm_cover.setMaximumSize(QSize(280, 280))
-        self.l_pm_cover.setBaseSize(QSize(0, 0))
         self.l_pm_cover.setFrameShape(QFrame.Shape.NoFrame)
         self.l_pm_cover.setPixmap(QPixmap("default_album_image.png"))
         self.l_pm_cover.setScaledContents(True)
         self.l_pm_cover.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
-        self.horizontalLayout_2.addWidget(self.l_pm_cover)
+        self.cover_vlayout.addWidget(self.l_pm_cover)
+
+        self.tabWidget.addTab(self.tab_2, "")
+
+        self.horizontalLayout_2.addWidget(self.tabWidget)
 
         self.lv_info_item.addLayout(self.horizontalLayout_2)
 
@@ -497,7 +658,7 @@ class Ui_MainWindow:
         MainWindow.setCentralWidget(self.w_central)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName("menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1200, 24))
+        self.menubar.setGeometry(QRect(0, 0, 1200, 33))
         # if QT_CONFIG(tooltip)
         self.menubar.setToolTip("")
         # endif // QT_CONFIG(tooltip)
@@ -563,6 +724,8 @@ class Ui_MainWindow:
 
         self.retranslateUi(MainWindow)
 
+        self.tabWidget.setCurrentIndex(1)
+
         QMetaObject.connectSlotsByName(MainWindow)
 
     # setupUi
@@ -589,7 +752,37 @@ class Ui_MainWindow:
         self.pb_reload_user_lists.setText(QCoreApplication.translate("MainWindow", "Reload", None))
         self.pb_download_list.setText(QCoreApplication.translate("MainWindow", "Download List", None))
         self.te_debug.setPlaceholderText(QCoreApplication.translate("MainWindow", "Logs...", None))
+        self.l_label_title.setText(QCoreApplication.translate("MainWindow", "Title", None))
+        self.lbl_title.setText("")
+        self.l_label_version.setText(QCoreApplication.translate("MainWindow", "Version", None))
+        self.lbl_version.setText("")
+        self.l_label_artists.setText(QCoreApplication.translate("MainWindow", "Artists", None))
+        self.lbl_artists.setText("")
+        self.l_label_track_number.setText(QCoreApplication.translate("MainWindow", "Track #", None))
+        self.lbl_track_number.setText("")
+        self.l_label_album.setText(QCoreApplication.translate("MainWindow", "Album", None))
+        self.lbl_album.setText("")
+        self.l_label_duration.setText(QCoreApplication.translate("MainWindow", "Duration", None))
+        self.lbl_duration.setText("")
+        self.l_label_codec.setText(QCoreApplication.translate("MainWindow", "Codec", None))
+        self.lbl_codec.setText("")
+        self.l_label_bitrate.setText(QCoreApplication.translate("MainWindow", "Bitrate", None))
+        self.lbl_bitrate.setText("")
+        self.l_label_release_date.setText(QCoreApplication.translate("MainWindow", "Release Date", None))
+        self.lbl_release_date.setText("")
+        self.l_label_popularity.setText(QCoreApplication.translate("MainWindow", "Popularity", None))
+        self.lbl_popularity.setText("")
+        self.l_label_bpm.setText(QCoreApplication.translate("MainWindow", "BPM", None))
+        self.lbl_bpm.setText("")
+        self.l_label_isrc.setText(QCoreApplication.translate("MainWindow", "ISRC", None))
+        self.lbl_isrc.setText("")
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab), QCoreApplication.translate("MainWindow", "Details", None)
+        )
         self.l_pm_cover.setText("")
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab_2), QCoreApplication.translate("MainWindow", "Cover Art", None)
+        )
         self.l_h_queue_download.setText(QCoreApplication.translate("MainWindow", "Download Queue", None))
         ___qtreewidgetitem4 = self.tr_queue_download.headerItem()
         ___qtreewidgetitem4.setText(5, QCoreApplication.translate("MainWindow", "Quality Video", None))

@@ -7,9 +7,13 @@
 
 This tool allows to download songs and videos from TIDAL. Multithreaded and multi-chunked downloads are supported.
 
-⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This is a **false positive**. Please read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md) and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade).
+⚠️ **Windows** Defender / **Anti Virus** software / web browser alerts, while you try to download the app binary: This
+is a **false positive**. Please
+read [this issue](https://github.com/exislow/tidal-dl-ng/issues/231), [PyInstaller (used by this project) statement](https://github.com/pyinstaller/pyinstaller/blob/develop/.github/ISSUE_TEMPLATE/antivirus.md)
+and [the alternative installation solution](https://github.com/exislow/tidal-dl-ng/?tab=readme-ov-file#-installation--upgrade).
 
-**A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on the song available. Dolby Atmos is supported. You can use the command line or GUI version of this tool.
+**A paid TIDAL plan is required!** Audio quality varies up to HiRes Lossless / TIDAL MAX 24-bit, 192 kHz depending on
+the song available. Dolby Atmos is supported. You can use the command line or GUI version of this tool.
 
 ![App Image](assets/app.png)
 
@@ -86,12 +90,15 @@ If you like to have the GUI version only as a binary, have a look at the
 
 - Download tracks, videos, albums, playlists, your favorites etc.
 - Multithreaded and multi-chunked downloads
-- Metadata for songs
+- Metadata for songs (including extended metadata like genres, producers, composers when available from TIDAL API -
+  see [metadata documentation](docs/missing_metadata.md))
 - Adjustable audio and video download quality.
 - FLAC extraction from MP4 containers
 - Lyrics and album art / cover download
 - Creates playlist files
 - Can symlink tracks instead of having several copies, if added to different playlist
+- **🆕 Quick View on Hover** (GUI): Hover over tracks to instantly preview rich metadata without clicking (
+  see [feature documentation](docs/feature_hover_info.md))
 - **Download History Tracking**: Visual indicator (✅) in GUI for already downloaded tracks, with persistent JSON-based storage, manual mark/unmark capability, and history management dialog
 
 ## ▶️ Getting started with development
@@ -150,25 +157,32 @@ See the `Makefile` for all available build commands.
 
 The CI/CD pipeline will be triggered when you open a pull request, merge to main, or when you create a new release.
 
-To finalize the set-up for publishing to PyPi or Artifactory, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/publishing/#set-up-for-pypi).
-For activating the automatic documentation with MkDocs, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
+To finalize the set-up for publishing to PyPi or Artifactory,
+see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/publishing/#set-up-for-pypi).
+For activating the automatic documentation with MkDocs,
+see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/mkdocs/#enabling-the-documentation-on-github).
 To enable the code coverage reports, see [here](https://fpgmaas.github.io/cookiecutter-poetry/features/codecov/).
 
 ## ❓ FAQ
 
 ### macOS Error Message: File/App is damaged and cannot be opened. You should move it to Trash
 
-If you download an (unsigned) app from any source other than those that Apple seems suited, the application gets an extended attribute "com.apple.Quarantine". This triggers the message: "<application> is damaged and can't be opened. You should move it to the Bin."
+If you download an (unsigned) app from any source other than those that Apple seems suited, the application gets an
+extended attribute "com.apple.Quarantine". This triggers the message: "<application> is damaged and can't be opened. You
+should move it to the Bin."
 
-Remove the attribute and you can launch the application. [Source 1](https://discussions.apple.com/thread/253714860?sortBy=rank) [Source 2](https://www.reddit.com/r/macsysadmin/comments/13vu7f3/app_is_damaged_and_cant_be_opened_error_on_ventura/)
+Remove the attribute and you can launch the
+application. [Source 1](https://discussions.apple.com/thread/253714860?sortBy=rank) [Source 2](https://www.reddit.com/r/macsysadmin/comments/13vu7f3/app_is_damaged_and_cant_be_opened_error_on_ventura/)
 
 ```
 sudo xattr -dr com.apple.quarantine /Applications/TIDAL-Downloader-NG.app/
 ```
 
-Why is this app unsigned? Only developer enrolled in the paid Apple developer program are allowed to sign (legal) apps. Without this subscription app signing is not possible.
+Why is this app unsigned? Only developer enrolled in the paid Apple developer program are allowed to sign (legal) apps.
+Without this subscription app signing is not possible.
 
-Gatekeeper really annoys you, and you like to disable it completely? Follow this [link](https://iboysoft.com/tips/how-to-disable-gatekeeper-macos-sequoia.html)
+Gatekeeper really annoys you, and you like to disable it completely? Follow
+this [link](https://iboysoft.com/tips/how-to-disable-gatekeeper-macos-sequoia.html)
 
 ### My (Windows) antivirus app XYZ says the GUI version of this app is harmful
 
@@ -178,7 +192,8 @@ Long answer: See [here](https://github.com/exislow/tidal-dl-ng/issues/231)
 
 ### I get an error when `extract_flac` is enabled
 
-Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the help of this particular option until you get it right what path to put for `path_binary_ffmpeg`.
+Your `path_binary_ffmpeg` is probably wrong. Please read over and over again the help of this particular option until
+you get it right what path to put for `path_binary_ffmpeg`.
 
 ### My Linux (e.g. Ubuntu) complains that `libxcb-cursor0` is not installed
 
@@ -198,7 +213,20 @@ This is due to the Python `ffmpeg` library which is used and only happens on win
 
 ### How can I download Dolby Atmos files?
 
-You need to activate `download_dolby_atmos` in the settings. Then, if an item is available in Dolby Atmos, it will be downloaded as an Dolby Atmos file instead of as an stereo audio file. Dolby Atmos ist only available as 320kbps at TIDAL (you cannot adjust the quality for Dolby Atmos downloads). If an item is available in Dolby Atmos the "Quality" column in the GUI will indicate this with `Dolby Atmos`
+You need to activate `download_dolby_atmos` in the settings. Then, if an item is available in Dolby Atmos, it will be
+downloaded as an Dolby Atmos file instead of as an stereo audio file. Dolby Atmos ist only available as 320kbps at
+TIDAL (you cannot adjust the quality for Dolby Atmos downloads). If an item is available in Dolby Atmos the "Quality"
+column in the GUI will indicate this with `Dolby Atmos`
+
+### Why do some metadata fields show "—" or "N/A"?
+
+Some metadata fields like Genres, Producers, Composers, Label, or BPM may display `—` because **the TIDAL API does not
+provide this information** for that specific track or album. This is not a bug - TIDAL simply doesn't have or doesn't
+expose this data via their API.
+
+- **Bitrate shows "N/A"** for LOSSLESS tracks because they use variable bitrate compression
+- **Extended metadata** (genres, producers, etc.) depends on what TIDAL receives from music labels
+- See the [detailed metadata documentation](docs/missing_metadata.md) for more information
 
 ## ‼️ Disclaimer
 

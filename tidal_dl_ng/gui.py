@@ -44,6 +44,7 @@
 # nuitka-project: --company-name=exislow
 
 
+import contextlib
 import math
 import sys
 import time
@@ -59,27 +60,17 @@ from tidal_dl_ng.dialog_history import DialogHistory
 from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
-    get_queue_download_media,
-    get_queue_download_quality_audio,
-    get_queue_download_quality_video,
     get_results_media_item,
     get_user_list_media_item,
-    set_queue_download_media,
-    set_user_list_media,
 )
-from tidal_dl_ng.helper.path import get_format_template, resource_path
+from tidal_dl_ng.helper.hover_manager import HoverManager
 from tidal_dl_ng.helper.tidal import (
+    extract_contributor_names,
     favorite_function_factory,
-    get_tidal_media_id,
-    get_tidal_media_type,
-    instantiate_media,
+    fetch_raw_track_and_album,
     items_results_all,
     name_builder_artist,
-    name_builder_title,
-    quality_audio_highest,
-    search_results_all,
-    url_ending_clean,
-    user_media_lists,
+    parse_track_and_album_extras,
 )
 
 try:
@@ -90,22 +81,25 @@ except ImportError as e:
     print("Qt dependencies missing. Cannot start GUI. Please read the 'README.md' carefully.")
     sys.exit(1)
 
-
 from ansi2html import Ansi2HTMLConverter
 from rich.progress import Progress
-from tidalapi import Album, Mix, Playlist, Quality, Track, UserPlaylist, Video
+from tidalapi import Album, Mix, Playlist, Quality, Track, Video
 from tidalapi.artist import Artist
-from tidalapi.media import AudioMode
-from tidalapi.playlist import Folder
 from tidalapi.session import SearchTypes
 
+from tidal_dl_ng.cache import TrackExtrasCache
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
-from tidal_dl_ng.constants import FAVORITES, QualityVideo, QueueDownloadStatus, TidalLists
+from tidal_dl_ng.constants import QualityVideo
 from tidal_dl_ng.download import Download
+from tidal_dl_ng.gui_covers import CoverManager
+from tidal_dl_ng.gui_playlist import GuiPlaylistManager
+from tidal_dl_ng.gui_queue import GuiQueueManager
+from tidal_dl_ng.gui_search import GuiSearchManager
 from tidal_dl_ng.history import HistoryService
 from tidal_dl_ng.logger import XStream, logger_gui
-from tidal_dl_ng.model.gui_data import ProgressBars, QueueDownloadItem, ResultItem, StatusbarMessage
+from tidal_dl_ng.model.gui_data import ProgressBars, ResultItem, StatusbarMessage
 from tidal_dl_ng.model.meta import ReleaseLatest
+from tidal_dl_ng.ui.info_tab_widget import InfoTabWidget
 from tidal_dl_ng.ui.main import Ui_MainWindow
 from tidal_dl_ng.ui.spinner import QtWaitingSpinner
 from tidal_dl_ng.worker import Worker
@@ -129,8 +123,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     shutdown: bool = False
     model_tr_results: QtGui.QStandardItemModel = QtGui.QStandardItemModel()
     proxy_tr_results: HumanProxyModel
+    info_tab_widget: InfoTabWidget
+    hover_manager: HoverManager
+    queue_manager: GuiQueueManager
+    playlist_manager: GuiPlaylistManager
+    search_manager: GuiSearchManager
     s_spinner_start: QtCore.Signal = QtCore.Signal(QtWidgets.QWidget)
     s_spinner_stop: QtCore.Signal = QtCore.Signal()
+    s_track_extras_ready: QtCore.Signal = QtCore.Signal(str, object)  # track_id, extras
+    s_invoke_callback: QtCore.Signal = QtCore.Signal(str, object)  # track_id, extras - for InfoTabWidget callback
     pb_item: QtWidgets.QProgressBar
     s_item_advance: QtCore.Signal = QtCore.Signal(float)
     s_item_name: QtCore.Signal = QtCore.Signal(str)
@@ -162,6 +163,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self.setWindowTitle("TIDAL Downloader Next Generation!")
 
+        # Initialize settings first
+        self.settings = Settings()
+
+        # Initialize managers that depend on settings
+        self.queue_manager = GuiQueueManager(self)
+        self.playlist_manager = GuiPlaylistManager(self)
+        self.search_manager = GuiSearchManager(self)
+        self.info_tab_widget = InfoTabWidget(self, self.tabWidget)
+
         # Logging redirect.
         XStream.stdout().messageWritten.connect(self._log_output)
         # XStream.stderr().messageWritten.connect(self._log_output)
@@ -169,13 +179,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.settings = Settings()
         self.history_service = HistoryService()
 
+        # Core components
         self._init_threads()
         self._init_gui()
+        self.track_extras_cache = TrackExtrasCache()
+        self._pending_extras_workers: dict[str, Worker] = {}
+        self._track_extras_callbacks: dict[str, Callable] = {}  # Store callbacks by track_id
+
+        # Managers that have dependencies
+        self.cover_manager = CoverManager(self, self.threadpool, self.info_tab_widget)
+
+        # Initialize the rest of the UI
+        self.info_tab_widget.set_track_extras_provider(self.get_track_extras)
         self._init_tree_results_model(self.model_tr_results)
         self._init_tree_results(self.tr_results, self.model_tr_results)
-        self._init_tree_lists(self.tr_lists_user)
-        self._init_tree_queue(self.tr_queue_download)
-        self._init_info()
+        self.playlist_manager.init_ui()
+        self.queue_manager.init_ui()
         self._init_progressbar()
         self._populate_quality(self.cb_quality_audio, Quality)
         self._populate_quality(self.cb_quality_video, QualityVideo)
@@ -183,10 +202,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.apply_settings(self.settings)
         self._init_menu_actions()
         self._init_signals()
-        self._init_buttons()
+
+        # Connect signal for invoking track extras callbacks
+        self.s_invoke_callback.connect(self._on_invoke_callback)
+
         self.init_tidal(tidal)
 
         logger_gui.debug("All setup.")
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        """Ensure background workers and hover hooks stop before exit."""
+        HandlingApp().event_abort.set()
+        if hasattr(self, "hover_manager") and self.hover_manager:
+            with contextlib.suppress(Exception):
+                self.hover_manager.stop()
+        self.threadpool.waitForDone(2000)
+        super().closeEvent(event)
 
     def _init_gui(self) -> None:
         """Initialize GUI-specific variables and state."""
@@ -243,12 +274,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         if result:
             self._init_dl()
-            self.thread_it(self.tidal_user_lists)
+            self.thread_it(self.playlist_manager.tidal_user_lists)
 
     def _init_threads(self):
         """Initialize thread pool and start background workers."""
         self.threadpool = QtCore.QThreadPool()
-        self.thread_it(self.watcher_queue_download)
+        self.thread_it(self.queue_manager.watcher_queue_download)
 
     def _init_dl(self):
         """Initialize Download object and related progress bars."""
@@ -283,11 +314,78 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # self.pb_progress.setVisible()
             self.statusbar.addPermanentWidget(pb)
 
-    def _init_info(self):
-        """Set default album cover image in the GUI."""
-        path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
+    def get_track_extras(self, track_id: str, callback: Callable[[str, dict | None], None]) -> dict | None:
+        """Return cached extras for a track or start async fetch.
 
-        self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
+        Args:
+            track_id: The track ID to fetch extras for.
+            callback: Function to call when async fetch completes.
+
+        Returns:
+            Cached extras dict if available, None if fetching async.
+        """
+        cached = self.track_extras_cache.get(track_id)
+        if cached is not None:
+            return cached
+
+        if track_id in self._pending_extras_workers:
+            return None
+
+        # Store the callback for this track_id
+        if callback:
+            self._track_extras_callbacks[track_id] = callback
+
+        def worker() -> None:
+            extras = None
+            try:
+                track_json, album_json = fetch_raw_track_and_album(self.tidal.session, track_id)
+                extras = parse_track_and_album_extras(track_json, album_json)
+                extras = self._decorate_extras(extras)
+                self.track_extras_cache.set(track_id, extras)
+            except Exception:
+                extras = None  # Return None on errors
+            finally:
+                self._pending_extras_workers.pop(track_id, None)
+                # Emit signal for any listeners
+                self.s_track_extras_ready.emit(track_id, extras)
+                # Emit signal to invoke the callback (will be handled by _on_invoke_callback in main thread)
+                self.s_invoke_callback.emit(track_id, extras)
+
+        worker_obj = Worker(worker)
+        self._pending_extras_workers[track_id] = worker_obj
+        self.threadpool.start(worker_obj)
+        return None
+
+    @QtCore.Slot(str, object)
+    def _on_invoke_callback(self, track_id: str, extras: dict | None) -> None:
+        """Invoke the stored callback for a track in the main thread.
+
+        This slot is connected to s_invoke_callback signal and runs in the main GUI thread,
+        allowing safe UI updates from the callback.
+        """
+        callback = self._track_extras_callbacks.pop(track_id, None)
+        if callback:
+            with contextlib.suppress(Exception):
+                callback(track_id, extras)
+
+    def _decorate_extras(self, extras: dict | None) -> dict:
+        """Add formatted string fields to extras dict."""
+        if not extras:
+            return {}
+        result = dict(extras)
+        result["genres_text"] = ", ".join(result.get("genres", []))
+        for role, key in [
+            ("producer", "producers_text"),
+            ("composer", "composers_text"),
+            ("lyricist", "lyricists_text"),
+        ]:
+            result[key] = extract_contributor_names(result.get("contributors_by_role"), role)
+        return result
+
+    def preload_covers_for_playlist(self, items: list) -> None:
+        """Preload cover pixmaps for a list of tracks in background."""
+        if self.cover_manager:
+            self.cover_manager.preload_covers_for_playlist(items)
 
     def on_progress_reset(self):
         """Reset progress bars to zero."""
@@ -386,6 +484,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_results)
 
+        # Initialize hover manager for track preview
+        self.hover_manager = HoverManager(
+            tree_view=tree,
+            proxy_model=self.proxy_tr_results,
+            source_model=model,
+            debounce_delay_ms=50,
+            parent=self,
+        )
+        # Connect hover signals
+        self.hover_manager.s_hover_confirmed.connect(self.on_track_hover_confirmed)
+        self.hover_manager.s_hover_left.connect(self.on_track_hover_left)
+
     def _init_tree_results_model(self, model: QtGui.QStandardItemModel) -> None:
         """Initialize the model for the results tree view.
 
@@ -407,150 +517,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
         model.setHorizontalHeaderLabels(labels_column)
-
-    def _init_tree_queue(self, tree: QtWidgets.QTableWidget) -> None:
-        """Initialize the download queue table widget.
-
-        Args:
-            tree (QTableWidget): The table widget.
-        """
-        tree.setColumnHidden(1, True)
-        tree.setColumnWidth(2, 200)
-
-        header = tree.header()
-
-        if hasattr(header, "setSectionResizeMode"):
-            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree.customContextMenuRequested.connect(self.menu_context_queue_download)
-
-    def tidal_user_lists(self) -> None:
-        """Fetch and emit user playlists, mixes, and favorites from Tidal."""
-        # Start loading spinner
-        self.s_spinner_start.emit(self.tr_lists_user)
-        self.s_pb_reload_status.emit(False)
-
-        user_all: dict[str, list] = user_media_lists(self.tidal.session)
-
-        self.s_populate_tree_lists.emit(user_all)
-
-    def on_populate_tree_lists(self, user_lists: dict[str, list]) -> None:
-        """Populate the user lists tree with playlists, mixes, and favorites.
-
-        Args:
-            user_lists (dict[str, list]): Dictionary with 'playlists' (Folder/Playlist) and 'mixes' lists.
-        """
-        twi_playlists: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Playlists, QtCore.Qt.MatchExactly, 0
-        )[0]
-        twi_mixes: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Mixes, QtCore.Qt.MatchExactly, 0
-        )[0]
-        twi_favorites: QtWidgets.QTreeWidgetItem = self.tr_lists_user.findItems(
-            TidalLists.Favorites, QtCore.Qt.MatchExactly, 0
-        )[0]
-
-        # Remove all children if present
-        for twi in [twi_playlists, twi_mixes]:
-            for i in reversed(range(twi.childCount())):
-                twi.removeChild(twi.child(i))
-
-        # Populate playlists (including folders)
-        for item in user_lists.get("playlists", []):
-            if isinstance(item, Folder):
-                twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
-                name: str = f"📁 {item.name}"
-                info: str = f"({item.total_number_of_items} items)" if item.total_number_of_items else ""
-                twi_child.setText(0, name)
-                set_user_list_media(twi_child, item)
-                twi_child.setText(2, info)
-
-                # Add disabled dummy child to show expansion arrow
-                dummy_child = QtWidgets.QTreeWidgetItem(twi_child)
-                dummy_child.setDisabled(True)
-            elif isinstance(item, UserPlaylist | Playlist):
-                twi_child = QtWidgets.QTreeWidgetItem(twi_playlists)
-                name: str = item.name if getattr(item, "name", None) is not None else ""
-                description: str = f" {item.description}" if item.description else ""
-                info: str = f"({item.num_tracks + item.num_videos} Tracks){description}"
-                twi_child.setText(0, name)
-                set_user_list_media(twi_child, item)
-                twi_child.setText(2, info)
-
-        # Populate mixes
-        for item in user_lists.get("mixes", []):
-            if isinstance(item, Mix):
-                twi_child = QtWidgets.QTreeWidgetItem(twi_mixes)
-                name: str = item.title
-                info: str = item.sub_title
-                twi_child.setText(0, name)
-                set_user_list_media(twi_child, item)
-                twi_child.setText(2, info)
-
-        # Remove all children from favorites to avoid duplication
-        for i in reversed(range(twi_favorites.childCount())):
-            twi_favorites.removeChild(twi_favorites.child(i))
-
-        # Populate static favorites
-        for key, favorite in FAVORITES.items():
-            twi_child = QtWidgets.QTreeWidgetItem(twi_favorites)
-            name: str = favorite["name"]
-            info: str = ""
-
-            twi_child.setText(0, name)
-            set_user_list_media(twi_child, key)
-            twi_child.setText(2, info)
-
-        # Stop load spinner
-        self.s_spinner_stop.emit()
-        self.s_pb_reload_status.emit(True)
-
-    def _init_tree_lists(self, tree: QtWidgets.QTreeWidget) -> None:
-        """Initialize the user lists tree widget.
-
-        Args:
-            tree (QTreeWidget): The tree widget.
-        """
-        # Adjust Tree.
-        tree.setColumnWidth(0, 200)
-        tree.setColumnHidden(1, True)
-        tree.setColumnWidth(2, 300)
-        tree.expandAll()
-
-        # Connect the contextmenu
-        tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        tree.customContextMenuRequested.connect(self.menu_context_tree_lists)
-
-    def _init_menu_actions(self) -> None:
-        """Initialize custom menu actions."""
-        # Create Tools menu if it doesn't exist
-        menubar = self.menuBar()
-        tools_menu = None
-
-        # Find or create Tools menu
-        for action in menubar.actions():
-            if action.text() == "Tools":
-                tools_menu = action.menu()
-                break
-
-        if not tools_menu:
-            tools_menu = menubar.addMenu("Tools")
-
-        # Create View History action
-        self.a_view_history = QtGui.QAction("View Download History...", self)
-        self.a_view_history.triggered.connect(self.on_view_history)
-        tools_menu.addAction(self.a_view_history)
-
-        # Add separator
-        tools_menu.addSeparator()
-
-        # Add duplicate prevention toggle
-        self.a_toggle_duplicate_prevention = QtGui.QAction("Prevent Duplicate Downloads", self)
-        self.a_toggle_duplicate_prevention.setCheckable(True)
-        is_preventing = self.history_service.get_settings().get("preventDuplicates", True)
-        self.a_toggle_duplicate_prevention.setChecked(is_preventing)
-        self.a_toggle_duplicate_prevention.triggered.connect(self.on_toggle_duplicate_prevention)
-        tools_menu.addAction(self.a_toggle_duplicate_prevention)
 
     def on_update_check(self, on_startup: bool = True) -> None:
         """Check for application updates and emit update signals.
@@ -616,51 +582,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.spinners.clear()
 
-    def menu_context_tree_lists(self, point: QtCore.QPoint) -> None:
-        """Show context menu for user lists tree.
-
-        Args:
-            point (QPoint): The point where the menu is requested.
-        """
-        # Infos about the node selected.
-        index = self.tr_lists_user.indexAt(point)
-
-        # Do not open menu if something went wrong or a parent node is clicked.
-        if not index.isValid() or not index.parent().data():
-            return
-
-        # Get the media item to determine type
-        item = self.tr_lists_user.itemAt(point)
-        media = get_user_list_media_item(item)
-
-        # We build the menu.
-        menu = QtWidgets.QMenu()
-
-        if isinstance(media, Folder):
-            # Folder-specific menu items
-            menu.addAction(
-                "Download All Playlists in Folder", lambda: self.thread_it(self.on_download_folder_playlists, point)
-            )
-            menu.addAction(
-                "Download All Albums from Folder", lambda: self.thread_it(self.on_download_folder_albums, point)
-            )
-        elif isinstance(media, str):
-            # Favorites items (stored as string keys like "fav_tracks", "fav_albums")
-            menu.addAction("Download All Items", lambda: self.thread_it(self.on_download_favorites, point))
-            menu.addAction(
-                "Download All Albums from Items", lambda: self.thread_it(self.on_download_albums_from_favorites, point)
-            )
-        else:
-            # Playlist/Mix menu items (existing)
-            menu.addAction("Download Playlist", lambda: self.thread_download_list_media(point))
-            menu.addAction(
-                "Download All Albums in Playlist",
-                lambda: self.thread_it(self.on_download_all_albums_from_playlist, point),
-            )
-            menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_lists_user, point))
-
-        menu.exec(self.tr_lists_user.mapToGlobal(point))
-
     def menu_context_tree_results(self, point: QtCore.QPoint) -> None:
         """Show context menu for results tree.
 
@@ -699,169 +620,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
-
-    def menu_context_queue_download(self, point: QtCore.QPoint) -> None:
-        """Show context menu for download queue.
-
-        Args:
-            point (QPoint): The point where the menu is requested.
-        """
-        # Get the item at this point
-        item = self.tr_queue_download.itemAt(point)
-
-        if not item:
-            return
-
-        # Build the menu
-        menu = QtWidgets.QMenu()
-
-        # Show remove option for waiting items
-        status = item.text(0)
-        if status == QueueDownloadStatus.Waiting:
-            menu.addAction("🗑️ Remove from Queue", lambda: self.on_queue_download_remove_item(item))
-
-        if menu.isEmpty():
-            return
-
-        menu.exec(self.tr_queue_download.mapToGlobal(point))
-
-    def on_queue_download_remove_item(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Remove a specific item from the download queue.
-
-        Args:
-            item (QTreeWidgetItem): The item to remove.
-        """
-        index = self.tr_queue_download.indexOfTopLevelItem(item)
-        if index >= 0:
-            self.tr_queue_download.takeTopLevelItem(index)
-            logger_gui.info("Removed item from download queue")
-
-    def on_mark_track_as_downloaded(self, track: Track, index: QtCore.QModelIndex) -> None:
-        """Mark a track as downloaded in history.
-
-        Args:
-            track (Track): The track to mark.
-            index (QModelIndex): The model index of the track.
-        """
-        track_id = str(track.id)
-
-        # Determine source information (manual for now)
-        source_type = "manual"
-        source_id = None
-        source_name = None
-
-        # Try to get album information if available
-        if hasattr(track, "album") and track.album:
-            source_type = "album"
-            source_id = str(track.album.id)
-            source_name = track.album.name
-
-        self.history_service.add_track_to_history(
-            track_id=track_id, source_type=source_type, source_id=source_id, source_name=source_name
-        )
-
-        # Update the UI - refresh the downloaded column
-        self._update_downloaded_column(index, True)
-        logger_gui.info(f"Marked track as downloaded: {track.name}")
-
-    def on_mark_track_as_not_downloaded(self, track_id: str, index: QtCore.QModelIndex) -> None:
-        """Remove a track from download history.
-
-        Args:
-            track_id (str): The track ID to remove.
-            index (QModelIndex): The model index of the track.
-        """
-        success = self.history_service.remove_track_from_history(track_id)
-
-        if success:
-            # Update the UI - refresh the downloaded column
-            self._update_downloaded_column(index, False)
-            logger_gui.info(f"Unmarked track (ID: {track_id})")
-
-    def _update_downloaded_column(self, index: QtCore.QModelIndex, is_downloaded: bool) -> None:
-        """Update the Downloaded? column for a specific index.
-
-        Args:
-            index (QModelIndex): The model index of the item.
-            is_downloaded (bool): Whether the track is downloaded.
-        """
-        # Get the source index (column 0)
-        source_index = self.proxy_tr_results.mapToSource(index)
-
-        # Get the item from the model
-        item = self.model_tr_results.itemFromIndex(source_index)
-        if not item:
-            return
-
-        # Get the parent row (the row contains all columns)
-        row = item.row()
-        parent = item.parent()
-
-        # Column 8 is "Downloaded?"
-        downloaded_item = self.model_tr_results.item(row, 8) if parent is None else parent.child(row, 8)
-
-        if downloaded_item:
-            if is_downloaded:
-                downloaded_item.setText("✅")
-                downloaded_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            else:
-                downloaded_item.setText("")
-
-    def thread_download_list_media(self, point: QtCore.QPoint) -> None:
-        """Start download of a list media item in a thread.
-
-        Args:
-            point (QPoint): The point in the tree.
-        """
-        self.thread_it(self.on_download_list_media, point)
-
-    def on_download_all_albums_from_playlist(self, point: QtCore.QPoint) -> None:
-        """Download all unique albums from tracks in a playlist.
-
-        Args:
-            point (QPoint): The point in the tree where the playlist was right-clicked.
-        """
-        try:
-            # Get and validate the playlist
-            item = self.tr_lists_user.itemAt(point)
-            media_list = get_user_list_media_item(item)
-
-            if not isinstance(media_list, Playlist | UserPlaylist | Mix):
-                logger_gui.error("Please select a playlist or mix.")
-                return
-
-            # Get all items from the playlist
-            logger_gui.info(f"Fetching all tracks from: {media_list.name}")
-            media_items = items_results_all(media_list)
-
-            # Extract unique album IDs from tracks
-            album_ids = self._extract_album_ids_from_tracks(media_items)
-
-            if not album_ids:
-                logger_gui.warning("No albums found in this playlist.")
-                return
-
-            logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
-
-            # Load albums with rate limiting
-            albums_dict = self._load_albums_with_rate_limiting(album_ids)
-
-            if not albums_dict:
-                logger_gui.error("Failed to load any albums from playlist.")
-                return
-
-            # Prepare and queue albums
-            self._queue_loaded_albums(albums_dict)
-
-            # Show confirmation
-            message = f"Added {len(albums_dict)} albums to download queue"
-            self.s_statusbar_message.emit(StatusbarMessage(message=message, timeout=3000))
-            logger_gui.info(message)
-
-        except Exception as e:
-            error_msg = f"Error downloading albums from playlist: {e!s}"
-            logger_gui.error(error_msg)
-            self.s_statusbar_message.emit(StatusbarMessage(message=error_msg, timeout=3000))
 
     def _extract_album_ids_from_tracks(self, media_items: list) -> dict[int, Album]:
         """Extract unique album IDs from a list of media items.
@@ -909,7 +667,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             try:
                 # Add delay every N albums to avoid rate limiting
                 if idx > 1 and (idx - 1) % batch_size == 0:
-                    logger_gui.info(f"🛑 RATE LIMITING: Processed {idx - 1} albums, pausing for {delay_sec} seconds...")
+                    logger_gui.info(
+                        f"ðY>' RATE LIMITING: Processed {idx - 1} albums, pausing for {delay_sec} seconds..."
+                    )
                     time.sleep(delay_sec)
 
                 # Check session validity before making API calls
@@ -966,7 +726,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         queue_items = []
         for album in albums_dict.values():
-            queue_dl_item = self.media_to_queue_download_model(album)
+            queue_dl_item = self.queue_manager.media_to_queue_download_model(album)
             if queue_dl_item:
                 queue_items.append((queue_dl_item, album))
                 logger_gui.debug(f"Prepared: {name_builder_artist(album)} - {album.name}")
@@ -974,7 +734,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Add all items to queue
         logger_gui.info(f"Adding {len(queue_items)} albums to queue...")
         for queue_dl_item, album in queue_items:
-            self.queue_download_media(queue_dl_item)
+            self.queue_manager.queue_download_media(queue_dl_item)
             logger_gui.info(f"Added: {name_builder_artist(album)} - {album.name}")
 
     def on_copy_url_share(
@@ -1001,304 +761,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         clipboard.clear()
         clipboard.setText(url_share)
-
-    def on_download_list_media(self, point: QtCore.QPoint | None = None) -> None:
-        """Download all media items in a selected list.
-
-        Args:
-            point (QPoint | None, optional): The point in the tree. Defaults to None.
-        """
-        items: list[QtWidgets.QTreeWidgetItem] = []
-
-        if point:
-            items = [self.tr_lists_user.itemAt(point)]
-        else:
-            items = self.tr_lists_user.selectedItems()
-
-            if len(items) == 0:
-                logger_gui.error("Please select a mix or playlist first.")
-
-        for item in items:
-            media = get_user_list_media_item(item)
-            queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(media)
-
-            if queue_dl_item:
-                self.queue_download_media(queue_dl_item)
-
-    def on_download_folder_playlists(self, point: QtCore.QPoint) -> None:
-        """Download all playlists in a folder.
-
-        Args:
-            point (QPoint): The point in the tree where the folder was right-clicked.
-        """
-        try:
-            # Get and validate the folder
-            item = self.tr_lists_user.itemAt(point)
-            media = get_user_list_media_item(item)
-
-            if not isinstance(media, Folder):
-                logger_gui.error("Please select a folder.")
-                return
-
-            # Fetch all playlists in the folder
-            logger_gui.info(f"Fetching playlists from folder: {media.name}")
-            playlists = self._get_folder_playlists(media)
-
-            if not playlists:
-                logger_gui.info(f"No playlists found in folder: {media.name}")
-                return
-
-            # Queue each playlist for download
-            logger_gui.info(f"Queueing {len(playlists)} playlists from folder: {media.name}")
-
-            for playlist in playlists:
-                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(playlist)
-
-                if queue_dl_item:
-                    self.queue_download_media(queue_dl_item)
-
-            logger_gui.info(f"✅ Successfully queued {len(playlists)} playlists from folder: {media.name}")
-
-        except Exception as e:
-            logger_gui.exception(f"Error downloading playlists from folder: {e}")
-            logger_gui.error("Failed to download playlists from folder. See log for details.")
-
-    def on_download_folder_albums(self, point: QtCore.QPoint) -> None:
-        """Download all unique albums from all playlists in a folder.
-
-        Args:
-            point (QPoint): The point in the tree where the folder was right-clicked.
-        """
-        try:
-            # Get and validate the folder
-            item = self.tr_lists_user.itemAt(point)
-            media = get_user_list_media_item(item)
-
-            if not isinstance(media, Folder):
-                logger_gui.error("Please select a folder.")
-                return
-
-            # Fetch all playlists in the folder
-            logger_gui.info(f"Fetching playlists from folder: {media.name}")
-            playlists = self._get_folder_playlists(media)
-
-            if not playlists:
-                logger_gui.info(f"No playlists found in folder: {media.name}")
-                return
-
-            logger_gui.info(f"Found {len(playlists)} playlists in folder: {media.name}")
-
-            # Collect all tracks from all playlists
-            all_tracks: list[Track] = []
-
-            for playlist in playlists:
-                try:
-                    tracks = self._get_playlist_tracks(playlist)
-                    all_tracks.extend(tracks)
-                    logger_gui.debug(f"Collected {len(tracks)} tracks from playlist: {playlist.name}")
-                except Exception as e:
-                    logger_gui.error(f"Error getting tracks from playlist '{playlist.name}': {e}")
-                    continue
-
-            if not all_tracks:
-                logger_gui.info(f"No tracks found in folder playlists: {media.name}")
-                return
-
-            logger_gui.info(f"Collected {len(all_tracks)} total tracks from all playlists")
-
-            # Extract unique album IDs
-            album_ids = self._extract_album_ids_from_tracks(all_tracks)
-            logger_gui.info(f"Found {len(album_ids)} unique albums across all playlists in folder: {media.name}")
-
-            if not album_ids:
-                logger_gui.info("No albums found to download.")
-                return
-
-            # Load full album objects with rate limiting
-            albums_dict = self._load_albums_with_rate_limiting(album_ids)
-
-            if not albums_dict:
-                logger_gui.error("Failed to load any albums.")
-                return
-
-            # Queue the albums for download
-            self._queue_loaded_albums(albums_dict)
-
-            logger_gui.info(f"✅ Successfully queued {len(albums_dict)} unique albums from folder: {media.name}")
-
-        except Exception as e:
-            logger_gui.exception(f"Error downloading albums from folder: {e}")
-            logger_gui.error("Failed to download albums from folder. See log for details.")
-
-    def on_download_favorites(self, point: QtCore.QPoint) -> None:
-        """Download all items from a Favorites category.
-
-        Args:
-            point (QPoint): The point in the tree where the favorites item was right-clicked.
-        """
-        try:
-            # Get and validate the favorites item
-            item = self.tr_lists_user.itemAt(point)
-            media = get_user_list_media_item(item)
-
-            if not isinstance(media, str):
-                logger_gui.error("Please select a favorites category.")
-                return
-
-            # Get the favorites category name for logging
-            favorite_name = FAVORITES.get(media, {}).get("name", media)
-            logger_gui.info(f"Fetching all items from favorites: {favorite_name}")
-
-            # Use the factory to get the appropriate favorites function
-            favorite_function = favorite_function_factory(self.tidal, media)
-
-            # Fetch all items from this favorites category
-            media_items = favorite_function()
-
-            if not media_items:
-                logger_gui.info(f"No items found in favorites: {favorite_name}")
-                return
-
-            logger_gui.info(f"Found {len(media_items)} items in favorites: {favorite_name}")
-
-            # Queue each item for download
-            queued_count = 0
-
-            for media_item in media_items:
-                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(media_item)
-
-                if queue_dl_item:
-                    self.queue_download_media(queue_dl_item)
-                    queued_count += 1
-
-            logger_gui.info(f"✅ Successfully queued {queued_count} items from favorites: {favorite_name}")
-
-        except Exception as e:
-            logger_gui.exception(f"Error downloading favorites: {e}")
-            logger_gui.error("Failed to download favorites. See log for details.")
-
-    def _download_albums_from_favorites_albums(self, media_items: list, favorite_name: str) -> None:
-        """Download albums from favorite albums list.
-
-        Args:
-            media_items (list): List of favorite albums.
-            favorite_name (str): Name of the favorites category for logging.
-        """
-        logger_gui.info(f"Queueing {len(media_items)} albums from favorites: {favorite_name}")
-        albums_dict = {album.id: album for album in media_items if isinstance(album, Album) and album.id}
-        self._queue_loaded_albums(albums_dict)
-        logger_gui.info(f"✅ Successfully queued {len(albums_dict)} albums from favorites: {favorite_name}")
-
-    def _download_albums_from_favorites_artists(self, media_items: list, favorite_name: str) -> None:
-        """Download albums from favorite artists list.
-
-        Args:
-            media_items (list): List of favorite artists.
-            favorite_name (str): Name of the favorites category for logging.
-        """
-        logger_gui.info(f"Fetching albums from {len(media_items)} artists...")
-        all_albums = {}
-
-        for artist in media_items:
-            if isinstance(artist, Artist):
-                try:
-                    artist_albums = items_results_all(artist)
-                    for album in artist_albums:
-                        if isinstance(album, Album) and album.id:
-                            all_albums[album.id] = album
-                    logger_gui.debug(f"Found {len(artist_albums)} albums from artist: {artist.name}")
-                except Exception as e:
-                    logger_gui.error(f"Error getting albums from artist '{artist.name}': {e}")
-                    continue
-
-        if not all_albums:
-            logger_gui.info("No albums found from favorite artists.")
-            return
-
-        logger_gui.info(f"Found {len(all_albums)} unique albums from favorite artists")
-        self._queue_loaded_albums(all_albums)
-        logger_gui.info(f"✅ Successfully queued {len(all_albums)} albums from favorites: {favorite_name}")
-
-    def _download_albums_from_favorites_tracks(self, media_items: list, favorite_name: str) -> None:
-        """Download albums from favorite tracks/videos/mixes list.
-
-        Args:
-            media_items (list): List of favorite tracks/videos/mixes.
-            favorite_name (str): Name of the favorites category for logging.
-        """
-        logger_gui.info("Extracting albums from tracks...")
-        album_ids = self._extract_album_ids_from_tracks(media_items)
-
-        if not album_ids:
-            logger_gui.info(f"No albums found in favorites: {favorite_name}")
-            return
-
-        logger_gui.info(f"Found {len(album_ids)} unique albums. Loading with rate limiting...")
-
-        # Load full album objects with rate limiting
-        albums_dict = self._load_albums_with_rate_limiting(album_ids)
-
-        if not albums_dict:
-            logger_gui.error("Failed to load any albums from favorites.")
-            return
-
-        # Queue the albums for download
-        self._queue_loaded_albums(albums_dict)
-        logger_gui.info(f"✅ Successfully queued {len(albums_dict)} unique albums from favorites: {favorite_name}")
-
-    def on_download_albums_from_favorites(self, point: QtCore.QPoint) -> None:
-        """Download all unique albums from items in a Favorites category.
-
-        Args:
-            point (QPoint): The point in the tree where the favorites item was right-clicked.
-        """
-        try:
-            # Get and validate the favorites item
-            item = self.tr_lists_user.itemAt(point)
-            media = get_user_list_media_item(item)
-
-            if not isinstance(media, str):
-                logger_gui.error("Please select a favorites category.")
-                return
-
-            # Get the favorites category name for logging
-            favorite_name = FAVORITES.get(media, {}).get("name", media)
-            logger_gui.info(f"Fetching all items from favorites: {favorite_name}")
-
-            # Use the factory to get the appropriate favorites function
-            favorite_function = favorite_function_factory(self.tidal, media)
-
-            # Fetch all items from this favorites category
-            media_items = favorite_function()
-
-            if not media_items:
-                logger_gui.info(f"No items found in favorites: {favorite_name}")
-                return
-
-            logger_gui.info(f"Found {len(media_items)} items in favorites: {favorite_name}")
-
-            # Delegate to appropriate handler based on favorites type
-            if media == "fav_albums":
-                self._download_albums_from_favorites_albums(media_items, favorite_name)
-            elif media == "fav_artists":
-                self._download_albums_from_favorites_artists(media_items, favorite_name)
-            else:
-                self._download_albums_from_favorites_tracks(media_items, favorite_name)
-
-        except Exception as e:
-            logger_gui.exception(f"Error downloading albums from favorites: {e}")
-            logger_gui.error("Failed to download albums from favorites. See log for details.")
-
-    def search_populate_results(self, query: str, type_media: Any) -> None:
-        """Populate the results tree with search results.
-
-        Args:
-            query (str): The search query.
-            type_media (SearchTypes): The type of media to search for.
-        """
-        results: list[ResultItem] = self.search(query, [type_media])
-
-        self.populate_tree_results(results)
 
     def populate_tree_results(self, results: list[ResultItem], parent: QtGui.QStandardItem | None = None) -> None:
         """Populate the results tree with ResultItem objects.
@@ -1400,387 +862,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.apply_settings(self.settings)
         self._init_dl()
 
-    def search(self, query: str, types_media: list[Any]) -> list[ResultItem]:
-        """Perform a search and return a list of ResultItems.
-
-        Args:
-            query (str): The search query.
-            types_media (list[Any]): The types of media to search for.
-
-        Returns:
-            list[ResultItem]: The search results.
-        """
-        query_clean: str = query.strip()
-
-        # If a direct link was searched for, skip search and create the object from the link directly.
-        if "http" in query_clean:
-            query_clean: str = url_ending_clean(query_clean)
-            media_type = get_tidal_media_type(query_clean)
-            item_id = get_tidal_media_id(query_clean)
-
-            try:
-                media = instantiate_media(self.tidal.session, media_type, item_id)
-            except:
-                logger_gui.error(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
-
-                media = None
-
-            result_search = {"direct": [media]}
-        else:
-            result_search: dict[str, list[SearchTypes]] = search_results_all(
-                session=self.tidal.session, needle=query_clean, types_media=types_media
-            )
-
-        result: list[ResultItem] = []
-
-        for _media_type, l_media in result_search.items():
-            if isinstance(l_media, list):
-                result = result + self.search_result_to_model(l_media)
-
-        return result
-
-    def search_result_to_model(self, items: list[SearchTypes]) -> list[ResultItem]:
-        """Convert search results to ResultItem models.
-
-        Args:
-            items (list[SearchTypes]): List of search result items.
-
-        Returns:
-            list[ResultItem]: List of ResultItem models.
-        """
-        result: list[ResultItem] = []
-
-        for idx, item in enumerate(items):
-            result_item = self._to_result_item(idx, item)
-
-            if result_item is not None:
-                result.append(result_item)
-
-        return result
-
-    def _to_result_item(self, idx: int, item) -> ResultItem | None:
-        """Helper to convert a single item to ResultItem, or None if not valid.
-
-        Args:
-            idx (int): Index of the item.
-            item: The item to convert.
-
-        Returns:
-            ResultItem | None: The converted ResultItem or None if not valid.
-        """
-        if not item or (hasattr(item, "available") and not item.available):
-            return None
-
-        # Prepare common data
-        explicit = " 🅴" if isinstance(item, Track | Video | Album) and item.explicit else ""
-        date_user_added = (
-            item.user_date_added.strftime("%Y-%m-%d_%H:%M") if getattr(item, "user_date_added", None) else ""
-        )
-        date_release = self._get_date_release(item)
-
-        # Map item types to their conversion methods
-        type_handlers = {
-            Track: lambda: self._result_item_from_track(idx, item, explicit, date_user_added, date_release),
-            Video: lambda: self._result_item_from_video(idx, item, explicit, date_user_added, date_release),
-            Playlist: lambda: self._result_item_from_playlist(idx, item, date_user_added, date_release),
-            Album: lambda: self._result_item_from_album(idx, item, explicit, date_user_added, date_release),
-            Mix: lambda: self._result_item_from_mix(idx, item, date_user_added, date_release),
-            Artist: lambda: self._result_item_from_artist(idx, item, date_user_added, date_release),
-            Folder: lambda: self._result_item_from_folder(idx, item, date_user_added),
-        }
-
-        # Find and execute the appropriate handler
-        for item_type, handler in type_handlers.items():
-            if isinstance(item, item_type):
-                return handler()
-
-        return None
-
-    def _get_date_release(self, item) -> str:
-        """Get the release date string for an item.
-
-        Args:
-            item: The item to extract the release date from.
-
-        Returns:
-            str: The formatted release date or empty string.
-        """
-        if hasattr(item, "album") and item.album and getattr(item.album, "release_date", None):
-            return item.album.release_date.strftime("%Y-%m-%d_%H:%M")
-
-        if hasattr(item, "release_date") and item.release_date:
-            return item.release_date.strftime("%Y-%m-%d_%H:%M")
-
-        return ""
-
-    def _result_item_from_track(
-        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
-    ) -> ResultItem:
-        """Create a ResultItem from a Track.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Track item.
-            explicit (str): Explicit tag.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-
-        final_quality = quality_audio_highest(item)
-        if hasattr(item, "audio_modes") and AudioMode.dolby_atmos.value in item.audio_modes:
-            final_quality = f"{final_quality} / Dolby Atmos"
-
-        return ResultItem(
-            position=idx,
-            artist=name_builder_artist(item),
-            title=f"{name_builder_title(item)}{explicit}",
-            album=item.album.name,
-            duration_sec=item.duration,
-            obj=item,
-            quality=final_quality,
-            explicit=bool(item.explicit),
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_video(
-        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
-    ) -> ResultItem:
-        """Create a ResultItem from a Video.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Video item.
-            explicit (str): Explicit tag.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        return ResultItem(
-            position=idx,
-            artist=name_builder_artist(item),
-            title=f"{name_builder_title(item)}{explicit}",
-            album=item.album.name if item.album else "",
-            duration_sec=item.duration,
-            obj=item,
-            quality=item.video_quality,
-            explicit=bool(item.explicit),
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_playlist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
-        """Create a ResultItem from a Playlist.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Playlist item.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        return ResultItem(
-            position=idx,
-            artist=", ".join(artist.name for artist in item.promoted_artists) if item.promoted_artists else "",
-            title=item.name,
-            album="",
-            duration_sec=item.duration,
-            obj=item,
-            quality="",
-            explicit=False,
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_album(
-        self, idx: int, item, explicit: str, date_user_added: str, date_release: str
-    ) -> ResultItem:
-        """Create a ResultItem from an Album.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Album item.
-            explicit (str): Explicit tag.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        return ResultItem(
-            position=idx,
-            artist=name_builder_artist(item),
-            title="",
-            album=f"{item.name}{explicit}",
-            duration_sec=item.duration,
-            obj=item,
-            quality=quality_audio_highest(item),
-            explicit=bool(item.explicit),
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_mix(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
-        """Create a ResultItem from a Mix.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Mix item.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        return ResultItem(
-            position=idx,
-            artist=item.sub_title,
-            title=item.title,
-            album="",
-            duration_sec=-1,  # TODO: Calculate total duration.
-            obj=item,
-            quality="",
-            explicit=False,
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_artist(self, idx: int, item, date_user_added: str, date_release: str) -> ResultItem:
-        """Create a ResultItem from an Artist.
-
-        Args:
-            idx (int): Index of the item.
-            item: The Artist item.
-            date_user_added (str): Date user added.
-            date_release (str): Release date.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        return ResultItem(
-            position=idx,
-            artist=item.name,
-            title="",
-            album="",
-            duration_sec=-1,
-            obj=item,
-            quality="",
-            explicit=False,
-            date_user_added=date_user_added,
-            date_release=date_release,
-        )
-
-    def _result_item_from_folder(self, idx: int, item: Folder, date_user_added: str) -> ResultItem:
-        """Create a ResultItem from a Folder.
-
-        Args:
-            idx (int): Index of the item.
-            item (Folder): The Folder item.
-            date_user_added (str): Date user added.
-
-        Returns:
-            ResultItem: The constructed ResultItem.
-        """
-        total_items: int = item.total_number_of_items if hasattr(item, "total_number_of_items") else 0
-        return ResultItem(
-            position=idx,
-            artist="",
-            title=f"📁 {item.name} ({total_items} items)",
-            album="",
-            duration_sec=-1,
-            obj=item,
-            quality="",
-            explicit=False,
-            date_user_added=date_user_added,
-            date_release="",
-        )
-
-    def media_to_queue_download_model(
-        self, media: Artist | Track | Video | Album | Playlist | Mix
-    ) -> QueueDownloadItem | bool:
-        """Convert a media object to a QueueDownloadItem for the download queue.
-
-        Args:
-            media (Artist | Track | Video | Album | Playlist | Mix): The media object.
-
-        Returns:
-            QueueDownloadItem | bool: The queue item or False if not available.
-        """
-        result: QueueDownloadItem | False
-        name: str = ""
-        quality_audio: Quality = self.settings.data.quality_audio
-        quality_video: QualityVideo = self.settings.data.quality_video
-        explicit: str = ""
-
-        # Check if item is available on TIDAL.
-        # Note: Some albums have available=None, which should be treated as available
-        if hasattr(media, "available") and media.available is False:
-            return False
-
-        # Set "Explicit" tag
-        if isinstance(media, Track | Video | Album):
-            explicit = " 🅴" if media.explicit else ""
-
-        # Build name and set quality
-        if isinstance(media, Track | Video):
-            name = f"{name_builder_artist(media)} - {name_builder_title(media)}{explicit}"
-        elif isinstance(media, Playlist | Artist):
-            name = media.name
-        elif isinstance(media, Album):
-            name = f"{name_builder_artist(media)} - {media.name}{explicit}"
-        elif isinstance(media, Mix):
-            name = media.title
-
-        # Determine actual quality.
-        if isinstance(media, Track | Album):
-            quality_highest: Quality = quality_audio_highest(media)
-
-            if (
-                self.settings.data.quality_audio == quality_highest
-                or self.settings.data.quality_audio == Quality.hi_res_lossless
-            ):
-                quality_audio = quality_highest
-
-        if name:
-            result = QueueDownloadItem(
-                name=name,
-                quality_audio=quality_audio,
-                quality_video=quality_video,
-                type_media=type(media).__name__,
-                status=QueueDownloadStatus.Waiting,
-                obj=media,
-            )
-        else:
-            result = False
-
-        return result
-
     def _init_signals(self) -> None:
         """Connect signals to their respective slots."""
         self.pb_download.clicked.connect(lambda: self.thread_it(self.on_download_results))
-        self.pb_download_list.clicked.connect(lambda: self.thread_it(self.on_download_list_media))
-        self.pb_reload_user_lists.clicked.connect(lambda: self.thread_it(self.tidal_user_lists))
-        self.pb_queue_download_clear_all.clicked.connect(self.on_queue_download_clear_all)
-        self.pb_queue_download_clear_finished.clicked.connect(self.on_queue_download_clear_finished)
-        self.pb_queue_download_remove.clicked.connect(self.on_queue_download_remove)
-        self.pb_queue_download_toggle.clicked.connect(self.on_pb_queue_download_toggle)
+        self.pb_download_list.clicked.connect(lambda: self.thread_it(self.playlist_manager.on_download_list_media))
         self.l_search.returnPressed.connect(
-            lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
+            lambda: self.search_manager.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
         self.pb_search.clicked.connect(
-            lambda: self.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
+            lambda: self.search_manager.search_populate_results(self.l_search.text(), self.cb_search_type.currentData())
         )
         self.cb_quality_audio.currentIndexChanged.connect(self.on_quality_set_audio)
         self.cb_quality_video.currentIndexChanged.connect(self.on_quality_set_video)
-        self.tr_lists_user.itemClicked.connect(self.on_list_items_show)
-        self.tr_lists_user.itemExpanded.connect(self.on_tr_lists_user_expanded)
         self.s_spinner_start[QtWidgets.QWidget].connect(self.on_spinner_start)
         self.s_spinner_stop.connect(self.on_spinner_stop)
         self.s_item_advance.connect(self.on_progress_item)
@@ -1788,8 +881,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.s_list_name.connect(self.on_progress_list_name)
         self.s_list_advance.connect(self.on_progress_list)
         self.s_pb_reset.connect(self.on_progress_reset)
-        self.s_populate_tree_lists.connect(self.on_populate_tree_lists)
-        self.s_populate_folder_children.connect(self.on_populate_folder_children)
         self.s_statusbar_message.connect(self.on_statusbar_message)
         self.s_tr_results_add_top_level_item.connect(self.on_tr_results_add_top_level_item)
         self.s_settings_save.connect(self.on_settings_save)
@@ -1809,16 +900,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tr_results.clicked.connect(self.on_result_item_clicked)
         self.tr_results.doubleClicked.connect(lambda: self.thread_it(self.on_download_results))
 
-        # Download Queue
-        self.tr_queue_download.itemClicked.connect(self.on_queue_download_item_clicked)
-        self.s_queue_download_item_downloading.connect(self.on_queue_download_item_downloading)
-        self.s_queue_download_item_finished.connect(self.on_queue_download_item_finished)
-        self.s_queue_download_item_failed.connect(self.on_queue_download_item_failed)
-        self.s_queue_download_item_skipped.connect(self.on_queue_download_item_skipped)
-
-    def _init_buttons(self) -> None:
-        """Initialize the state of the download buttons."""
-        self.pb_queue_download_run()
+        # Managers
+        self.queue_manager.connect_signals()
+        self.playlist_manager.connect_signals()
 
     def on_logout(self) -> None:
         """Log out from TIDAL and close the application."""
@@ -1885,206 +969,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if self.tidal:
             self.tidal.settings_apply()
 
-    def on_tr_lists_user_expanded(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Handle expansion of folders in the user lists tree.
-
-        Args:
-            item (QTreeWidgetItem): The expanded tree item.
-        """
-        # Check if it's a first-time expansion (has disabled dummy child)
-        if item.childCount() > 0 and item.child(0).isDisabled():
-            # Run in thread to avoid blocking UI
-            self.thread_it(self.tr_lists_user_load_folder_children, item)
-
-    def tr_lists_user_load_folder_children(self, parent_item: QtWidgets.QTreeWidgetItem) -> None:
-        """Load and display children of a folder in the user lists tree.
-
-        Args:
-            parent_item (QTreeWidgetItem): The parent folder item.
-        """
-        folder: Folder | None = get_user_list_media_item(parent_item)
-
-        if not isinstance(folder, Folder):
-            return
-
-        # Show spinner while loading
-        self.s_spinner_start.emit(self.tr_lists_user)
-
-        try:
-            # Fetch folder contents
-            folders, playlists = self._fetch_folder_contents(folder)
-
-            # Emit signal to populate in main thread
-            self.s_populate_folder_children.emit(parent_item, folders, playlists)
-
-        finally:
-            self.s_spinner_stop.emit()
-
-    def on_populate_folder_children(
-        self, parent_item: QtWidgets.QTreeWidgetItem, folders: list[Folder], playlists: list[Playlist]
-    ) -> None:
-        """Populate folder children in the main thread (signal handler).
-
-        Args:
-            parent_item (QTreeWidgetItem): The parent folder item.
-            folders (list[Folder]): List of sub-folders.
-            playlists (list[Playlist]): List of playlists.
-        """
-        # Remove dummy child
-        parent_item.takeChild(0)
-
-        # Add sub-folders as children
-        for sub_folder in folders:
-            twi_child = QtWidgets.QTreeWidgetItem(parent_item)
-            twi_child.setText(0, f"📁 {sub_folder.name}")
-            set_user_list_media(twi_child, sub_folder)
-            info = f"({sub_folder.total_number_of_items} items)" if sub_folder.total_number_of_items else ""
-            twi_child.setText(2, info)
-
-            # Add dummy child for potential sub-folders
-            dummy = QtWidgets.QTreeWidgetItem(twi_child)
-            dummy.setDisabled(True)
-
-        # Add playlists as children
-        for playlist in playlists:
-            twi_child = QtWidgets.QTreeWidgetItem(parent_item)
-            name = playlist.name if playlist.name else ""
-            twi_child.setText(0, name)
-            set_user_list_media(twi_child, playlist)
-            info = f"({playlist.num_tracks + playlist.num_videos} Tracks)"
-            if playlist.description:
-                info += f" {playlist.description}"
-            twi_child.setText(2, info)
-
-    def _fetch_folder_contents(self, folder: Folder) -> tuple[list[Folder], list[Playlist]]:
-        """Fetch contents (sub-folders and playlists) of a folder.
-
-        Args:
-            folder (Folder): The folder to fetch contents for.
-
-        Returns:
-            tuple[list[Folder], list[Playlist]]: Sub-folders and playlists within the folder.
-        """
-        folder_id = folder.id if folder.id else "root"
-
-        # Fetch sub-folders with manual pagination
-        offset = 0
-        limit = 50
-        folders = []
-
-        while True:
-            batch = self.tidal.session.user.favorites.playlist_folders(
-                limit=limit, offset=offset, parent_folder_id=folder_id
-            )
-            if not batch:
-                break
-            folders.extend(batch)
-            if len(batch) < limit:
-                break
-            offset += limit
-
-        # Fetch playlists in this folder using folder.items() method
-        offset = 0
-        playlists = []
-
-        while True:
-            batch = folder.items(offset=offset, limit=limit)
-            if not batch:
-                break
-            playlists.extend(batch)
-            if len(batch) < limit:
-                break
-            offset += limit
-
-        return folders, playlists
-
-    def _get_folder_playlists(self, folder: Folder) -> list[Playlist]:
-        """Fetch all playlists from a folder.
-
-        Args:
-            folder (Folder): The folder to fetch playlists from.
-
-        Returns:
-            list[Playlist]: List of playlists in the folder.
-        """
-        # Use existing method to fetch folder contents
-        # Since folders can't contain folders, we ignore the folders return value
-        _, playlists = self._fetch_folder_contents(folder)
-
-        logger_gui.debug(f"Found {len(playlists)} playlists in folder: {folder.name}")
-
-        return playlists
-
-    def _get_playlist_tracks(self, playlist: Playlist | UserPlaylist | Mix) -> list[Track]:
-        """Fetch all tracks from a playlist.
-
-        Args:
-            playlist (Playlist | UserPlaylist | Mix): The playlist to fetch tracks from.
-
-        Returns:
-            list[Track]: List of tracks in the playlist.
-        """
-        playlist_name = getattr(playlist, "name", "unknown")
-        logger_gui.debug(f"Fetching tracks from playlist: {playlist_name}")
-        media_items = items_results_all(playlist)
-
-        # Filter for Track objects only (items_results_all may return Videos too)
-        tracks = [item for item in media_items if isinstance(item, Track)]
-
-        logger_gui.debug(f"Found {len(tracks)} tracks in playlist: {playlist_name}")
-
-        return tracks
-
-    def on_list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Show the items in the selected playlist or mix.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The selected tree widget item.
-        """
-        self.thread_it(self.list_items_show, item)
-
-    def list_items_show(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Fetch and display the items in a playlist, mix, or folder.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The tree widget item representing a playlist, mix, or folder.
-        """
-        media_list: Album | Playlist | Folder | str = get_user_list_media_item(item)
-
-        # Only if clicked item is not a top level item.
-        if media_list:
-            # Show spinner while loading list
-            self.s_spinner_start.emit(self.tr_results)
-            try:
-                if isinstance(media_list, Folder):
-                    # Show folder contents
-                    self._show_folder_contents(media_list)
-                elif isinstance(media_list, str) and media_list.startswith("fav_"):
-                    function_list = favorite_function_factory(self.tidal, media_list)
-                    self.list_items_show_result(favorite_function=function_list)
-                else:
-                    self.list_items_show_result(media_list)
-                    # Load cover asynchronously to avoid blocking the GUI
-                    self.thread_it(self.cover_show, media_list)
-            finally:
-                self.s_spinner_stop.emit()
-
-    def _show_folder_contents(self, folder: Folder) -> None:
-        """Display folder contents (nested playlists/folders) in results pane.
-
-        Args:
-            folder (Folder): The folder to display contents for.
-        """
-        # Fetch folder contents using the shared helper method
-        folders, playlists = self._fetch_folder_contents(folder)
-
-        # Combine folders and playlists
-        items = folders + playlists
-
-        # Convert to ResultItems and display
-        result = self.search_result_to_model(items)
-        self.populate_tree_results(result)
-
     def on_result_item_clicked(self, index: QtCore.QModelIndex) -> None:
         """Handle the event when a result item is clicked.
 
@@ -2095,60 +979,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             index, self.proxy_tr_results, self.model_tr_results
         )
 
-        # Load cover asynchronously to avoid blocking the GUI
-        self.thread_it(self.cover_show, media)
-
-    def on_queue_download_item_clicked(self, item: QtWidgets.QTreeWidgetItem, column: int) -> None:
-        """Handle the event when a queue download item is clicked.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The clicked tree widget item.
-            column (int): The column index of the clicked item.
-        """
-        media: Track | Video | Album | Artist | Mix | Playlist = get_queue_download_media(item)
+        # Update info tab widget with selected media (persists selection)
+        self.info_tab_widget.update_on_selection(media)
 
         # Load cover asynchronously to avoid blocking the GUI
-        self.thread_it(self.cover_show, media)
-
-    def cover_show(self, media: Album | Playlist | Track | Video | Album | Artist) -> None:
-        """Show the cover image of the selected media item.
-
-        Args:
-            media (Album | Playlist | Track | Video | Album | Artist): The media item.
-        """
-        cover_url: str = ""
-        # Show spinner in the cover label itself
-        parent_widget = self.l_pm_cover
-
-        # Show spinner while loading
-        self.s_spinner_start.emit(parent_widget)
-
-        try:
-            try:
-                cover_url = media.album.image()
-            except Exception:
-                # Only call image() if it exists
-                if hasattr(media, "image") and callable(getattr(media, "image", None)):
-                    try:
-                        cover_url = media.image()
-                    except Exception:
-                        logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
-                else:
-                    cover_url = None
-
-                    logger_gui.info(f"No cover available (media ID: {getattr(media, 'id', 'unknown')}).")
-
-            if cover_url and self.cover_url_current != cover_url:
-                self.cover_url_current = cover_url
-                data_cover: bytes = Download.cover_data(cover_url)
-                pixmap: QtGui.QPixmap = QtGui.QPixmap()
-                pixmap.loadFromData(data_cover)
-                self.l_pm_cover.setPixmap(pixmap)
-            elif not cover_url:
-                path_image: str = resource_path("tidal_dl_ng/ui/default_album_image.png")
-                self.l_pm_cover.setPixmap(QtGui.QPixmap(path_image))
-        finally:
-            self.s_spinner_stop.emit()
+        self.thread_it(self.cover_manager.load_cover, media)
 
     def list_items_show_result(
         self,
@@ -2176,9 +1011,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             media_items: list[Track | Video | Album] = favorite_function()
         else:
-            media_items: list[Track | Video | Album] = items_results_all(media_list)
+            media_items: list[Track | Video | Album] = items_results_all(self.tidal.session, media_list)
 
-        result: list[ResultItem] = self.search_result_to_model(media_items)
+        result: list[ResultItem] = self.search_manager.search_result_to_model(media_items)
 
         self.populate_tree_results(result, parent=parent)
 
@@ -2196,76 +1031,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Execute
         self.threadpool.start(worker)
 
-    def on_queue_download_clear_all(self) -> None:
-        """Clear all items from the download queue."""
-        self.on_clear_queue_download(
-            f"({QueueDownloadStatus.Waiting}|{QueueDownloadStatus.Finished}|{QueueDownloadStatus.Failed})"
-        )
-
-    def on_queue_download_clear_finished(self) -> None:
-        """Clear finished items from the download queue."""
-        self.on_clear_queue_download(f"[{QueueDownloadStatus.Finished}]")
-
-    def on_clear_queue_download(self, regex: str) -> None:
-        """Clear items from the download queue matching the given regex.
-
-        Args:
-            regex (str): Regular expression to match items.
-        """
-        items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
-            regex, QtCore.Qt.MatchFlag.MatchRegularExpression, column=0
-        )
-
-        for item in items:
-            self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
-
-    def on_queue_download_remove(self) -> None:
-        """Remove selected items from the download queue."""
-        items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.selectedItems()
-
-        if len(items) == 0:
-            logger_gui.error("Please select an item from the queue first.")
-        else:
-            for item in items:
-                status: str = item.text(0)
-
-                if status != QueueDownloadStatus.Downloading:
-                    self.tr_queue_download.takeTopLevelItem(self.tr_queue_download.indexOfTopLevelItem(item))
-                else:
-                    logger_gui.info("Cannot remove a currently downloading item from queue.")
-
-    def on_pb_queue_download_toggle(self) -> None:
-        """Toggle download status (pause / resume) accordingly.
-
-        :return: None
-        """
-        handling_app: HandlingApp = HandlingApp()
-
-        if handling_app.event_run.is_set():
-            self.pb_queue_download_pause()
-        else:
-            self.pb_queue_download_run()
-
-    def pb_queue_download_run(self) -> None:
-        """Start the download queue and update the button state."""
-        handling_app: HandlingApp = HandlingApp()
-
-        handling_app.event_run.set()
-
-        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackPause))
-        self.pb_queue_download_toggle.setIcon(icon)
-        self.pb_queue_download_toggle.setStyleSheet("background-color: #e0a800; color: #212529")
-
-    def pb_queue_download_pause(self) -> None:
-        """Pause the download queue and update the button state."""
-        handling_app: HandlingApp = HandlingApp()
-
-        handling_app.event_run.clear()
-
-        icon = QtGui.QIcon(QtGui.QIcon.fromTheme(QtGui.QIcon.ThemeIcon.MediaPlaybackStart))
-        self.pb_queue_download_toggle.setIcon(icon)
-        self.pb_queue_download_toggle.setStyleSheet("background-color: #218838; color: #fff")
-
     # TODO: Must happen in main thread. Do not thread this.
     def on_download_results(self) -> None:
         """Download the selected results in the results tree."""
@@ -2278,230 +1043,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 media: Track | Album | Playlist | Video | Artist = get_results_media_item(
                     item, self.proxy_tr_results, self.model_tr_results
                 )
-                queue_dl_item: QueueDownloadItem = self.media_to_queue_download_model(media)
+                queue_dl_item = self.queue_manager.media_to_queue_download_model(media)
 
                 if queue_dl_item:
-                    self.queue_download_media(queue_dl_item)
-
-    def queue_download_media(self, queue_dl_item: QueueDownloadItem) -> None:
-        """Add a media item to the download queue.
-
-        Args:
-            queue_dl_item (QueueDownloadItem): The item to add to the queue.
-        """
-        # Populate child
-        child: QtWidgets.QTreeWidgetItem = QtWidgets.QTreeWidgetItem()
-
-        child.setText(0, queue_dl_item.status)
-        set_queue_download_media(child, queue_dl_item.obj)
-        child.setText(2, queue_dl_item.name)
-        child.setText(3, queue_dl_item.type_media)
-        child.setText(4, queue_dl_item.quality_audio)
-        child.setText(5, queue_dl_item.quality_video)
-        self.tr_queue_download.addTopLevelItem(child)
-
-    def watcher_queue_download(self) -> None:
-        """Monitor the download queue and process items as they become available."""
-        handling_app: HandlingApp = HandlingApp()
-
-        while not handling_app.event_abort.is_set():
-            items: list[QtWidgets.QTreeWidgetItem | None] = self.tr_queue_download.findItems(
-                QueueDownloadStatus.Waiting, QtCore.Qt.MatchFlag.MatchExactly, column=0
-            )
-
-            if len(items) > 0:
-                result: QueueDownloadStatus
-                item: QtWidgets.QTreeWidgetItem = items[0]
-                media: Track | Album | Playlist | Video | Mix | Artist = get_queue_download_media(item)
-                quality_audio: Quality = get_queue_download_quality_audio(item)
-                quality_video: QualityVideo = get_queue_download_quality_video(item)
-
-                try:
-                    self.s_queue_download_item_downloading.emit(item)
-                    result = self.on_queue_download(media, quality_audio=quality_audio, quality_video=quality_video)
-
-                    if result == QueueDownloadStatus.Finished:
-                        self.s_queue_download_item_finished.emit(item)
-                    elif result == QueueDownloadStatus.Skipped:
-                        self.s_queue_download_item_skipped.emit(item)
-                except Exception as e:
-                    logger_gui.error(e)
-                    self.s_queue_download_item_failed.emit(item)
-            else:
-                time.sleep(2)
-
-    def on_queue_download_item_downloading(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Update the status of a queue download item to 'Downloading'.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
-        """
-        self.queue_download_item_status(item, QueueDownloadStatus.Downloading)
-
-    def on_queue_download_item_finished(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Update the status of a queue download item to 'Finished'.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
-        """
-        self.queue_download_item_status(item, QueueDownloadStatus.Finished)
-
-    def on_queue_download_item_failed(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Update the status of a queue download item to 'Failed'.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
-        """
-        self.queue_download_item_status(item, QueueDownloadStatus.Failed)
-
-    def on_queue_download_item_skipped(self, item: QtWidgets.QTreeWidgetItem) -> None:
-        """Update the status of a queue download item to 'Skipped'.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
-        """
-        self.queue_download_item_status(item, QueueDownloadStatus.Skipped)
-
-    def queue_download_item_status(self, item: QtWidgets.QTreeWidgetItem, status: str) -> None:
-        """Set the status text of a queue download item.
-
-        Args:
-            item (QtWidgets.QTreeWidgetItem): The item to update.
-            status (str): The status text.
-        """
-        item.setText(0, status)
-
-    def on_queue_download(
-        self,
-        media: Track | Album | Playlist | Video | Mix | Artist,
-        quality_audio: Quality | None = None,
-        quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download the specified media item(s) and return the result status.
-
-        Args:
-            media (Track | Album | Playlist | Video | Mix | Artist): The media item(s) to download.
-            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
-            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
-
-        Returns:
-            QueueDownloadStatus: The status of the download operation.
-        """
-        result: QueueDownloadStatus
-        items_media: [Track | Album | Playlist | Video | Mix | Artist]
-
-        if isinstance(media, Artist):
-            items_media: [Album] = items_results_all(media)
-        else:
-            items_media = [media]
-
-        download_delay: bool = bool(isinstance(media, Track | Video) and self.settings.data.download_delay)
-
-        for item_media in items_media:
-            result = self.download(
-                item_media,
-                self.dl,
-                delay_track=download_delay,
-                quality_audio=quality_audio,
-                quality_video=quality_video,
-            )
-
-        return result
-
-    def download(
-        self,
-        media: Track | Album | Playlist | Video | Mix | Artist,
-        dl: Download,
-        delay_track: bool = False,
-        quality_audio: Quality | None = None,
-        quality_video: QualityVideo | None = None,
-    ) -> QueueDownloadStatus:
-        """Download a media item and return the result status.
-
-        Args:
-            media (Track | Album | Playlist | Video | Mix | Artist): The media item to download.
-            dl (Download): The Download object to use.
-            delay_track (bool, optional): Whether to apply download delay. Defaults to False.
-            quality_audio (Quality | None, optional): Desired audio quality. Defaults to None.
-            quality_video (QualityVideo | None, optional): Desired video quality. Defaults to None.
-
-        Returns:
-            QueueDownloadStatus: The status of the download operation.
-        """
-        result_dl: bool
-        path_file: str
-        result: QueueDownloadStatus
-        self.s_pb_reset.emit()
-        self.s_statusbar_message.emit(StatusbarMessage(message="Download started..."))
-
-        file_template = get_format_template(media, self.settings)
-
-        # Determine source information
-        source_type = "manual"
-        source_id = None
-        source_name = None
-
-        if isinstance(media, Album):
-            source_type = "album"
-            source_id = str(media.id)
-            source_name = media.name
-        elif isinstance(media, Playlist | UserPlaylist):
-            source_type = "playlist"
-            source_id = str(media.id) if hasattr(media, "id") else None
-            source_name = media.name if hasattr(media, "name") else None
-        elif isinstance(media, Mix):
-            source_type = "mix"
-            source_id = str(media.id)
-            source_name = media.title
-        elif isinstance(media, Track):
-            # For individual tracks, try to get album info
-            if hasattr(media, "album") and media.album:
-                source_type = "album"
-                source_id = str(media.album.id)
-                source_name = media.album.name
-            else:
-                source_type = "track"
-                source_id = str(media.id)
-                source_name = media.name
-
-        if isinstance(media, Track | Video):
-            result_dl, path_file = dl.item(
-                media=media,
-                file_template=file_template,
-                download_delay=delay_track,
-                quality_audio=quality_audio,
-                quality_video=quality_video,
-                source_type=source_type,
-                source_id=source_id,
-                source_name=source_name,
-            )
-        elif isinstance(media, Album | Playlist | Mix):
-            dl.items(
-                media=media,
-                file_template=file_template,
-                video_download=self.settings.data.video_download,
-                download_delay=self.settings.data.download_delay,
-                quality_audio=quality_audio,
-                quality_video=quality_video,
-                source_type=source_type,
-                source_id=source_id,
-                source_name=source_name,
-            )
-
-            # Dummy values
-            result_dl = True
-            path_file = "dummy"
-
-        self.s_statusbar_message.emit(StatusbarMessage(message="Download finished.", timeout=2000))
-
-        if result_dl and path_file:
-            result = QueueDownloadStatus.Finished
-        elif not result_dl and path_file:
-            result = QueueDownloadStatus.Skipped
-        else:
-            result = QueueDownloadStatus.Failed
-
-        return result
+                    self.queue_manager.queue_download_media(queue_dl_item)
 
     def on_version(
         self, update_check: bool = False, update_available: bool = False, update_info: ReleaseLatest | None = None
@@ -2542,6 +1087,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         self.thread_it(self.tr_results_expanded, index)
 
+    def on_track_hover_confirmed(self, media: Track | Video | Album | Mix | Playlist | Artist) -> None:
+        """Handle confirmed hover event over a track (after debounce delay)."""
+        if not media:
+            return
+
+        # Update info tab widget with hover data
+        self.info_tab_widget.update_on_hover(media)
+
+        # Load cover using CoverManager (with smart caching)
+        if self.cover_manager:
+            self.cover_manager.load_cover(media, use_cache_check=True)
+
+    def on_track_hover_left(self) -> None:
+        """Handle hover leaving the track list."""
+        # Revert to the currently selected media
+        with contextlib.suppress(Exception):
+            self.info_tab_widget.revert_to_selection()
+
+        # Reload the cover for the selected media if it exists
+        if self.info_tab_widget.current_media_selected and self.cover_manager:
+            self.cover_manager.load_cover(self.info_tab_widget.current_media_selected, use_cache_check=True)
+
     def tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
         """Load and display the children of an expanded result item.
 
@@ -2580,26 +1147,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.pb_reload_user_lists.setEnabled(status)
         self.pb_reload_user_lists.setText(button_text)
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        """Handle the close event of the main window.
-
-        Args:
-            event (QtGui.QCloseEvent): The close event.
-        """
-        # Save the main window size and position
-        self.settings.data.window_x = self.x()
-        self.settings.data.window_y = self.y()
-        self.settings.data.window_w = self.width()
-        self.settings.data.window_h = self.height()
-        self.settings.save()
-
-        self.shutdown = True
-
-        handling_app: HandlingApp = HandlingApp()
-        handling_app.event_abort.set()
-
-        event.accept()
-
     def thread_download_album_from_track(self, point: QtCore.QPoint) -> None:
         """Starts the download of the full album from a selected track in a new thread.
 
@@ -2626,11 +1173,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 full_album_object = self.tidal.session.album(media_track.album.id)
 
                 # Convert the full album object into a queue item
-                queue_dl_item: QueueDownloadItem | None = self.media_to_queue_download_model(full_album_object)
+                queue_dl_item = self.queue_manager.media_to_queue_download_model(full_album_object)
 
                 if queue_dl_item:
                     # Add the item to the download queue
-                    self.queue_download_media(queue_dl_item)
+                    self.queue_manager.queue_download_media(queue_dl_item)
                 else:
                     logger_gui.warning(f"Failed to create a queue item for album ID: {full_album_object.id}")
             except Exception as e:

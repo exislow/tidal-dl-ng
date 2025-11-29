@@ -8,6 +8,7 @@ Classes:
     Download: Main class for managing downloads, segment merging, file operations, and metadata.
 """
 
+import contextlib
 import os
 import pathlib
 import random
@@ -63,12 +64,16 @@ from tidal_dl_ng.helper.path import (
     url_to_filename,
 )
 from tidal_dl_ng.helper.tidal import (
+    extract_contributor_names,
+    # new helpers for enriched metadata
+    fetch_raw_track_and_album,
     instantiate_media,
     items_results_all,
     name_builder_album_artist,
     name_builder_artist,
     name_builder_item,
     name_builder_title,
+    parse_track_and_album_extras,
 )
 from tidal_dl_ng.history import HistoryService
 from tidal_dl_ng.metadata import Metadata
@@ -1298,67 +1303,123 @@ class Download:
         Returns:
             tuple[bool, pathlib.Path | None, pathlib.Path | None]: (Success, path to lyrics, path to cover)
         """
-        result: bool = False
-        path_lyrics: pathlib.Path | None = None
-        path_cover: pathlib.Path | None = None
-        release_date: str = (
-            track.album.available_release_date.strftime("%Y-%m-%d")
-            if track.album.available_release_date
-            else track.album.release_date.strftime("%Y-%m-%d") if track.album.release_date else ""
-        )
+        release_date = self._release_date_str(track)
         copy_right: str = track.copyright if hasattr(track, "copyright") and track.copyright else ""
         isrc: str = track.isrc if hasattr(track, "isrc") and track.isrc else ""
-        lyrics: str = ""
-        lyrics_synced: str = ""
-        lyrics_unsynced: str = ""
-        cover_data: bytes = None
+        lyrics, lyrics_synced, lyrics_unsynced, path_lyrics = self._collect_lyrics(track)
+        cover_data, path_cover = self._collect_cover(track, is_parent_album)
+        extras = self._fetch_extras(track)
+        m = self._build_metadata(
+            track,
+            media_stream,
+            release_date,
+            copy_right,
+            isrc,
+            cover_data,
+            lyrics_synced,
+            lyrics_unsynced,
+            extras,
+        )
+        m.path_file = path_media
+        m.save()
+        return True, path_lyrics, path_cover
 
-        if self.settings.data.lyrics_embed or self.settings.data.lyrics_file:
-            # Try to retrieve lyrics.
-            try:
-                lyrics_obj = track.lyrics()
+    def _release_date_str(self, track: Track) -> str:
+        date = None
+        if hasattr(track, "album") and track.album is not None:
+            date = track.album.available_release_date or track.album.release_date
+        return date.strftime("%Y-%m-%d") if date else ""
 
-                if lyrics_obj.text:
-                    lyrics_unsynced = lyrics_obj.text
-                    lyrics = lyrics_unsynced
-                if lyrics_obj.subtitles:
-                    lyrics_synced = lyrics_obj.subtitles
-                    lyrics = lyrics_synced
-            except:
-                lyrics = ""
-                # TODO: Implement proper logging.
-                print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
-
+    def _collect_lyrics(self, track: Track) -> tuple[str, str, str, pathlib.Path | None]:
+        lyrics = ""
+        lyrics_synced = ""
+        lyrics_unsynced = ""
+        path_lyrics: pathlib.Path | None = None
+        if not (self.settings.data.lyrics_embed or self.settings.data.lyrics_file):
+            return lyrics, lyrics_synced, lyrics_unsynced, None
+        try:
+            lyrics_obj = track.lyrics()
+            if getattr(lyrics_obj, "text", None):
+                lyrics_unsynced = lyrics_obj.text
+                lyrics = lyrics_unsynced
+            if getattr(lyrics_obj, "subtitles", None):
+                lyrics_synced = lyrics_obj.subtitles
+                lyrics = lyrics_synced
+        except Exception:
+            lyrics = ""
         if lyrics and self.settings.data.lyrics_file:
-            path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)
+            path_lyrics = self.lyrics_to_file(pathlib.Path(self.path_base), lyrics)
+        return lyrics, lyrics_synced, lyrics_unsynced, path_lyrics
 
+    def _collect_cover(self, track: Track, is_parent_album: bool) -> tuple[bytes | None, pathlib.Path | None]:
+        cover_data: bytes | None = None
+        path_cover: pathlib.Path | None = None
+        if not (self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album)):
+            return None, None
         cover_dimension = self.settings.data.metadata_cover_dimension
-
-        if self.settings.data.metadata_cover_embed or (self.settings.data.cover_album_file and is_parent_album):
-            # Do not write CoverDimensions.PxORIGIN to metadata, since it can exceed max metadata file size (>16Mb)
-            url_cover = track.album.image(
-                int(cover_dimension) if cover_dimension != CoverDimensions.PxORIGIN else int(CoverDimensions.Px1280)
-            )
-            cover_data = self.cover_data(url=url_cover)
-
+        dim = int(cover_dimension) if cover_dimension != CoverDimensions.PxORIGIN else int(CoverDimensions.Px1280)
+        url_cover = track.album.image(dim)
+        cover_data = self.cover_data(url=url_cover) if url_cover else None
         if cover_data and self.settings.data.cover_album_file and is_parent_album:
             if cover_dimension == CoverDimensions.PxORIGIN:
                 url_cover_album_file = track.album.image(CoverDimensions.PxORIGIN)
                 cover_data_album_file = self.cover_data(url=url_cover_album_file)
             else:
                 cover_data_album_file = cover_data
+            path_cover = self.cover_to_file(pathlib.Path(self.path_base), cover_data_album_file)
+        return cover_data, path_cover
 
-            path_cover = self.cover_to_file(path_media.parent, cover_data_album_file)
+    def _fetch_extras(self, track: Track) -> dict:
+        extras: dict = {
+            "bpm": None,
+            "label": "",
+            "genres": [],
+            "contributors_by_role": {},
+        }
+        # Use suppress to avoid bare try/except pass
+        with contextlib.suppress(Exception):
+            track_json, album_json = fetch_raw_track_and_album(
+                self.session, str(track.id), extra_params={"include": "contributors,genres"}
+            )
+            parsed = parse_track_and_album_extras(track_json, album_json)
+            if parsed:
+                extras.update(parsed)
+        return extras
 
+    def _build_metadata(
+        self,
+        track: Track,
+        media_stream: Stream,
+        release_date: str,
+        copy_right: str,
+        isrc: str,
+        cover_data: bytes | None,
+        lyrics_synced: str,
+        lyrics_unsynced: str,
+        extras: dict,
+    ) -> Metadata:
         metadata_target_upc = MetadataTargetUPC(self.settings.data.metadata_target_upc)
         target_upc: dict[str, str] = METADATA_LOOKUP_UPC[metadata_target_upc]
         explicit: bool = track.explicit if hasattr(track, "explicit") else False
         title = name_builder_title(track)
-        title += METADATA_EXPLICIT if explicit and self.settings.data.mark_explicit else ""
-
-        # `None` values are not allowed.
-        m: Metadata = Metadata(
-            path_file=path_media,
+        if explicit and self.settings.data.mark_explicit:
+            title += METADATA_EXPLICIT
+        genres = extras.get("genres") or []
+        genres_clean = [g for g in genres if isinstance(g, str) and g]
+        genre_display = self.settings.data.metadata_delimiter_artist.join(genres_clean)
+        contributors_by_role = extras.get("contributors_by_role") or {}
+        delimiter = self.settings.data.metadata_delimiter_artist
+        producers = extract_contributor_names(contributors_by_role, "producer", delimiter=delimiter)
+        composers_detailed = extract_contributor_names(
+            contributors_by_role, "composer", delimiter=delimiter
+        ) or extract_contributor_names(contributors_by_role, "composers", delimiter=delimiter)
+        lyricists = extract_contributor_names(
+            contributors_by_role, "lyricist", delimiter=delimiter
+        ) or extract_contributor_names(contributors_by_role, "lyricists", delimiter=delimiter)
+        bpm_val = extras.get("bpm")
+        bpm: int | None = int(bpm_val) if isinstance(bpm_val, (int | float)) else None
+        return Metadata(
+            path_file=pathlib.Path(self.path_base),
             target_upc=target_upc,
             lyrics=lyrics_synced,
             lyrics_unsynced=lyrics_unsynced,
@@ -1382,13 +1443,13 @@ class Download:
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
             explicit=explicit,
+            genre=genre_display,
+            label=extras.get("label") or "",
+            bpm=bpm,
+            producers=producers,
+            composers_detailed=composers_detailed,
+            lyricists=lyricists,
         )
-
-        m.save()
-
-        result = True
-
-        return result, path_lyrics, path_cover
 
     def items(
         self,

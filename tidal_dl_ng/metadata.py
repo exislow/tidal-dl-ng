@@ -32,6 +32,13 @@ class Metadata:
     upc: str
     target_upc: dict[str, str]
     explicit: bool
+    # New enriched metadata fields
+    genre: str
+    label: str
+    bpm: int | None
+    producers: str
+    composers_detailed: str
+    lyricists: str
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -61,6 +68,13 @@ class Metadata:
         replay_gain_write: bool = True,
         upc: str = "",
         explicit: bool = False,
+        # New enriched metadata kwargs (all optional)
+        genre: str = "",
+        label: str = "",
+        bpm: int | None = None,
+        producers: str = "",
+        composers_detailed: str = "",
+        lyricists: str = "",
     ):
         self.path_file = path_file
         self.title = title
@@ -87,6 +101,13 @@ class Metadata:
         self.upc = upc
         self.target_upc = target_upc
         self.explicit = explicit
+        # Store enriched metadata
+        self.genre = genre
+        self.label = label
+        self.bpm = bpm
+        self.producers = producers
+        self.composers_detailed = composers_detailed
+        self.lyricists = lyricists
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -139,12 +160,24 @@ class Metadata:
         self.m.tags["DISCNUMBER"] = str(self.discnumber)
         self.m.tags["DISCTOTAL"] = str(self.totaldisc)
         self.m.tags["DATE"] = self.date
-        self.m.tags["COMPOSER"] = self.composer
+        self.m.tags["COMPOSER"] = self.composer if self.composer else self.composers_detailed
         self.m.tags["ISRC"] = self.isrc
         self.m.tags["LYRICS"] = self.lyrics
         self.m.tags["UNSYNCEDLYRICS"] = self.lyrics_unsynced
         self.m.tags["URL"] = self.url_share
         self.m.tags[self.target_upc["FLAC"]] = self.upc
+        # Enriched fields
+        if self.genre:
+            self.m.tags["GENRE"] = self.genre
+        if self.label:
+            # Using LABEL; some tools map PUBLISHER, but LABEL is widely recognised in Vorbis.
+            self.m.tags["LABEL"] = self.label
+        if self.bpm is not None:
+            self.m.tags["BPM"] = str(self.bpm)
+        if self.producers:
+            self.m.tags["PRODUCER"] = self.producers
+        if self.lyricists:
+            self.m.tags["LYRICIST"] = self.lyricists
 
         if self.replay_gain_write:
             self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
@@ -163,12 +196,29 @@ class Metadata:
         self.m.tags.add(TRCK(encoding=3, text=str(self.tracknumber)))
         self.m.tags.add(TRCK(encoding=3, text=self.discnumber))
         self.m.tags.add(TDRC(encoding=3, text=self.date))
-        self.m.tags.add(TCOM(encoding=3, text=self.composer))
+        self.m.tags.add(TCOM(encoding=3, text=self.composer if self.composer else self.composers_detailed))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
         self.m.tags.add(SYLT(encoding=3, desc="text", text=self.lyrics))
         self.m.tags.add(USLT(encoding=3, desc="text", text=self.lyrics_unsynced))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
         self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["MP3"], text=self.upc))
+        # Enriched fields
+        if self.genre:
+            from mutagen.id3 import TCON
+
+            self.m.tags.add(TCON(encoding=3, text=self.genre))
+        if self.label:
+            from mutagen.id3 import TPUB
+
+            self.m.tags.add(TPUB(encoding=3, text=self.label))
+        if self.bpm is not None:
+            from mutagen.id3 import TBPM
+
+            self.m.tags.add(TBPM(encoding=3, text=str(self.bpm)))
+        if self.producers:
+            self.m.tags.add(TXXX(encoding=3, desc="PRODUCER", text=self.producers))
+        if self.lyricists:
+            self.m.tags.add(TXXX(encoding=3, desc="LYRICIST", text=self.lyricists))
 
         if self.replay_gain_write:
             self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
@@ -184,15 +234,26 @@ class Metadata:
         self.m.tags["cprt"] = self.copy_right
         self.m.tags["trkn"] = [[self.tracknumber, self.totaltrack]]
         self.m.tags["disk"] = [[self.discnumber, self.totaldisc]]
-        # self.m.tags['\xa9gen'] = self.genre
+        if self.genre:
+            self.m.tags["\xa9gen"] = self.genre
         self.m.tags["\xa9day"] = self.date
-        self.m.tags["\xa9wrt"] = self.composer
+        self.m.tags["\xa9wrt"] = self.composer if self.composer else self.composers_detailed
         self.m.tags["\xa9lyr"] = self.lyrics
         self.m.tags["----:com.apple.iTunes:UNSYNCEDLYRICS"] = self.lyrics_unsynced.encode("utf-8")
         self.m.tags["isrc"] = self.isrc
         self.m.tags["\xa9url"] = self.url_share
         self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
         self.m.tags["rtng"] = [1 if self.explicit else 0]
+        # Custom iTunes free-form tags for label / credits
+        if self.label:
+            self.m.tags["----:com.apple.iTunes:LABEL"] = self.label.encode("utf-8")
+        if self.producers:
+            self.m.tags["----:com.apple.iTunes:PRODUCER"] = self.producers.encode("utf-8")
+        if self.lyricists:
+            self.m.tags["----:com.apple.iTunes:LYRICIST"] = self.lyricists.encode("utf-8")
+        if self.bpm is not None:
+            # Standard MP4 tempo atom
+            self.m.tags["tmpo"] = [int(self.bpm)]
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")

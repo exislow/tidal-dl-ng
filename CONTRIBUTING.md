@@ -93,25 +93,51 @@ Now you can make your changes locally.
 
 7. When you're done making changes, check that your changes pass the formatting tests.
 
-```bash
-make check
-```
+   **On Linux/macOS:**
 
-Now, validate that all unit tests are passing:
+   ```bash
+   make check
+   ```
 
-```bash
-make test
-```
+   **On Windows PowerShell (equivalent commands):**
+
+   ```powershell
+   poetry check --lock
+   poetry run pre-commit run -a
+   poetry run deptry .
+   ```
+
+8. Now, validate that all unit tests are passing:
+
+   **On Linux/macOS:**
+
+   ```bash
+   make test
+   ```
+
+   **On Windows PowerShell (equivalent):**
+
+   ```powershell
+   poetry run pytest --doctest-modules
+   ```
 
 9. Before raising a pull request you should also run tox.
    This will run the tests across different versions of Python:
 
-```bash
-tox
-```
+   ```bash
+   tox
+   ```
 
-This requires you to have multiple versions of python installed.
-This step is also triggered in the CI/CD pipeline, so you could also choose to skip this step locally.
+   **Note:** This requires you to have multiple versions of Python installed.
+   This step is also triggered in the CI/CD pipeline, so you could also choose to skip this step locally.
+
+   **Windows users:** If `tox` fails with Git/dulwich errors (like `KeyError: b'HEAD'`), you can skip this step as the CI/CD pipeline will run it automatically when you create a pull request. Make sure you have committed your changes to Git before running tox:
+
+   ```powershell
+   git add .
+   git commit -m "Your changes"
+   # Then try tox again, or skip it and rely on CI/CD
+   ```
 
 10. Commit your changes and push your branch to GitHub:
 
@@ -131,3 +157,35 @@ Before you submit a pull request, check that it meets these guidelines:
 
 2. If the pull request adds functionality, the docs should be updated.
    Put your new functionality into a function with a docstring, and add the feature to the list in `README.md`.
+
+# Troubleshooting
+
+## Windows-specific Issues
+
+### Tox fails with UnicodeDecodeError or KeyError: b'HEAD'
+
+This is a known issue on Windows when:
+
+- The Git repository doesn't have a valid HEAD (no commits yet)
+- There are encoding issues with Git output
+
+**Solutions:**
+
+1. Make sure you have at least one commit in your Git repository:
+
+   ```powershell
+   git status  # Check if you have uncommitted changes
+   git add .
+   git commit -m "Initial commit"
+   ```
+
+2. If the error persists, you can skip `tox` locally and rely on the CI/CD pipeline to run it when you create a pull request.
+
+3. Alternatively, run the tests manually for your Python version:
+   ```powershell
+   poetry run pytest --doctest-modules
+   ```
+
+### Make commands don't work on Windows
+
+If you're on Windows and `make` is not available, use the PowerShell equivalent commands documented in steps 7 and 8 above, or install `make` for Windows (e.g., via Chocolatey: `choco install make`).
