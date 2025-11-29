@@ -52,14 +52,17 @@ handler_qt: QtHandler = QtHandler()
 # log_fmt: str = "[%(asctime)s] %(levelname)s: %(message)s"
 log_fmt: str = "> %(message)s"
 # formatter = logging.Formatter(log_fmt)
-formatter = coloredlogs.ColoredFormatter(fmt=log_fmt)
+# Configure custom level styles to make INFO messages green
+level_styles = coloredlogs.DEFAULT_LEVEL_STYLES.copy()
+level_styles["info"] = {"color": "green"}
+formatter = coloredlogs.ColoredFormatter(fmt=log_fmt, level_styles=level_styles)
 handler_qt.setFormatter(formatter)
 logger_gui.addHandler(handler_qt)
 logger_gui.setLevel(logging.DEBUG)
 
 logger_cli = logging.getLogger(__name__)
 handler_stream: logging.StreamHandler = logging.StreamHandler()
-formatter = coloredlogs.ColoredFormatter(fmt=log_fmt)
+formatter = coloredlogs.ColoredFormatter(fmt=log_fmt, level_styles=level_styles)
 handler_stream.setFormatter(formatter)
 logger_cli.addHandler(handler_stream)
 logger_cli.setLevel(logging.DEBUG)

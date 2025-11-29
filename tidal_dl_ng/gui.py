@@ -55,6 +55,7 @@ from tidalapi.session import LinkLogin
 
 from tidal_dl_ng import __version__, update_available
 from tidal_dl_ng.dialog import DialogLogin, DialogPreferences, DialogVersion
+from tidal_dl_ng.dialog_history import DialogHistory
 from tidal_dl_ng.helper.gui import (
     FilterHeader,
     HumanProxyModel,
@@ -101,6 +102,7 @@ from tidalapi.session import SearchTypes
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
 from tidal_dl_ng.constants import FAVORITES, QualityVideo, QueueDownloadStatus, TidalLists
 from tidal_dl_ng.download import Download
+from tidal_dl_ng.history import HistoryService
 from tidal_dl_ng.logger import XStream, logger_gui
 from tidal_dl_ng.model.gui_data import ProgressBars, QueueDownloadItem, ResultItem, StatusbarMessage
 from tidal_dl_ng.model.meta import ReleaseLatest
@@ -119,6 +121,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     settings: Settings
     tidal: Tidal
     dl: Download
+    history_service: HistoryService
     threadpool: QtCore.QThreadPool
     tray: QtWidgets.QSystemTrayIcon
     spinners: dict
@@ -164,6 +167,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # XStream.stderr().messageWritten.connect(self._log_output)
 
         self.settings = Settings()
+        self.history_service = HistoryService()
 
         self._init_threads()
         self._init_gui()
@@ -177,6 +181,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._populate_quality(self.cb_quality_video, QualityVideo)
         self._populate_search_types(self.cb_search_type, SearchTypes)
         self.apply_settings(self.settings)
+        self._init_menu_actions()
         self._init_signals()
         self._init_buttons()
         self.init_tidal(tidal)
@@ -375,6 +380,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setColumnWidth(5, skinny_width)  # duration
         tree.setColumnWidth(6, narrow_width)  # quality
         tree.setColumnWidth(7, narrow_width)  # date
+        tree.setColumnWidth(8, skinny_width)  # downloaded?
         header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
         # Connect the contextmenu
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -386,7 +392,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Args:
             model (QStandardItemModel): The model to initialize.
         """
-        labels_column: list[str] = ["#", "obj", "Artist", "Title", "Album", "Duration", "Quality", "Date"]
+        labels_column: list[str] = [
+            "#",
+            "obj",
+            "Artist",
+            "Title",
+            "Album",
+            "Duration",
+            "Quality",
+            "Date",
+            "Downloaded?",
+        ]
 
         model.setColumnCount(len(labels_column))
         model.setRowCount(0)
@@ -505,6 +521,37 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tree.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         tree.customContextMenuRequested.connect(self.menu_context_tree_lists)
 
+    def _init_menu_actions(self) -> None:
+        """Initialize custom menu actions."""
+        # Create Tools menu if it doesn't exist
+        menubar = self.menuBar()
+        tools_menu = None
+
+        # Find or create Tools menu
+        for action in menubar.actions():
+            if action.text() == "Tools":
+                tools_menu = action.menu()
+                break
+
+        if not tools_menu:
+            tools_menu = menubar.addMenu("Tools")
+
+        # Create View History action
+        self.a_view_history = QtGui.QAction("View Download History...", self)
+        self.a_view_history.triggered.connect(self.on_view_history)
+        tools_menu.addAction(self.a_view_history)
+
+        # Add separator
+        tools_menu.addSeparator()
+
+        # Add duplicate prevention toggle
+        self.a_toggle_duplicate_prevention = QtGui.QAction("Prevent Duplicate Downloads", self)
+        self.a_toggle_duplicate_prevention.setCheckable(True)
+        is_preventing = self.history_service.get_settings().get("preventDuplicates", True)
+        self.a_toggle_duplicate_prevention.setChecked(is_preventing)
+        self.a_toggle_duplicate_prevention.triggered.connect(self.on_toggle_duplicate_prevention)
+        tools_menu.addAction(self.a_toggle_duplicate_prevention)
+
     def on_update_check(self, on_startup: bool = True) -> None:
         """Check for application updates and emit update signals.
 
@@ -516,6 +563,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if (on_startup and is_available) or not on_startup:
             self.s_update_show.emit(True, is_available, info)
 
+    # The rest of the class remains unchanged
     def apply_settings(self, settings: Settings) -> None:
         """Apply user settings to the GUI.
 
@@ -636,6 +684,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if isinstance(media, Track | Video) and hasattr(media, "album") and media.album:
             menu.addAction("Download Full Album", lambda: self.thread_download_album_from_track(point))
 
+        # Add mark/unmark as downloaded for Tracks
+        if isinstance(media, Track):
+            track_id = str(media.id)
+            is_downloaded = self.history_service.is_downloaded(track_id)
+
+            if is_downloaded:
+                menu.addAction(
+                    "✖️ Mark as Not Downloaded", lambda: self.on_mark_track_as_not_downloaded(track_id, index)
+                )
+            else:
+                menu.addAction("✅ Mark as Downloaded", lambda: self.on_mark_track_as_downloaded(media, index))
+
         menu.addAction("Copy Share URL", lambda: self.on_copy_url_share(self.tr_results, point))
 
         menu.exec(self.tr_results.mapToGlobal(point))
@@ -675,6 +735,77 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if index >= 0:
             self.tr_queue_download.takeTopLevelItem(index)
             logger_gui.info("Removed item from download queue")
+
+    def on_mark_track_as_downloaded(self, track: Track, index: QtCore.QModelIndex) -> None:
+        """Mark a track as downloaded in history.
+
+        Args:
+            track (Track): The track to mark.
+            index (QModelIndex): The model index of the track.
+        """
+        track_id = str(track.id)
+
+        # Determine source information (manual for now)
+        source_type = "manual"
+        source_id = None
+        source_name = None
+
+        # Try to get album information if available
+        if hasattr(track, "album") and track.album:
+            source_type = "album"
+            source_id = str(track.album.id)
+            source_name = track.album.name
+
+        self.history_service.add_track_to_history(
+            track_id=track_id, source_type=source_type, source_id=source_id, source_name=source_name
+        )
+
+        # Update the UI - refresh the downloaded column
+        self._update_downloaded_column(index, True)
+        logger_gui.info(f"Marked track as downloaded: {track.name}")
+
+    def on_mark_track_as_not_downloaded(self, track_id: str, index: QtCore.QModelIndex) -> None:
+        """Remove a track from download history.
+
+        Args:
+            track_id (str): The track ID to remove.
+            index (QModelIndex): The model index of the track.
+        """
+        success = self.history_service.remove_track_from_history(track_id)
+
+        if success:
+            # Update the UI - refresh the downloaded column
+            self._update_downloaded_column(index, False)
+            logger_gui.info(f"Unmarked track (ID: {track_id})")
+
+    def _update_downloaded_column(self, index: QtCore.QModelIndex, is_downloaded: bool) -> None:
+        """Update the Downloaded? column for a specific index.
+
+        Args:
+            index (QModelIndex): The model index of the item.
+            is_downloaded (bool): Whether the track is downloaded.
+        """
+        # Get the source index (column 0)
+        source_index = self.proxy_tr_results.mapToSource(index)
+
+        # Get the item from the model
+        item = self.model_tr_results.itemFromIndex(source_index)
+        if not item:
+            return
+
+        # Get the parent row (the row contains all columns)
+        row = item.row()
+        parent = item.parent()
+
+        # Column 8 is "Downloaded?"
+        downloaded_item = self.model_tr_results.item(row, 8) if parent is None else parent.child(row, 8)
+
+        if downloaded_item:
+            if is_downloaded:
+                downloaded_item.setText("✅")
+                downloaded_item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            else:
+                downloaded_item.setText("")
 
     def thread_download_list_media(self, point: QtCore.QPoint) -> None:
         """Start download of a list media item in a thread.
@@ -1228,6 +1359,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             item.date_user_added if item.date_user_added != "" else item.date_release
         )
 
+        # Check download history
+        child_downloaded: QtGui.QStandardItem = QtGui.QStandardItem()
+        if isinstance(item.obj, Track):
+            track_id = str(item.obj.id)
+            if self.history_service.is_downloaded(track_id):
+                child_downloaded.setText("✅")
+                child_downloaded.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+
         if isinstance(item.obj, Mix | Playlist | Album | Artist):
             # Add a disabled dummy child, so expansion arrow will appear. This Child will be replaced on expansion.
             child_dummy: QtGui.QStandardItem = QtGui.QStandardItem()
@@ -1244,6 +1383,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             child_duration,
             child_quality,
             child_date,
+            child_downloaded,
         )
 
     def on_tr_results_add_top_level_item(self, item_child: Sequence[QtGui.QStandardItem]):
@@ -2296,6 +2436,34 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         file_template = get_format_template(media, self.settings)
 
+        # Determine source information
+        source_type = "manual"
+        source_id = None
+        source_name = None
+
+        if isinstance(media, Album):
+            source_type = "album"
+            source_id = str(media.id)
+            source_name = media.name
+        elif isinstance(media, Playlist | UserPlaylist):
+            source_type = "playlist"
+            source_id = str(media.id) if hasattr(media, "id") else None
+            source_name = media.name if hasattr(media, "name") else None
+        elif isinstance(media, Mix):
+            source_type = "mix"
+            source_id = str(media.id)
+            source_name = media.title
+        elif isinstance(media, Track):
+            # For individual tracks, try to get album info
+            if hasattr(media, "album") and media.album:
+                source_type = "album"
+                source_id = str(media.album.id)
+                source_name = media.album.name
+            else:
+                source_type = "track"
+                source_id = str(media.id)
+                source_name = media.name
+
         if isinstance(media, Track | Video):
             result_dl, path_file = dl.item(
                 media=media,
@@ -2303,6 +2471,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 download_delay=delay_track,
                 quality_audio=quality_audio,
                 quality_video=quality_video,
+                source_type=source_type,
+                source_id=source_id,
+                source_name=source_name,
             )
         elif isinstance(media, Album | Playlist | Mix):
             dl.items(
@@ -2312,6 +2483,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 download_delay=self.settings.data.download_delay,
                 quality_audio=quality_audio,
                 quality_video=quality_video,
+                source_type=source_type,
+                source_id=source_id,
+                source_name=source_name,
             )
 
             # Dummy values
@@ -2344,6 +2518,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def on_preferences(self) -> None:
         """Open the preferences dialog."""
         DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
+
+    def on_view_history(self) -> None:
+        """Open the download history dialog."""
+        DialogHistory(history_service=self.history_service, parent=self)
+
+    def on_toggle_duplicate_prevention(self, enabled: bool) -> None:
+        """Toggle duplicate download prevention on or off.
+
+        Args:
+            enabled (bool): Whether duplicate prevention is enabled.
+        """
+        self.history_service.update_settings(preventDuplicates=enabled)
+        status_msg = "enabled" if enabled else "disabled"
+        logger_gui.info(f"Duplicate download prevention {status_msg}")
+        self.s_statusbar_message.emit(StatusbarMessage(message=f"Duplicate prevention {status_msg}.", timeout=2500))
 
     def on_tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
         """Handle the event when a result item group is expanded.

@@ -92,6 +92,7 @@ If you like to have the GUI version only as a binary, have a look at the
 - Lyrics and album art / cover download
 - Creates playlist files
 - Can symlink tracks instead of having several copies, if added to different playlist
+- **Download History Tracking**: Visual indicator (✅) in GUI for already downloaded tracks, with persistent JSON-based storage, manual mark/unmark capability, and history management dialog
 
 ## ▶️ Getting started with development
 
