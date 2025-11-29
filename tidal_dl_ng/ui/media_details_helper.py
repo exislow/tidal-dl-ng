@@ -65,41 +65,41 @@ class MediaDetailsHelper:
         labels["isrc"].setText(safe_str(isrc))
 
         # Track Number
-        track_number = find_attr(media, ["track_number", "tracknumber", "number", "position"])
+        track_number = find_attr(media, "track_number", "tracknumber", "number", "position")
         if not track_number and hasattr(media, "album") and media.album:
-            track_number = find_attr(media.album, ["track_number", "tracknumber"])
+            track_number = find_attr(media.album, "track_number", "tracknumber")
         labels["track_number"].setText(safe_str(track_number))
 
     @staticmethod
     def populate_metadata_fields(labels: dict, media) -> None:
         """Populate metadata fields (BPM, Label, Producers, Composers)."""
         # BPM
-        bpm = find_attr(media, ["bpm", "tempo"])
+        bpm = find_attr(media, "bpm", "tempo")
         if not bpm and hasattr(media, "album") and media.album:
-            bpm = find_attr(media.album, ["bpm", "tempo"])
+            bpm = find_attr(media.album, "bpm", "tempo")
         labels["bpm"].setText(safe_str(bpm))
 
         # Label
         label = None
         if hasattr(media, "album") and media.album:
-            label = find_attr(media.album, ["label", "label_name", "recordLabel"])
+            label = find_attr(media.album, "label", "label_name", "recordLabel")
         if not label:
-            label = find_attr(media, ["label", "label_name", "recordLabel"])
+            label = find_attr(media, "label", "label_name", "recordLabel")
         labels["label"].setText(safe_str(label))
 
         # Producers/Composers
-        producers = find_attr(media, ["producers", "producer"])
+        producers = find_attr(media, "producers", "producer")
         labels["producers"].setText(safe_str(producers) if producers else "—")
 
-        composers = find_attr(media, ["composers", "composer"])
+        composers = find_attr(media, "composers", "composer")
         labels["composers"].setText(safe_str(composers) if composers else "—")
 
     @staticmethod
     def populate_genres(labels: dict, media) -> None:
         """Extract and populate genre information with filtering."""
-        genres = find_attr(media, ["genres", "genre"])
+        genres = find_attr(media, "genres", "genre")
         if not genres and hasattr(media, "album") and media.album:
-            genres = find_attr(media.album, ["genres", "genre"])
+            genres = find_attr(media.album, "genres", "genre")
 
         if not genres:
             labels["genres"].setText("—")
