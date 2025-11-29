@@ -70,6 +70,7 @@ from tidal_dl_ng.helper.tidal import (
     name_builder_item,
     name_builder_title,
 )
+from tidal_dl_ng.history import HistoryService
 from tidal_dl_ng.metadata import Metadata
 from tidal_dl_ng.model.downloader import DownloadSegmentResult, TrackStreamInfo
 from tidal_dl_ng.model.gui_data import ProgressBars
@@ -116,6 +117,7 @@ class Download:
     progress_overall: Progress
     event_abort: Event
     event_run: Event
+    history_service: HistoryService
 
     def __init__(
         self,
@@ -156,6 +158,7 @@ class Download:
         self.path_base = path_base
         self.event_abort = event_abort
         self.event_run = event_run
+        self.history_service = HistoryService()
 
         if not self.settings.data.path_binary_ffmpeg and (
             self.settings.data.video_convert_mp4 or self.settings.data.extract_flac
@@ -172,7 +175,7 @@ class Download:
     def _get_media_urls(
         self,
         media: Track | Video,
-        stream_manifest: StreamManifest | None = None,
+        stream_manifest: StreamManifest | None,
     ) -> list[str]:
         """Extract URLs for the given media item.
 
@@ -526,6 +529,9 @@ class Download:
         is_parent_album: bool = False,
         list_position: int = 0,
         list_total: int = 0,
+        source_type: str = "manual",
+        source_id: str | None = None,
+        source_name: str | None = None,
     ) -> tuple[bool, pathlib.Path | str]:
         """Download a single media item, handling file naming, skipping, and post-processing.
 
@@ -541,6 +547,9 @@ class Download:
             is_parent_album (bool, optional): Whether this is a parent album. Defaults to False.
             list_position (int, optional): Position in list. Defaults to 0.
             list_total (int, optional): Total items in list. Defaults to 0.
+            source_type (str, optional): Source type (playlist, album, manual, mix, track). Defaults to "manual".
+            source_id (str | None, optional): Source ID (UUID for playlist/album). Defaults to None.
+            source_name (str | None, optional): Source name for display. Defaults to None.
 
         Returns:
             tuple[bool, pathlib.Path | str]: (Downloaded, path to file)
@@ -556,6 +565,13 @@ class Download:
         path_media_dst, file_extension_dummy, skip_file, skip_download = self._prepare_file_paths_and_skip_logic(
             media, file_template, quality_audio, list_position, list_total
         )
+
+        # Step 2b: Duplicate prevention based on persistent history
+        if isinstance(media, Track):
+            track_id = str(media.id)
+            if self.history_service.should_skip_download(track_id):
+                self.fn_logger.info(f"Skipped item '{name_builder_item(media)}' (already in history).")
+                return False, path_media_dst
 
         if skip_file:
             self.fn_logger.debug(f"Download skipped, since file exists: '{path_media_dst}'")
@@ -581,6 +597,16 @@ class Download:
             download_delay,
             skip_file,
         )
+
+        # Step 6: Add to download history if successful (only for Tracks)
+        if download_success and isinstance(media, Track):
+            try:
+                self.history_service.add_track_to_history(
+                    track_id=str(media.id), source_type=source_type, source_id=source_id, source_name=source_name
+                )
+            except Exception as e:
+                # Don't fail the download if history tracking fails
+                self.fn_logger.warning(f"Failed to add track to history: {e}")
 
         return download_success, path_media_dst
 
@@ -1374,6 +1400,9 @@ class Download:
         download_delay: bool = True,
         quality_audio: Quality | None = None,
         quality_video: QualityVideo | None = None,
+        source_type: str = "manual",
+        source_id: str | None = None,
+        source_name: str | None = None,
     ) -> None:
         """Download all items in an album, playlist, or mix.
 
@@ -1386,6 +1415,9 @@ class Download:
             download_delay (bool, optional): Whether to delay between downloads. Defaults to True.
             quality_audio (Quality | None, optional): Audio quality. Defaults to None.
             quality_video (QualityVideo | None, optional): Video quality. Defaults to None.
+            source_type (str, optional): Source type (playlist, album, manual, mix). Defaults to "manual".
+            source_id (str | None, optional): Source ID (UUID for playlist/album). Defaults to None.
+            source_name (str | None, optional): Source name for display. Defaults to None.
         """
         # Validate and prepare media collection
         validated_media = self._validate_and_prepare_media(media, media_id, media_type, video_download)
@@ -1421,6 +1453,9 @@ class Download:
             progress,
             progress_task,
             progress_stdout,
+            source_type,
+            source_id,
+            source_name,
         )
 
         # Create playlist file if requested
@@ -1483,6 +1518,9 @@ class Download:
         progress: Progress,
         progress_task: TaskID,
         progress_stdout: bool,
+        source_type: str = "manual",
+        source_id: str | None = None,
+        source_name: str | None = None,
     ) -> list[pathlib.Path]:
         """Execute downloads for all items in the collection.
 
@@ -1497,6 +1535,9 @@ class Download:
             progress (Progress): Progress bar instance.
             progress_task (TaskID): Progress task ID.
             progress_stdout (bool): Whether to show progress in stdout.
+            source_type (str, optional): Source type. Defaults to "manual".
+            source_id (str | None, optional): Source ID. Defaults to None.
+            source_name (str | None, optional): Source name. Defaults to None.
 
         Returns:
             list[pathlib.Path]: List of result directories.
@@ -1528,6 +1569,9 @@ class Download:
                         is_parent_album=is_album,
                         list_position=count + 1,
                         list_total=list_total,
+                        source_type=source_type,
+                        source_id=source_id,
+                        source_name=source_name,
                     )
                     for count, item_media in enumerate(items)
                 ]
