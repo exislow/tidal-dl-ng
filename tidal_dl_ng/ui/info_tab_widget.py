@@ -565,10 +565,10 @@ class InfoTabWidget(QtCore.QObject):
         self.lbl_isrc.setText(safe_str(isrc))
 
         # Track Number: try multiple possible attribute names and album track info
-        track_number = find_attr(track, ["track_number", "tracknumber", "number", "position", "track"]) or None
+        track_number = find_attr(track, "track_number", "tracknumber", "number", "position", "track") or None
         if track_number is None and hasattr(track, "album") and track.album:
             # Some album objects contain track indexing information
-            track_number = find_attr(track.album, ["track_number", "tracknumber", "number"]) or None
+            track_number = find_attr(track.album, "track_number", "tracknumber", "number") or None
         self.lbl_track_number.setText(safe_str(track_number))
 
         # Note: Label, Genres, Producers and Composers fields are not available in TIDAL API - removed from display
