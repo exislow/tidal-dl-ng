@@ -48,6 +48,7 @@ import contextlib
 import math
 import sys
 import time
+import urllib.parse
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
@@ -903,6 +904,52 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # Managers
         self.queue_manager.connect_signals()
         self.playlist_manager.connect_signals()
+        self.info_tab_widget.s_search_in_app.connect(self.on_search_in_app)
+        self.info_tab_widget.s_search_in_browser.connect(self.on_search_in_browser)
+
+    def on_search_in_app(self, search_term: str, search_type: str):
+        """Perform a search within the application, selecting the correct category."""
+        self.l_search.setText(search_term)
+
+        # Map the search type string to the corresponding class
+        search_type_map = {
+            "artist": Artist,
+            "album": Album,
+            "track": Track,
+            "video": Video,
+            "playlist": Playlist,
+        }
+        # Default to the current selection if the type is unknown
+        search_category = search_type_map.get(search_type.lower(), self.cb_search_type.currentData())
+
+        # Find the index of the category in the combobox and set it
+        for i in range(self.cb_search_type.count()):
+            if self.cb_search_type.itemData(i) == search_category:
+                self.cb_search_type.setCurrentIndex(i)
+                break
+
+        self.search_manager.search_populate_results(search_term, search_category)
+
+    def on_search_in_browser(self, search_term: str, search_type: str):
+        """Open a search in the default web browser."""
+        safe_term = urllib.parse.quote(search_term)
+        # Map the search type to the URL path component
+        search_path_map = {
+            "artist": "artists",
+            "album": "albums",
+            "track": "tracks",
+            "video": "videos",
+            "playlist": "playlists",
+        }
+        # Use a generic search if the type is not in the map
+        search_path = search_path_map.get(search_type.lower())
+
+        if search_path:
+            url = QtCore.QUrl(f"https://listen.tidal.com/search/{search_path}?q={safe_term}")
+        else:
+            url = QtCore.QUrl(f"https://listen.tidal.com/search?q={safe_term}")
+
+        QtGui.QDesktopServices.openUrl(url)
 
     def on_logout(self) -> None:
         """Log out from TIDAL and close the application."""
