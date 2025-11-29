@@ -80,8 +80,8 @@ class TrackInfoFormatter:
             artists = getattr(media, "artists", [])
 
             for artist in artists:
-                name = InfoTabWidget._get_artist_name(artist)
-                roles = InfoTabWidget._format_artist_roles(artist)
+                name = TrackInfoFormatter._get_artist_name(artist)
+                roles = TrackInfoFormatter._format_artist_roles(artist)
 
                 if roles and roles[0] != "main":
                     name = f"{name} ({', '.join(roles)})"
@@ -207,6 +207,8 @@ class InfoTabWidget(QtCore.QObject):
     s_update_cover: QtCore.Signal = QtCore.Signal(str)
     s_spinner_start: QtCore.Signal = QtCore.Signal()
     s_spinner_stop: QtCore.Signal = QtCore.Signal()
+    s_search_in_app: QtCore.Signal = QtCore.Signal(str, str)
+    s_search_in_browser: QtCore.Signal = QtCore.Signal(str, str)
 
     def _setup_search_roots(self, parent_widget: QtWidgets.QTabWidget | None) -> list:
         """Setup list of widget roots to search for UI elements."""
@@ -306,6 +308,60 @@ class InfoTabWidget(QtCore.QObject):
 
         # connect signals
         self._connect_signals()
+
+        # Make labels clickable using linkActivated signal
+        clickable_labels = [self.lbl_title, self.lbl_artists, self.lbl_album]
+        for label in clickable_labels:
+            label.setTextFormat(QtCore.Qt.RichText)
+            label.setOpenExternalLinks(False)  # We handle links manually
+            label.linkActivated.connect(self._on_link_activated)
+            label.installEventFilter(self)  # For right-click handling
+            label.setToolTip("Left-click to search in app, Ctrl+click or right-click to search in browser.")
+
+    def eventFilter(self, watched: QtCore.QObject, event: QtCore.QEvent) -> bool:
+        """Filter events for clickable labels to handle right-clicks."""
+        if event.type() == QtCore.QEvent.Type.MouseButtonPress and isinstance(watched, QtWidgets.QLabel):
+            event: QtGui.QMouseEvent
+            if event.button() == QtCore.Qt.MouseButton.RightButton:
+                # On right-click, find the link under the cursor
+                anchor = watched.anchorAt(event.pos())
+                if anchor:
+                    self._on_link_activated(anchor, right_click=True)
+                    return True  # Event handled
+
+        return super().eventFilter(watched, event)
+
+    def _create_link(self, search_type: str, text: str) -> str:
+        """Create an HTML link for search, using a specific color."""
+        if not text or text == "—":
+            return "—"
+        # The link format is "search:type:text"
+        link_target = f"search:{search_type}:{text}"
+        # Use a standard link color; Qt will handle styling.
+        return f"<a href='{link_target}' style='color:#367af6;'>{text}</a>"
+
+    @QtCore.Slot(str)
+    def _on_link_activated(self, link: str, right_click: bool = False) -> None:
+        """Handle clicks on rich text links in labels."""
+        if not link:
+            return
+
+        parts = link.split(":", 2)
+        if len(parts) < 3 or parts[0] != "search":
+            return
+
+        search_type = parts[1]
+        search_term = parts[2]
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+
+        is_browser_action = right_click or (modifiers & QtCore.Qt.KeyboardModifier.ControlModifier)
+
+        if is_browser_action:
+            # Ctrl+Click or Right-Click: Open in browser
+            self.s_search_in_browser.emit(search_term, search_type)
+        else:
+            # Left-Click: Search in app
+            self.s_search_in_app.emit(search_term, search_type)
 
     def _connect_signals(self) -> None:
         """Connect internal signals to slots."""
@@ -520,21 +576,28 @@ class InfoTabWidget(QtCore.QObject):
         """
         # Title and version
         title = name_builder_title(track)
+        self.lbl_title.setText(self._create_link("track", title))
         version = getattr(track, "version", None)
-
-        # Use _safe_str for all displayed values to avoid passing non-str types to QLabel.setText
-        self.lbl_title.setText(safe_str(title))
         self.lbl_version.setText(safe_str(version))
 
         # Artists
-        artists = TrackInfoFormatter.format_artists(track)
-        self.lbl_artists.setText(safe_str(artists))
+        artist_parts = []
+        if hasattr(track, "artists") and track.artists:
+            for artist in track.artists:
+                name = TrackInfoFormatter._get_artist_name(artist)
+                roles = TrackInfoFormatter._format_artist_roles(artist)
+                link = self._create_link("artist", name)
+                if roles and roles[0] != "main":
+                    artist_parts.append(f"{link} ({', '.join(roles)})")
+                else:
+                    artist_parts.append(link)
+        self.lbl_artists.setText(", ".join(artist_parts) if artist_parts else "—")
 
         # Album name (prefer album object's name)
         album_name = None
         if hasattr(track, "album") and track.album:
             album_name = getattr(track.album, "name", None) or None
-        self.lbl_album.setText(safe_str(album_name))
+        self.lbl_album.setText(self._create_link("album", album_name))
 
         # Codec & Bitrate
         codec = TrackInfoFormatter.format_codec(track)
@@ -557,21 +620,17 @@ class InfoTabWidget(QtCore.QObject):
         self.lbl_popularity.setText(safe_str(popularity))
 
         # BPM: Show loading indicator, will be updated when extras are loaded
-        # The BPM comes from async extras, not from the track object itself
         self.lbl_bpm.setText("⏳ Loading...")
 
         # ISRC
         isrc = getattr(track, "isrc", None)
         self.lbl_isrc.setText(safe_str(isrc))
 
-        # Track Number: try multiple possible attribute names and album track info
+        # Track Number
         track_number = find_attr(track, "track_number", "tracknumber", "number", "position", "track") or None
         if track_number is None and hasattr(track, "album") and track.album:
-            # Some album objects contain track indexing information
             track_number = find_attr(track.album, "track_number", "tracknumber", "number") or None
         self.lbl_track_number.setText(safe_str(track_number))
-
-        # Note: Label, Genres, Producers and Composers fields are not available in TIDAL API - removed from display
 
     def _populate_video_details(self, video: Video) -> None:
         """Populate details for a Video.
@@ -581,27 +640,31 @@ class InfoTabWidget(QtCore.QObject):
         """
         # Title and version
         title = name_builder_title(video)
+        self.lbl_title.setText(self._create_link("video", title))
         version = getattr(video, "version", None)
-
-        self.lbl_title.setText(safe_str(title))
         self.lbl_version.setText(safe_str(version))
 
-        # Artists (from credits if available)
-        artists = extract_names_from_mixed(
+        # Artists
+        artists_str = extract_names_from_mixed(
             getattr(video, "credits", None), match_types=("performer", "artist", "actor")
         )
-        if not artists:
-            # Fallback to regular artist field
-            artists = TrackInfoFormatter.format_artists(video)
-        self.lbl_artists.setText(safe_str(artists))
+        if not artists_str:
+            artist_parts = []
+            if hasattr(video, "artists") and video.artists:
+                for artist in video.artists:
+                    name = TrackInfoFormatter._get_artist_name(artist)
+                    artist_parts.append(self._create_link("artist", name))
+            self.lbl_artists.setText(", ".join(artist_parts) if artist_parts else "—")
+        else:
+            self.lbl_artists.setText(self._create_link("artist", artists_str))
 
-        # Album name (from album object if available)
+        # Album name
         album_name = None
         if hasattr(video, "album") and video.album:
             album_name = getattr(video.album, "name", None) or None
-        self.lbl_album.setText(safe_str(album_name))
+        self.lbl_album.setText(self._create_link("album", album_name))
 
-        # Codec & Bitrate (inherited from Track)
+        # Codec & Bitrate
         codec = TrackInfoFormatter.format_codec(video)
         self.lbl_codec.setText(safe_str(codec))
         bitrate = TrackInfoFormatter.format_bitrate(video)
@@ -611,7 +674,7 @@ class InfoTabWidget(QtCore.QObject):
         duration = TrackInfoFormatter.format_duration(getattr(video, "duration", None))
         self.lbl_duration.setText(safe_str(duration))
 
-        # Release date (from album if exists)
+        # Release date
         release_date = None
         if hasattr(video, "album") and video.album and hasattr(video.album, "release_date"):
             release_date = TrackInfoFormatter.format_date(video.album.release_date)
@@ -621,14 +684,11 @@ class InfoTabWidget(QtCore.QObject):
         popularity = getattr(video, "popularity", None)
         self.lbl_popularity.setText(safe_str(popularity))
 
-        # ISRC (from audio track if available)
+        # ISRC
         isrc = getattr(video, "isrc", None)
         if not isrc and hasattr(video, "track"):
             isrc = getattr(video.track, "isrc", None)
         self.lbl_isrc.setText(safe_str(isrc))
-
-        # Note: Video-specific fields (resolution, frame rate) and genres are not displayed
-        # as the required labels are not available in the UI
 
     def _populate_album_details(self, album: Album) -> None:
         """Populate details for an Album.
@@ -638,26 +698,28 @@ class InfoTabWidget(QtCore.QObject):
         """
         # Title and version
         title = name_builder_title(album)
+        self.lbl_title.setText(self._create_link("album", title))
         version = getattr(album, "version", None)
-
-        self.lbl_title.setText(safe_str(title))
         self.lbl_version.setText(safe_str(version))
 
-        # Artists (from album object)
-        artists = TrackInfoFormatter.format_artists(album)
-        self.lbl_artists.setText(safe_str(artists))
+        # Artists
+        artist_parts = []
+        if hasattr(album, "artists") and album.artists:
+            for artist in album.artists:
+                name = TrackInfoFormatter._get_artist_name(artist)
+                artist_parts.append(self._create_link("artist", name))
+        self.lbl_artists.setText(", ".join(artist_parts) if artist_parts else "—")
 
-        # Album name
-        album_name = getattr(album, "name", None)
-        self.lbl_album.setText(safe_str(album_name))
+        # Album name (same as title for an album)
+        self.lbl_album.setText(self._create_link("album", title))
 
-        # Codec & Bitrate: not typically relevant for albums, but can inherit from first track
+        # Codec & Bitrate
         codec = TrackInfoFormatter.format_codec(album)
         self.lbl_codec.setText(safe_str(codec))
         bitrate = TrackInfoFormatter.format_bitrate(album)
         self.lbl_bitrate.setText(safe_str(bitrate))
 
-        # Duration: total duration of the album
+        # Duration
         duration = TrackInfoFormatter.format_duration(getattr(album, "duration", None))
         self.lbl_duration.setText(safe_str(duration))
 
@@ -665,14 +727,11 @@ class InfoTabWidget(QtCore.QObject):
         release_date = TrackInfoFormatter.format_date(getattr(album, "release_date", None))
         self.lbl_release_date.setText(safe_str(release_date))
 
-        # Popularity: album popularity if available
+        # Popularity
         popularity = getattr(album, "popularity", None)
         self.lbl_popularity.setText(safe_str(popularity))
 
-        # ISRC: not typically available at album level, clear field
         self.lbl_isrc.setText("—")
-
-        # Note: Genres, Label, Producers and Composers fields are not available in TIDAL API - removed from display
 
     def _extract_playlist_artists(self, playlist: Playlist | Mix) -> str:
         """Extract and format artists from playlist tracks."""
@@ -681,13 +740,15 @@ class InfoTabWidget(QtCore.QObject):
 
         all_artists = set()
         for track in playlist.tracks:
-            if isinstance(track, Track | Video | Album):
-                artists = TrackInfoFormatter.format_artists(track)
-                if artists and artists != "Unknown Artist":
-                    all_artists.update(artists.split(", "))
+            if isinstance(track, Track | Video | Album) and hasattr(track, "artists"):
+                for artist in track.artists:
+                    name = TrackInfoFormatter._get_artist_name(artist)
+                    if name and name != "Unknown Artist":
+                        all_artists.add(name)
 
         if all_artists:
-            return ", ".join(list(all_artists)[:3])
+            artist_links = [self._create_link("artist", name) for name in list(all_artists)[:5]]
+            return ", ".join(artist_links)
         return "—"
 
     def _extract_playlist_release_date(self, playlist: Playlist | Mix) -> str:
@@ -712,26 +773,23 @@ class InfoTabWidget(QtCore.QObject):
         """
         # Title and version
         title = name_builder_title(playlist)
+        self.lbl_title.setText(self._create_link("playlist", title))
         version = getattr(playlist, "version", None)
-
-        self.lbl_title.setText(safe_str(title))
         self.lbl_version.setText(safe_str(version))
 
-        # Artists: try to combine artists from all tracks
-        artists = self._extract_playlist_artists(playlist)
-        self.lbl_artists.setText(safe_str(artists))
+        # Artists
+        artists_html = self._extract_playlist_artists(playlist)
+        self.lbl_artists.setText(artists_html)
 
-        # Album name: prefer playlist name, then mix/album name
+        # Album name (playlist title)
         album_name = getattr(playlist, "name", None)
-        if not album_name and hasattr(playlist, "album"):
-            album_name = getattr(playlist.album, "name", None)
-        self.lbl_album.setText(safe_str(album_name))
+        self.lbl_album.setText(self._create_link("playlist", album_name))
 
-        # Codec & Bitrate: not typically relevant for playlists, clear fields
+        # Codec & Bitrate
         self.lbl_codec.setText("—")
         self.lbl_bitrate.setText("—")
 
-        # Duration: total duration of the playlist/mix
+        # Duration
         duration = TrackInfoFormatter.format_duration(getattr(playlist, "duration", None))
         self.lbl_duration.setText(safe_str(duration))
 
@@ -739,14 +797,11 @@ class InfoTabWidget(QtCore.QObject):
         release_date = self._extract_playlist_release_date(playlist)
         self.lbl_release_date.setText(safe_str(release_date))
 
-        # Popularity: playlist popularity if available
+        # Popularity
         popularity = getattr(playlist, "popularity", None)
         self.lbl_popularity.setText(safe_str(popularity))
 
-        # ISRC: not typically available at playlist level, clear field
         self.lbl_isrc.setText("—")
-
-        # Note: Genres, Label, Producers and Composers fields are not available in TIDAL API - removed from display
 
     def _extract_artist_album_name(self, artist: Artist) -> str | None:
         """Extract first album name from artist's albums."""
@@ -789,13 +844,11 @@ class InfoTabWidget(QtCore.QObject):
         Args:
             artist (Artist): The artist object.
         """
-        # Name: prefer artist's own name, fallback to common name
+        # Name
         name = getattr(artist, "name", None)
-        if not name and hasattr(artist, "common_name"):
-            name = getattr(artist.common_name, "name", None)
-        self.lbl_title.setText(safe_str(name))
+        self.lbl_title.setText(self._create_link("artist", name))
 
-        # Version: use artist type or role if available
+        # Version
         version = None
         if hasattr(artist, "type"):
             version = getattr(artist.type, "name", None)
@@ -803,31 +856,28 @@ class InfoTabWidget(QtCore.QObject):
             version = getattr(artist.role, "name", None)
         self.lbl_version.setText(safe_str(version))
 
-        # Artists: typically not relevant for single artist, clear field
+        # Artists
         self.lbl_artists.setText("—")
 
-        # Album name: try to use first album name if available
+        # Album name
         album_name = self._extract_artist_album_name(artist)
-        self.lbl_album.setText(safe_str(album_name))
+        self.lbl_album.setText(self._create_link("album", album_name))
 
-        # Codec & Bitrate: not relevant for artists, clear fields
+        # Codec & Bitrate
         self.lbl_codec.setText("—")
         self.lbl_bitrate.setText("—")
 
-        # Duration: total duration of all albums/tracks by the artist
+        # Duration
         total_duration = self._calculate_artist_total_duration(artist)
         duration = TrackInfoFormatter.format_duration(total_duration)
         self.lbl_duration.setText(safe_str(duration))
 
-        # Release date: try to use release date of the first album
+        # Release date
         release_date = self._extract_artist_release_date(artist)
         self.lbl_release_date.setText(safe_str(release_date))
 
-        # Popularity: artist popularity if available
+        # Popularity
         popularity = getattr(artist, "popularity", None)
         self.lbl_popularity.setText(safe_str(popularity))
 
-        # ISRC: not typically available at artist level, clear field
         self.lbl_isrc.setText("—")
-
-        # Note: Genres, Label, Producers and Composers fields are not available in TIDAL API - removed from display
