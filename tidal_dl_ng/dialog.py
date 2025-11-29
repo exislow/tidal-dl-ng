@@ -203,7 +203,7 @@ class DialogPreferences(QtWidgets.QDialog):
     ):
         # If a path is set, use it otherwise the users home directory.
         path_settings: str = os.path.expanduser(obj_line_edit.text()) if obj_line_edit.text() else ""
-        # Check if obj_line_edit is empty but path_default can be usd instead
+        # Check if obj_line_edit is empty but path_default can be used instead
         path_settings = (
             path_settings if path_settings else os.path.expanduser(path_default) if path_default else path_settings
         )
@@ -223,7 +223,7 @@ class DialogPreferences(QtWidgets.QDialog):
 
         dialog.setDirectory(dir_current)
 
-        # Execute dialog and set path is something is choosen.
+        # Execute dialog and set path if something is chosen.
         if dialog.exec():
             dir_name: str = dialog.selectedFiles()[0]
             path: Path = Path(dir_name)

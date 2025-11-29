@@ -171,7 +171,7 @@ def _process_url(
         return False
 
     if "http" not in url:
-        print(f"It seems like that you have supplied an invalid URL: {url}")
+        print(f"It seems like you have supplied an invalid URL: {url}")
         return True
 
     url_clean: str = url_ending_clean(url)
@@ -286,7 +286,7 @@ def settings_management(
 
     Args:
         names (list[str] | None, optional): None (list all options), one (list the value only for this option) or two arguments (set the value for the option). Defaults to None.
-        editor (bool, optional): If set, your favorite system editor will be opened. Defaults to False.
+        editor (bool, optional): If set, your default system editor will be opened. Defaults to False.
     """
     if editor:
         config_path: Path = Path(path_file_settings())
@@ -333,7 +333,7 @@ def login(ctx: typer.Context) -> bool:
     Returns:
         bool: True if login was successful, False otherwise.
     """
-    print("Let us check, if you are already logged in... ", end="")
+    print("Let us check if you are already logged in... ", end="")
 
     settings = Settings()
     tidal = Tidal(settings)
@@ -375,7 +375,7 @@ def download(
             writable=False,
             readable=True,
             resolve_path=True,
-            help="List with URLs to download. One per line",
+            help="File with URLs to download. One URL per line.",
         ),
     ] = None,
 ) -> bool:
@@ -395,7 +395,7 @@ def download(
             text: str = file_urls.read_text()
             urls = text.splitlines()
         else:
-            print("Provide either URLs, IDs or a file containing URLs (one per line).")
+            print("Provide either URLs or a file containing URLs (one per line).")
 
             raise typer.Abort()
 

@@ -406,7 +406,7 @@ class Download:
             with path_file.open("wb") as f_target:
                 for dl_segment_result in dl_segment_results:
                     with dl_segment_result.path_segment.open("rb") as f_segment:
-                        # Read and write junks, which gives better HDD write performance
+                        # Read and write chunks, which gives better HDD write performance
                         while segment := f_segment.read(CHUNK_SIZE):
                             f_target.write(segment)
 
@@ -1244,7 +1244,7 @@ class Download:
                 response: requests.Response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
                 result = response.content
             except Exception as e:
-                # TODO: Implement propper logging.
+                # TODO: Implement proper logging.
                 print(e)
             finally:
                 response.close()
@@ -1253,7 +1253,7 @@ class Download:
                 with open(path_file, "rb") as f:
                     result = f.read()
             except OSError as e:
-                # TODO: Implement propper logging.
+                # TODO: Implement proper logging.
                 print(e)
 
         return result
