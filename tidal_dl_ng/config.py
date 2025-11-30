@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import shutil
@@ -173,14 +174,10 @@ class Tidal(BaseConfig, metaclass=SingletonMeta):
         self.set_option("refresh_token", self.session.refresh_token)
         self.set_option("expiry_time", self.session.expiry_time)
         self.save()
-        
+
         # Set restrictive permissions on token file (Unix-based systems only)
-        try:
+        with contextlib.suppress(OSError, NotImplementedError):
             os.chmod(self.file_path, 0o600)
-        except (OSError, NotImplementedError):
-            # OSError: Permission denied or file not found
-            # NotImplementedError: Windows doesn't support Unix permissions
-            pass
 
     def switch_to_atmos_session(self) -> bool:
         """

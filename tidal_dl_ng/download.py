@@ -629,7 +629,7 @@ class Download:
                     )
                     return None
             elif not media:
-                raise MediaMissing
+                self._raise_media_missing()
         except (MediaMissing, Exception):
             return None
 
@@ -641,6 +641,13 @@ class Download:
             return None
 
         return media
+
+    def _raise_media_missing(self) -> None:
+        """Raise MediaMissing exception.
+
+        Helper method to abstract raise statement as per TRY301.
+        """
+        raise MediaMissing
 
     def _prepare_file_paths_and_skip_logic(
         self,
