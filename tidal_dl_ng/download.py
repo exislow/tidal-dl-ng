@@ -1240,21 +1240,22 @@ class Download:
         result: str | bytes = ""
 
         if url:
+            response = None
             try:
-                response: requests.Response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+                response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+                response.raise_for_status()
                 result = response.content
-            except Exception as e:
-                # TODO: Implement proper logging.
-                print(e)
+            except requests.RequestException as e:
+                self.fn_logger.error(f"Failed to download cover from {url}: {e}")
             finally:
-                response.close()
+                if response:
+                    response.close()
         elif path_file:
             try:
                 with open(path_file, "rb") as f:
                     result = f.read()
             except OSError as e:
-                # TODO: Implement proper logging.
-                print(e)
+                self.fn_logger.error(f"Failed to read file {path_file}: {e}")
 
         return result
 
@@ -1300,8 +1301,7 @@ class Download:
                     lyrics = lyrics_synced
             except:
                 lyrics = ""
-                # TODO: Implement proper logging.
-                print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
+                self.fn_logger.debug(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         if lyrics and self.settings.data.lyrics_file:
             path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)

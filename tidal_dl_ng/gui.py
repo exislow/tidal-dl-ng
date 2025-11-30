@@ -1280,7 +1280,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
             try:
                 media = instantiate_media(self.tidal.session, media_type, item_id)
-            except:
+            except Exception:
                 logger_gui.error(f"Media not found (ID: {item_id}). Maybe it is not available anymore.")
 
                 media = None
