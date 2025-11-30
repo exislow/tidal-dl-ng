@@ -144,6 +144,10 @@ class DialogPreferences(QtWidgets.QDialog):
 
         # Run the .setupUi() method to show the GUI
         self.ui.setupUi(self)
+
+        # Initialize categories
+        self._init_categories()
+
         # Set data.
         self.gui_populate()
         # Post setup
@@ -159,6 +163,10 @@ class DialogPreferences(QtWidgets.QDialog):
             "format_track",
             "format_video",
             "path_binary_ffmpeg",
+            "metadata_delimiter_artist",
+            "metadata_delimiter_album_artist",
+            "filename_delimiter_artist",
+            "filename_delimiter_album_artist",
         ]
 
     def _init_spin_box(self):
@@ -188,6 +196,25 @@ class DialogPreferences(QtWidgets.QDialog):
             "symlink_to_track",
             "playlist_create",
         ]
+
+    def _init_categories(self):
+        """Initialize the categories list and connect to page switching."""
+        # Add categories to the list
+        self.ui.lw_categories.addItem("Flags")
+        self.ui.lw_categories.addItem("Quality")
+        self.ui.lw_categories.addItem("Numbers")
+        self.ui.lw_categories.addItem("Paths & Formats")
+        self.ui.lw_categories.addItem("Delimiters")
+
+        # Set the first category as selected
+        self.ui.lw_categories.setCurrentRow(0)
+
+        # Connect category selection to page switching
+        self.ui.lw_categories.currentRowChanged.connect(self._on_category_changed)
+
+    def _on_category_changed(self, index: int):
+        """Handle category change to switch pages."""
+        self.ui.sw_categories.setCurrentIndex(index)
 
     def gui_populate(self):
         self.populate_checkboxes()
