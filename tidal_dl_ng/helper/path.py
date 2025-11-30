@@ -188,9 +188,8 @@ def format_str_media(
             )
             if result is not None:
                 return result
-    except Exception as e:
-        # TODO: Implement better exception logging.
-        print(e)
+    except (AttributeError, KeyError, TypeError, ValueError) as e:
+        logger.error(f"Error formatting path for media attribute '{name}': {e}")
 
     return name
 
