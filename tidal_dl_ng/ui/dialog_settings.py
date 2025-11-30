@@ -6,20 +6,26 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import QCoreApplication, QMetaObject, Qt
+from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialogButtonBox,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLayout,
     QLineEdit,
+    QListView,
+    QListWidget,
     QPushButton,
     QSizePolicy,
+    QSpacerItem,
     QSpinBox,
+    QStackedWidget,
     QVBoxLayout,
+    QWidget,
 )
 
 
@@ -27,7 +33,7 @@ class Ui_DialogSettings:
     def setupUi(self, DialogSettings):
         if not DialogSettings.objectName():
             DialogSettings.setObjectName("DialogSettings")
-        DialogSettings.resize(640, 832)
+        DialogSettings.resize(808, 379)
         sizePolicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         sizePolicy.setHorizontalStretch(100)
         sizePolicy.setVerticalStretch(100)
@@ -40,13 +46,100 @@ class Ui_DialogSettings:
         self.lv_main = QVBoxLayout()
         self.lv_main.setObjectName("lv_main")
         self.lv_main.setContentsMargins(12, 12, 12, 12)
-        self.gb_flags = QGroupBox(DialogSettings)
+        self.lh_main_content = QHBoxLayout()
+        self.lh_main_content.setObjectName("lh_main_content")
+        self.lw_categories = QListWidget(DialogSettings)
+        self.lw_categories.setObjectName("lw_categories")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.lw_categories.sizePolicy().hasHeightForWidth())
+        self.lw_categories.setSizePolicy(sizePolicy1)
+        self.lw_categories.setMinimumSize(QSize(150, 0))
+        self.lw_categories.setMaximumSize(QSize(200, 16777215))
+        self.lw_categories.setStyleSheet(
+            "QListWidget {\n"
+            "    background-color: #2b2b2b;\n"
+            "    border: 1px solid #3d3d3d;\n"
+            "    border-radius: 4px;\n"
+            "    padding: 4px;\n"
+            "    outline: none;\n"
+            "}\n"
+            "\n"
+            "QListWidget::item {\n"
+            "    padding: 4px 3px;\n"
+            "    border-radius: 3px;\n"
+            "    margin: 2px 0px;\n"
+            "    color: #e0e0e0;\n"
+            "}\n"
+            "\n"
+            "QListWidget::item:selected {\n"
+            "    background-color: #3d5a80;\n"
+            "    color: white;\n"
+            "    font-weight: bold;\n"
+            "}\n"
+            "\n"
+            "QListWidget::item:hover:!selected {\n"
+            "    background-color: #3a3a3a;\n"
+            "    color: white;\n"
+            "}\n"
+            "\n"
+            "QListWidget::item:focus {\n"
+            "    outline: none;\n"
+            "}"
+        )
+        self.lw_categories.setFrameShape(QFrame.Shape.StyledPanel)
+        self.lw_categories.setFrameShadow(QFrame.Shadow.Raised)
+        self.lw_categories.setMidLineWidth(-1)
+        self.lw_categories.setResizeMode(QListView.ResizeMode.Adjust)
+        self.lw_categories.setSpacing(0)
+
+        self.lh_main_content.addWidget(self.lw_categories)
+
+        self.sw_categories = QStackedWidget(DialogSettings)
+        self.sw_categories.setObjectName("sw_categories")
+        self.sw_categories.setStyleSheet(
+            "QStackedWidget {\n"
+            "    background-color: #333333;\n"
+            "    border: 1px solid #3d3d3d;\n"
+            "    border-radius: 4px;\n"
+            "}\n"
+            "\n"
+            "QWidget {\n"
+            "    background-color: transparent;\n"
+            "}\n"
+            "\n"
+            "QGroupBox {\n"
+            "    background-color: #3a3a3a;\n"
+            "    border: 1px solid #4a4a4a;\n"
+            "    border-radius: 6px;\n"
+            "    margin-top: 12px;\n"
+            "    padding-top: 12px;\n"
+            "    font-weight: bold;\n"
+            "}\n"
+            "\n"
+            "QGroupBox::title {\n"
+            "    subcontrol-origin: margin;\n"
+            "    subcontrol-position: top left;\n"
+            "    padding: 4px 8px;\n"
+            "    background-color: #3a3a3a;\n"
+            "    border-radius: 4px;\n"
+            "}"
+        )
+        self.sw_categories.setFrameShape(QFrame.Shape.StyledPanel)
+        self.sw_categories.setFrameShadow(QFrame.Shadow.Plain)
+        self.sw_categories.setMidLineWidth(1)
+        self.page_flags = QWidget()
+        self.page_flags.setObjectName("page_flags")
+        self.lv_page_flags = QVBoxLayout(self.page_flags)
+        self.lv_page_flags.setObjectName("lv_page_flags")
+        self.gb_flags = QGroupBox(self.page_flags)
         self.gb_flags.setObjectName("gb_flags")
-        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        sizePolicy1.setHorizontalStretch(100)
-        sizePolicy1.setVerticalStretch(100)
-        sizePolicy1.setHeightForWidth(self.gb_flags.sizePolicy().hasHeightForWidth())
-        self.gb_flags.setSizePolicy(sizePolicy1)
+        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy2.setHorizontalStretch(100)
+        sizePolicy2.setVerticalStretch(100)
+        sizePolicy2.setHeightForWidth(self.gb_flags.sizePolicy().hasHeightForWidth())
+        self.gb_flags.setSizePolicy(sizePolicy2)
         self.gb_flags.setFlat(False)
         self.gb_flags.setCheckable(False)
         self.lv_flags = QVBoxLayout(self.gb_flags)
@@ -57,8 +150,8 @@ class Ui_DialogSettings:
         self.lv_flag_video_download.setObjectName("lv_flag_video_download")
         self.cb_video_download = QCheckBox(self.gb_flags)
         self.cb_video_download.setObjectName("cb_video_download")
-        sizePolicy1.setHeightForWidth(self.cb_video_download.sizePolicy().hasHeightForWidth())
-        self.cb_video_download.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.cb_video_download.sizePolicy().hasHeightForWidth())
+        self.cb_video_download.setSizePolicy(sizePolicy2)
 
         self.lv_flag_video_download.addWidget(self.cb_video_download)
 
@@ -68,8 +161,8 @@ class Ui_DialogSettings:
         self.lv_flag_video_convert.setObjectName("lv_flag_video_convert")
         self.cb_video_convert_mp4 = QCheckBox(self.gb_flags)
         self.cb_video_convert_mp4.setObjectName("cb_video_convert_mp4")
-        sizePolicy1.setHeightForWidth(self.cb_video_convert_mp4.sizePolicy().hasHeightForWidth())
-        self.cb_video_convert_mp4.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.cb_video_convert_mp4.sizePolicy().hasHeightForWidth())
+        self.cb_video_convert_mp4.setSizePolicy(sizePolicy2)
 
         self.lv_flag_video_convert.addWidget(self.cb_video_convert_mp4)
 
@@ -83,11 +176,11 @@ class Ui_DialogSettings:
         self.lv_flag_lyrics_embed.setObjectName("lv_flag_lyrics_embed")
         self.cb_lyrics_embed = QCheckBox(self.gb_flags)
         self.cb_lyrics_embed.setObjectName("cb_lyrics_embed")
-        sizePolicy2 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        sizePolicy2.setHorizontalStretch(0)
-        sizePolicy2.setVerticalStretch(0)
-        sizePolicy2.setHeightForWidth(self.cb_lyrics_embed.sizePolicy().hasHeightForWidth())
-        self.cb_lyrics_embed.setSizePolicy(sizePolicy2)
+        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(self.cb_lyrics_embed.sizePolicy().hasHeightForWidth())
+        self.cb_lyrics_embed.setSizePolicy(sizePolicy3)
 
         self.lv_flag_lyrics_embed.addWidget(self.cb_lyrics_embed)
 
@@ -97,8 +190,8 @@ class Ui_DialogSettings:
         self.lv_flag_lyrics_file.setObjectName("lv_flag_lyrics_file")
         self.cb_lyrics_file = QCheckBox(self.gb_flags)
         self.cb_lyrics_file.setObjectName("cb_lyrics_file")
-        sizePolicy1.setHeightForWidth(self.cb_lyrics_file.sizePolicy().hasHeightForWidth())
-        self.cb_lyrics_file.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.cb_lyrics_file.sizePolicy().hasHeightForWidth())
+        self.cb_lyrics_file.setSizePolicy(sizePolicy2)
 
         self.lv_flag_lyrics_file.addWidget(self.cb_lyrics_file)
 
@@ -112,8 +205,8 @@ class Ui_DialogSettings:
         self.lv_flag_download_delay.setObjectName("lv_flag_download_delay")
         self.cb_download_delay = QCheckBox(self.gb_flags)
         self.cb_download_delay.setObjectName("cb_download_delay")
-        sizePolicy1.setHeightForWidth(self.cb_download_delay.sizePolicy().hasHeightForWidth())
-        self.cb_download_delay.setSizePolicy(sizePolicy1)
+        sizePolicy2.setHeightForWidth(self.cb_download_delay.sizePolicy().hasHeightForWidth())
+        self.cb_download_delay.setSizePolicy(sizePolicy2)
 
         self.lv_flag_download_delay.addWidget(self.cb_download_delay)
 
@@ -123,8 +216,8 @@ class Ui_DialogSettings:
         self.lv_flag_extract_flac.setObjectName("lv_flag_extract_flac")
         self.cb_extract_flac = QCheckBox(self.gb_flags)
         self.cb_extract_flac.setObjectName("cb_extract_flac")
-        sizePolicy2.setHeightForWidth(self.cb_extract_flac.sizePolicy().hasHeightForWidth())
-        self.cb_extract_flac.setSizePolicy(sizePolicy2)
+        sizePolicy3.setHeightForWidth(self.cb_extract_flac.sizePolicy().hasHeightForWidth())
+        self.cb_extract_flac.setSizePolicy(sizePolicy3)
 
         self.lv_flag_extract_flac.addWidget(self.cb_extract_flac)
 
@@ -220,33 +313,42 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.horizontalLayout_13)
 
-        self.lv_main.addWidget(self.gb_flags)
+        self.lv_page_flags.addWidget(self.gb_flags)
 
-        self.gb_choices = QGroupBox(DialogSettings)
+        self.vs_page_flags = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.lv_page_flags.addItem(self.vs_page_flags)
+
+        self.sw_categories.addWidget(self.page_flags)
+        self.page_quality = QWidget()
+        self.page_quality.setObjectName("page_quality")
+        self.lv_page_quality = QVBoxLayout(self.page_quality)
+        self.lv_page_quality.setObjectName("lv_page_quality")
+        self.gb_choices = QGroupBox(self.page_quality)
         self.gb_choices.setObjectName("gb_choices")
-        sizePolicy3 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy3.setHorizontalStretch(0)
-        sizePolicy3.setVerticalStretch(0)
-        sizePolicy3.setHeightForWidth(self.gb_choices.sizePolicy().hasHeightForWidth())
-        self.gb_choices.setSizePolicy(sizePolicy3)
+        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(self.gb_choices.sizePolicy().hasHeightForWidth())
+        self.gb_choices.setSizePolicy(sizePolicy4)
         self.lv_choices = QVBoxLayout(self.gb_choices)
         self.lv_choices.setObjectName("lv_choices")
         self.lh_choices_quality_audio = QHBoxLayout()
         self.lh_choices_quality_audio.setObjectName("lh_choices_quality_audio")
         self.l_icon_quality_audio = QLabel(self.gb_choices)
         self.l_icon_quality_audio.setObjectName("l_icon_quality_audio")
-        sizePolicy4 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        sizePolicy4.setHorizontalStretch(0)
-        sizePolicy4.setVerticalStretch(0)
-        sizePolicy4.setHeightForWidth(self.l_icon_quality_audio.sizePolicy().hasHeightForWidth())
-        self.l_icon_quality_audio.setSizePolicy(sizePolicy4)
+        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        sizePolicy5.setHorizontalStretch(0)
+        sizePolicy5.setVerticalStretch(0)
+        sizePolicy5.setHeightForWidth(self.l_icon_quality_audio.sizePolicy().hasHeightForWidth())
+        self.l_icon_quality_audio.setSizePolicy(sizePolicy5)
 
         self.lh_choices_quality_audio.addWidget(self.l_icon_quality_audio)
 
         self.l_quality_audio = QLabel(self.gb_choices)
         self.l_quality_audio.setObjectName("l_quality_audio")
-        sizePolicy4.setHeightForWidth(self.l_quality_audio.sizePolicy().hasHeightForWidth())
-        self.l_quality_audio.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_quality_audio.sizePolicy().hasHeightForWidth())
+        self.l_quality_audio.setSizePolicy(sizePolicy5)
 
         self.lh_choices_quality_audio.addWidget(self.l_quality_audio)
 
@@ -263,15 +365,15 @@ class Ui_DialogSettings:
         self.lh_choices_quality_video.setObjectName("lh_choices_quality_video")
         self.l_icon_quality_video = QLabel(self.gb_choices)
         self.l_icon_quality_video.setObjectName("l_icon_quality_video")
-        sizePolicy4.setHeightForWidth(self.l_icon_quality_video.sizePolicy().hasHeightForWidth())
-        self.l_icon_quality_video.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_quality_video.sizePolicy().hasHeightForWidth())
+        self.l_icon_quality_video.setSizePolicy(sizePolicy5)
 
         self.lh_choices_quality_video.addWidget(self.l_icon_quality_video)
 
         self.l_quality_video = QLabel(self.gb_choices)
         self.l_quality_video.setObjectName("l_quality_video")
-        sizePolicy4.setHeightForWidth(self.l_quality_video.sizePolicy().hasHeightForWidth())
-        self.l_quality_video.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_quality_video.sizePolicy().hasHeightForWidth())
+        self.l_quality_video.setSizePolicy(sizePolicy5)
 
         self.lh_choices_quality_video.addWidget(self.l_quality_video)
 
@@ -289,25 +391,25 @@ class Ui_DialogSettings:
         self.lh_choices_cover_dimension.setSizeConstraint(QLayout.SizeConstraint.SetDefaultConstraint)
         self.l_icon_metadata_cover_dimension = QLabel(self.gb_choices)
         self.l_icon_metadata_cover_dimension.setObjectName("l_icon_metadata_cover_dimension")
-        sizePolicy4.setHeightForWidth(self.l_icon_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
-        self.l_icon_metadata_cover_dimension.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
+        self.l_icon_metadata_cover_dimension.setSizePolicy(sizePolicy5)
 
         self.lh_choices_cover_dimension.addWidget(self.l_icon_metadata_cover_dimension)
 
         self.l_metadata_cover_dimension = QLabel(self.gb_choices)
         self.l_metadata_cover_dimension.setObjectName("l_metadata_cover_dimension")
-        sizePolicy4.setHeightForWidth(self.l_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
-        self.l_metadata_cover_dimension.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
+        self.l_metadata_cover_dimension.setSizePolicy(sizePolicy5)
 
         self.lh_choices_cover_dimension.addWidget(self.l_metadata_cover_dimension)
 
         self.c_metadata_cover_dimension = QComboBox(self.gb_choices)
         self.c_metadata_cover_dimension.setObjectName("c_metadata_cover_dimension")
-        sizePolicy5 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        sizePolicy5.setHorizontalStretch(10)
-        sizePolicy5.setVerticalStretch(0)
-        sizePolicy5.setHeightForWidth(self.c_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
-        self.c_metadata_cover_dimension.setSizePolicy(sizePolicy5)
+        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        sizePolicy6.setHorizontalStretch(10)
+        sizePolicy6.setVerticalStretch(0)
+        sizePolicy6.setHeightForWidth(self.c_metadata_cover_dimension.sizePolicy().hasHeightForWidth())
+        self.c_metadata_cover_dimension.setSizePolicy(sizePolicy6)
 
         self.lh_choices_cover_dimension.addWidget(self.c_metadata_cover_dimension)
 
@@ -315,9 +417,18 @@ class Ui_DialogSettings:
 
         self.lv_choices.addLayout(self.lh_choices_cover_dimension)
 
-        self.lv_main.addWidget(self.gb_choices)
+        self.lv_page_quality.addWidget(self.gb_choices)
 
-        self.gb_numbers = QGroupBox(DialogSettings)
+        self.vs_page_quality = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.lv_page_quality.addItem(self.vs_page_quality)
+
+        self.sw_categories.addWidget(self.page_quality)
+        self.page_numbers = QWidget()
+        self.page_numbers.setObjectName("page_numbers")
+        self.lv_page_numbers = QVBoxLayout(self.page_numbers)
+        self.lv_page_numbers.setObjectName("lv_page_numbers")
+        self.gb_numbers = QGroupBox(self.page_numbers)
         self.gb_numbers.setObjectName("gb_numbers")
         self.verticalLayout_8 = QVBoxLayout(self.gb_numbers)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
@@ -362,9 +473,18 @@ class Ui_DialogSettings:
 
         self.verticalLayout_8.addLayout(self.horizontalLayout_11)
 
-        self.lv_main.addWidget(self.gb_numbers)
+        self.lv_page_numbers.addWidget(self.gb_numbers)
 
-        self.gb_path = QGroupBox(DialogSettings)
+        self.vs_page_numbers = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.lv_page_numbers.addItem(self.vs_page_numbers)
+
+        self.sw_categories.addWidget(self.page_numbers)
+        self.page_paths = QWidget()
+        self.page_paths.setObjectName("page_paths")
+        self.lv_page_paths = QVBoxLayout(self.page_paths)
+        self.lv_page_paths.setObjectName("lv_page_paths")
+        self.gb_path = QGroupBox(self.page_paths)
         self.gb_path.setObjectName("gb_path")
         self.horizontalLayout_2 = QHBoxLayout(self.gb_path)
         self.horizontalLayout_2.setObjectName("horizontalLayout_2")
@@ -374,15 +494,15 @@ class Ui_DialogSettings:
         self.lh_path_base.setObjectName("lh_path_base")
         self.l_icon_download_base_path = QLabel(self.gb_path)
         self.l_icon_download_base_path.setObjectName("l_icon_download_base_path")
-        sizePolicy4.setHeightForWidth(self.l_icon_download_base_path.sizePolicy().hasHeightForWidth())
-        self.l_icon_download_base_path.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_download_base_path.sizePolicy().hasHeightForWidth())
+        self.l_icon_download_base_path.setSizePolicy(sizePolicy5)
 
         self.lh_path_base.addWidget(self.l_icon_download_base_path)
 
         self.l_download_base_path = QLabel(self.gb_path)
         self.l_download_base_path.setObjectName("l_download_base_path")
-        sizePolicy3.setHeightForWidth(self.l_download_base_path.sizePolicy().hasHeightForWidth())
-        self.l_download_base_path.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_download_base_path.sizePolicy().hasHeightForWidth())
+        self.l_download_base_path.setSizePolicy(sizePolicy4)
 
         self.lh_path_base.addWidget(self.l_download_base_path)
 
@@ -392,15 +512,15 @@ class Ui_DialogSettings:
         self.lh_path_fmt_track.setObjectName("lh_path_fmt_track")
         self.l_icon_format_track = QLabel(self.gb_path)
         self.l_icon_format_track.setObjectName("l_icon_format_track")
-        sizePolicy4.setHeightForWidth(self.l_icon_format_track.sizePolicy().hasHeightForWidth())
-        self.l_icon_format_track.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_format_track.sizePolicy().hasHeightForWidth())
+        self.l_icon_format_track.setSizePolicy(sizePolicy5)
 
         self.lh_path_fmt_track.addWidget(self.l_icon_format_track)
 
         self.l_format_track = QLabel(self.gb_path)
         self.l_format_track.setObjectName("l_format_track")
-        sizePolicy3.setHeightForWidth(self.l_format_track.sizePolicy().hasHeightForWidth())
-        self.l_format_track.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_format_track.sizePolicy().hasHeightForWidth())
+        self.l_format_track.setSizePolicy(sizePolicy4)
 
         self.lh_path_fmt_track.addWidget(self.l_format_track)
 
@@ -410,15 +530,15 @@ class Ui_DialogSettings:
         self.lh_path_fmt_video.setObjectName("lh_path_fmt_video")
         self.l_icon_format_video = QLabel(self.gb_path)
         self.l_icon_format_video.setObjectName("l_icon_format_video")
-        sizePolicy4.setHeightForWidth(self.l_icon_format_video.sizePolicy().hasHeightForWidth())
-        self.l_icon_format_video.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_format_video.sizePolicy().hasHeightForWidth())
+        self.l_icon_format_video.setSizePolicy(sizePolicy5)
 
         self.lh_path_fmt_video.addWidget(self.l_icon_format_video)
 
         self.l_format_video = QLabel(self.gb_path)
         self.l_format_video.setObjectName("l_format_video")
-        sizePolicy3.setHeightForWidth(self.l_format_video.sizePolicy().hasHeightForWidth())
-        self.l_format_video.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_format_video.sizePolicy().hasHeightForWidth())
+        self.l_format_video.setSizePolicy(sizePolicy4)
 
         self.lh_path_fmt_video.addWidget(self.l_format_video)
 
@@ -428,18 +548,18 @@ class Ui_DialogSettings:
         self.lh_path_fmt_album.setObjectName("lh_path_fmt_album")
         self.l_icon_format_album = QLabel(self.gb_path)
         self.l_icon_format_album.setObjectName("l_icon_format_album")
-        sizePolicy6 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
-        sizePolicy6.setHorizontalStretch(0)
-        sizePolicy6.setVerticalStretch(0)
-        sizePolicy6.setHeightForWidth(self.l_icon_format_album.sizePolicy().hasHeightForWidth())
-        self.l_icon_format_album.setSizePolicy(sizePolicy6)
+        sizePolicy7 = QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        sizePolicy7.setHorizontalStretch(0)
+        sizePolicy7.setVerticalStretch(0)
+        sizePolicy7.setHeightForWidth(self.l_icon_format_album.sizePolicy().hasHeightForWidth())
+        self.l_icon_format_album.setSizePolicy(sizePolicy7)
 
         self.lh_path_fmt_album.addWidget(self.l_icon_format_album)
 
         self.l_format_album = QLabel(self.gb_path)
         self.l_format_album.setObjectName("l_format_album")
-        sizePolicy3.setHeightForWidth(self.l_format_album.sizePolicy().hasHeightForWidth())
-        self.l_format_album.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_format_album.sizePolicy().hasHeightForWidth())
+        self.l_format_album.setSizePolicy(sizePolicy4)
 
         self.lh_path_fmt_album.addWidget(self.l_format_album)
 
@@ -449,15 +569,15 @@ class Ui_DialogSettings:
         self.lh_fpath_mt_playlist.setObjectName("lh_fpath_mt_playlist")
         self.l_icon_format_playlist = QLabel(self.gb_path)
         self.l_icon_format_playlist.setObjectName("l_icon_format_playlist")
-        sizePolicy4.setHeightForWidth(self.l_icon_format_playlist.sizePolicy().hasHeightForWidth())
-        self.l_icon_format_playlist.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_format_playlist.sizePolicy().hasHeightForWidth())
+        self.l_icon_format_playlist.setSizePolicy(sizePolicy5)
 
         self.lh_fpath_mt_playlist.addWidget(self.l_icon_format_playlist)
 
         self.l_format_playlist = QLabel(self.gb_path)
         self.l_format_playlist.setObjectName("l_format_playlist")
-        sizePolicy3.setHeightForWidth(self.l_format_playlist.sizePolicy().hasHeightForWidth())
-        self.l_format_playlist.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_format_playlist.sizePolicy().hasHeightForWidth())
+        self.l_format_playlist.setSizePolicy(sizePolicy4)
 
         self.lh_fpath_mt_playlist.addWidget(self.l_format_playlist)
 
@@ -467,15 +587,15 @@ class Ui_DialogSettings:
         self.lh_path_fmt_mix.setObjectName("lh_path_fmt_mix")
         self.l_icon_format_mix = QLabel(self.gb_path)
         self.l_icon_format_mix.setObjectName("l_icon_format_mix")
-        sizePolicy6.setHeightForWidth(self.l_icon_format_mix.sizePolicy().hasHeightForWidth())
-        self.l_icon_format_mix.setSizePolicy(sizePolicy6)
+        sizePolicy7.setHeightForWidth(self.l_icon_format_mix.sizePolicy().hasHeightForWidth())
+        self.l_icon_format_mix.setSizePolicy(sizePolicy7)
 
         self.lh_path_fmt_mix.addWidget(self.l_icon_format_mix)
 
         self.l_format_mix = QLabel(self.gb_path)
         self.l_format_mix.setObjectName("l_format_mix")
-        sizePolicy3.setHeightForWidth(self.l_format_mix.sizePolicy().hasHeightForWidth())
-        self.l_format_mix.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_format_mix.sizePolicy().hasHeightForWidth())
+        self.l_format_mix.setSizePolicy(sizePolicy4)
 
         self.lh_path_fmt_mix.addWidget(self.l_format_mix)
 
@@ -485,15 +605,15 @@ class Ui_DialogSettings:
         self.lh_path_binary_ffmpeg.setObjectName("lh_path_binary_ffmpeg")
         self.l_icon_path_binary_ffmpeg = QLabel(self.gb_path)
         self.l_icon_path_binary_ffmpeg.setObjectName("l_icon_path_binary_ffmpeg")
-        sizePolicy4.setHeightForWidth(self.l_icon_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
-        self.l_icon_path_binary_ffmpeg.setSizePolicy(sizePolicy4)
+        sizePolicy5.setHeightForWidth(self.l_icon_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.l_icon_path_binary_ffmpeg.setSizePolicy(sizePolicy5)
 
         self.lh_path_binary_ffmpeg.addWidget(self.l_icon_path_binary_ffmpeg)
 
         self.l_path_binary_ffmpeg = QLabel(self.gb_path)
         self.l_path_binary_ffmpeg.setObjectName("l_path_binary_ffmpeg")
-        sizePolicy3.setHeightForWidth(self.l_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
-        self.l_path_binary_ffmpeg.setSizePolicy(sizePolicy3)
+        sizePolicy4.setHeightForWidth(self.l_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.l_path_binary_ffmpeg.setSizePolicy(sizePolicy4)
 
         self.lh_path_binary_ffmpeg.addWidget(self.l_path_binary_ffmpeg)
 
@@ -507,8 +627,8 @@ class Ui_DialogSettings:
         self.horizontalLayout_10.setObjectName("horizontalLayout_10")
         self.le_download_base_path = QLineEdit(self.gb_path)
         self.le_download_base_path.setObjectName("le_download_base_path")
-        sizePolicy2.setHeightForWidth(self.le_download_base_path.sizePolicy().hasHeightForWidth())
-        self.le_download_base_path.setSizePolicy(sizePolicy2)
+        sizePolicy3.setHeightForWidth(self.le_download_base_path.sizePolicy().hasHeightForWidth())
+        self.le_download_base_path.setSizePolicy(sizePolicy3)
         self.le_download_base_path.setDragEnabled(True)
 
         self.horizontalLayout_10.addWidget(self.le_download_base_path)
@@ -551,8 +671,8 @@ class Ui_DialogSettings:
         self.horizontalLayout_4.setObjectName("horizontalLayout_4")
         self.le_format_playlist = QLineEdit(self.gb_path)
         self.le_format_playlist.setObjectName("le_format_playlist")
-        sizePolicy2.setHeightForWidth(self.le_format_playlist.sizePolicy().hasHeightForWidth())
-        self.le_format_playlist.setSizePolicy(sizePolicy2)
+        sizePolicy3.setHeightForWidth(self.le_format_playlist.sizePolicy().hasHeightForWidth())
+        self.le_format_playlist.setSizePolicy(sizePolicy3)
 
         self.horizontalLayout_4.addWidget(self.le_format_playlist)
 
@@ -571,8 +691,8 @@ class Ui_DialogSettings:
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.le_path_binary_ffmpeg = QLineEdit(self.gb_path)
         self.le_path_binary_ffmpeg.setObjectName("le_path_binary_ffmpeg")
-        sizePolicy2.setHeightForWidth(self.le_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
-        self.le_path_binary_ffmpeg.setSizePolicy(sizePolicy2)
+        sizePolicy3.setHeightForWidth(self.le_path_binary_ffmpeg.sizePolicy().hasHeightForWidth())
+        self.le_path_binary_ffmpeg.setSizePolicy(sizePolicy3)
         self.le_path_binary_ffmpeg.setDragEnabled(True)
 
         self.horizontalLayout_3.addWidget(self.le_path_binary_ffmpeg)
@@ -588,7 +708,160 @@ class Ui_DialogSettings:
 
         self.horizontalLayout_2.setStretch(1, 50)
 
-        self.lv_main.addWidget(self.gb_path)
+        self.lv_page_paths.addWidget(self.gb_path)
+
+        self.vs_page_paths = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.lv_page_paths.addItem(self.vs_page_paths)
+
+        self.sw_categories.addWidget(self.page_paths)
+        self.page_delimiters = QWidget()
+        self.page_delimiters.setObjectName("page_delimiters")
+        self.lv_page_delimiters = QVBoxLayout(self.page_delimiters)
+        self.lv_page_delimiters.setObjectName("lv_page_delimiters")
+        self.gb_delimiters = QGroupBox(self.page_delimiters)
+        self.gb_delimiters.setObjectName("gb_delimiters")
+        self.lv_delimiters = QVBoxLayout(self.gb_delimiters)
+        self.lv_delimiters.setObjectName("lv_delimiters")
+        self.lh_metadata_delimiter_artist = QHBoxLayout()
+        self.lh_metadata_delimiter_artist.setObjectName("lh_metadata_delimiter_artist")
+        self.l_icon_metadata_delimiter_artist = QLabel(self.gb_delimiters)
+        self.l_icon_metadata_delimiter_artist.setObjectName("l_icon_metadata_delimiter_artist")
+        sizePolicy5.setHeightForWidth(self.l_icon_metadata_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.l_icon_metadata_delimiter_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_metadata_delimiter_artist.addWidget(self.l_icon_metadata_delimiter_artist)
+
+        self.l_metadata_delimiter_artist = QLabel(self.gb_delimiters)
+        self.l_metadata_delimiter_artist.setObjectName("l_metadata_delimiter_artist")
+        sizePolicy5.setHeightForWidth(self.l_metadata_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.l_metadata_delimiter_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_metadata_delimiter_artist.addWidget(self.l_metadata_delimiter_artist)
+
+        self.le_metadata_delimiter_artist = QLineEdit(self.gb_delimiters)
+        self.le_metadata_delimiter_artist.setObjectName("le_metadata_delimiter_artist")
+        sizePolicy4.setHeightForWidth(self.le_metadata_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.le_metadata_delimiter_artist.setSizePolicy(sizePolicy4)
+        self.le_metadata_delimiter_artist.setMaximumSize(QSize(100, 16777215))
+
+        self.lh_metadata_delimiter_artist.addWidget(self.le_metadata_delimiter_artist)
+
+        self.hs_metadata_delimiter_artist = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+
+        self.lh_metadata_delimiter_artist.addItem(self.hs_metadata_delimiter_artist)
+
+        self.lv_delimiters.addLayout(self.lh_metadata_delimiter_artist)
+
+        self.lh_metadata_delimiter_album_artist = QHBoxLayout()
+        self.lh_metadata_delimiter_album_artist.setObjectName("lh_metadata_delimiter_album_artist")
+        self.l_icon_metadata_delimiter_album_artist = QLabel(self.gb_delimiters)
+        self.l_icon_metadata_delimiter_album_artist.setObjectName("l_icon_metadata_delimiter_album_artist")
+        sizePolicy5.setHeightForWidth(self.l_icon_metadata_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.l_icon_metadata_delimiter_album_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_metadata_delimiter_album_artist.addWidget(self.l_icon_metadata_delimiter_album_artist)
+
+        self.l_metadata_delimiter_album_artist = QLabel(self.gb_delimiters)
+        self.l_metadata_delimiter_album_artist.setObjectName("l_metadata_delimiter_album_artist")
+        sizePolicy5.setHeightForWidth(self.l_metadata_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.l_metadata_delimiter_album_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_metadata_delimiter_album_artist.addWidget(self.l_metadata_delimiter_album_artist)
+
+        self.le_metadata_delimiter_album_artist = QLineEdit(self.gb_delimiters)
+        self.le_metadata_delimiter_album_artist.setObjectName("le_metadata_delimiter_album_artist")
+        sizePolicy4.setHeightForWidth(self.le_metadata_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.le_metadata_delimiter_album_artist.setSizePolicy(sizePolicy4)
+        self.le_metadata_delimiter_album_artist.setMaximumSize(QSize(100, 16777215))
+
+        self.lh_metadata_delimiter_album_artist.addWidget(self.le_metadata_delimiter_album_artist)
+
+        self.hs_metadata_delimiter_album_artist = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+
+        self.lh_metadata_delimiter_album_artist.addItem(self.hs_metadata_delimiter_album_artist)
+
+        self.lv_delimiters.addLayout(self.lh_metadata_delimiter_album_artist)
+
+        self.lh_filename_delimiter_artist = QHBoxLayout()
+        self.lh_filename_delimiter_artist.setObjectName("lh_filename_delimiter_artist")
+        self.l_icon_filename_delimiter_artist = QLabel(self.gb_delimiters)
+        self.l_icon_filename_delimiter_artist.setObjectName("l_icon_filename_delimiter_artist")
+        sizePolicy5.setHeightForWidth(self.l_icon_filename_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.l_icon_filename_delimiter_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_filename_delimiter_artist.addWidget(self.l_icon_filename_delimiter_artist)
+
+        self.l_filename_delimiter_artist = QLabel(self.gb_delimiters)
+        self.l_filename_delimiter_artist.setObjectName("l_filename_delimiter_artist")
+        sizePolicy5.setHeightForWidth(self.l_filename_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.l_filename_delimiter_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_filename_delimiter_artist.addWidget(self.l_filename_delimiter_artist)
+
+        self.le_filename_delimiter_artist = QLineEdit(self.gb_delimiters)
+        self.le_filename_delimiter_artist.setObjectName("le_filename_delimiter_artist")
+        sizePolicy4.setHeightForWidth(self.le_filename_delimiter_artist.sizePolicy().hasHeightForWidth())
+        self.le_filename_delimiter_artist.setSizePolicy(sizePolicy4)
+        self.le_filename_delimiter_artist.setMaximumSize(QSize(100, 16777215))
+
+        self.lh_filename_delimiter_artist.addWidget(self.le_filename_delimiter_artist)
+
+        self.hs_filename_delimiter_artist = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+
+        self.lh_filename_delimiter_artist.addItem(self.hs_filename_delimiter_artist)
+
+        self.lv_delimiters.addLayout(self.lh_filename_delimiter_artist)
+
+        self.lh_filename_delimiter_album_artist = QHBoxLayout()
+        self.lh_filename_delimiter_album_artist.setObjectName("lh_filename_delimiter_album_artist")
+        self.l_icon_filename_delimiter_album_artist = QLabel(self.gb_delimiters)
+        self.l_icon_filename_delimiter_album_artist.setObjectName("l_icon_filename_delimiter_album_artist")
+        sizePolicy5.setHeightForWidth(self.l_icon_filename_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.l_icon_filename_delimiter_album_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_filename_delimiter_album_artist.addWidget(self.l_icon_filename_delimiter_album_artist)
+
+        self.l_filename_delimiter_album_artist = QLabel(self.gb_delimiters)
+        self.l_filename_delimiter_album_artist.setObjectName("l_filename_delimiter_album_artist")
+        sizePolicy5.setHeightForWidth(self.l_filename_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.l_filename_delimiter_album_artist.setSizePolicy(sizePolicy5)
+
+        self.lh_filename_delimiter_album_artist.addWidget(self.l_filename_delimiter_album_artist)
+
+        self.le_filename_delimiter_album_artist = QLineEdit(self.gb_delimiters)
+        self.le_filename_delimiter_album_artist.setObjectName("le_filename_delimiter_album_artist")
+        sizePolicy4.setHeightForWidth(self.le_filename_delimiter_album_artist.sizePolicy().hasHeightForWidth())
+        self.le_filename_delimiter_album_artist.setSizePolicy(sizePolicy4)
+        self.le_filename_delimiter_album_artist.setMaximumSize(QSize(100, 16777215))
+
+        self.lh_filename_delimiter_album_artist.addWidget(self.le_filename_delimiter_album_artist)
+
+        self.hs_filename_delimiter_album_artist = QSpacerItem(
+            40, 20, QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+
+        self.lh_filename_delimiter_album_artist.addItem(self.hs_filename_delimiter_album_artist)
+
+        self.lv_delimiters.addLayout(self.lh_filename_delimiter_album_artist)
+
+        self.lv_page_delimiters.addWidget(self.gb_delimiters)
+
+        self.vs_page_delimiters = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+
+        self.lv_page_delimiters.addItem(self.vs_page_delimiters)
+
+        self.sw_categories.addWidget(self.page_delimiters)
+
+        self.lh_main_content.addWidget(self.sw_categories)
+
+        self.lv_main.addLayout(self.lh_main_content)
 
         self.bb_dialog = QDialogButtonBox(DialogSettings)
         self.bb_dialog.setObjectName("bb_dialog")
@@ -602,6 +875,8 @@ class Ui_DialogSettings:
         self.retranslateUi(DialogSettings)
         self.bb_dialog.accepted.connect(DialogSettings.accept)
         self.bb_dialog.rejected.connect(DialogSettings.reject)
+
+        self.sw_categories.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(DialogSettings)
 
@@ -656,5 +931,18 @@ class Ui_DialogSettings:
         self.l_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.pb_download_base_path.setText(QCoreApplication.translate("DialogSettings", "...", None))
         self.pb_path_binary_ffmpeg.setText(QCoreApplication.translate("DialogSettings", "...", None))
+        self.gb_delimiters.setTitle(QCoreApplication.translate("DialogSettings", "Delimiters", None))
+        self.l_icon_metadata_delimiter_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_metadata_delimiter_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_metadata_delimiter_album_artist.setText(
+            QCoreApplication.translate("DialogSettings", "TextLabel", None)
+        )
+        self.l_metadata_delimiter_album_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_filename_delimiter_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_filename_delimiter_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
+        self.l_icon_filename_delimiter_album_artist.setText(
+            QCoreApplication.translate("DialogSettings", "TextLabel", None)
+        )
+        self.l_filename_delimiter_album_artist.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
 
     # retranslateUi
