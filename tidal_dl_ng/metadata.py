@@ -161,7 +161,6 @@ class Metadata:
         self.m.tags.add(TPE1(encoding=3, text=self.artists))
         self.m.tags.add(TCOP(encoding=3, text=self.copy_right))
         self.m.tags.add(TRCK(encoding=3, text=str(self.tracknumber)))
-        self.m.tags.add(TRCK(encoding=3, text=self.discnumber))
         self.m.tags.add(TDRC(encoding=3, text=self.date))
         self.m.tags.add(TCOM(encoding=3, text=self.composer))
         self.m.tags.add(TSRC(encoding=3, text=self.isrc))
@@ -201,6 +200,7 @@ class Metadata:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude).encode("utf-8")
 
     def cleanup_tags(self):
-        for key, value in self.m.tags.items():
-            if value == "" or value == [""]:
-                del self.m.tags[key]
+        # Collect keys to delete first to avoid RuntimeError during iteration
+        keys_to_delete = [key for key, value in self.m.tags.items() if value == "" or value == [""]]
+        for key in keys_to_delete:
+            del self.m.tags[key]

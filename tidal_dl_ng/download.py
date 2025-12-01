@@ -98,6 +98,7 @@ class RequestsClient:
             headers = {}
 
         o = requests.get(uri, timeout=timeout, headers=headers)
+        o.raise_for_status()
 
         return o.text, o.url
 
@@ -221,15 +222,18 @@ class Download:
             progress_total: int = urls_count
             block_size: int | None = None
         elif urls_count == 1:
+            r = None
             try:
                 # Get file size and compute progress steps
                 r = requests.head(urls[0], timeout=REQUESTS_TIMEOUT_SEC)
+                r.raise_for_status()
 
                 total_size_in_bytes: int = int(r.headers.get("content-length", 0))
                 block_size = 1048576
                 progress_total = total_size_in_bytes / block_size
             finally:
-                r.close()
+                if r:
+                    r.close()
         else:
             raise ValueError
 
@@ -625,8 +629,8 @@ class Download:
                     )
                     return None
             elif not media:
-                raise MediaMissing
-        except:
+                self._raise_media_missing()
+        except (MediaMissing, Exception):
             return None
 
         # If video download is not allowed and this is a video, return None
@@ -637,6 +641,13 @@ class Download:
             return None
 
         return media
+
+    def _raise_media_missing(self) -> None:
+        """Raise MediaMissing exception.
+
+        Helper method to abstract raise statement as per TRY301.
+        """
+        raise MediaMissing
 
     def _prepare_file_paths_and_skip_logic(
         self,
@@ -1221,7 +1232,7 @@ class Download:
         try:
             with open(result, mode=mode, encoding=encoding) as f:
                 f.write(content)
-        except:
+        except OSError:
             result = ""
 
         return result
@@ -1240,21 +1251,24 @@ class Download:
         result: str | bytes = ""
 
         if url:
+            response = None
             try:
-                response: requests.Response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+                response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+                response.raise_for_status()
                 result = response.content
-            except Exception as e:
-                # TODO: Implement proper logging.
-                print(e)
+            except requests.RequestException:
+                # Silently handle download errors (static method has no logger access)
+                pass
             finally:
-                response.close()
+                if response:
+                    response.close()
         elif path_file:
             try:
                 with open(path_file, "rb") as f:
                     result = f.read()
-            except OSError as e:
-                # TODO: Implement proper logging.
-                print(e)
+            except OSError:
+                # Silently handle file read errors (static method has no logger access)
+                pass
 
         return result
 
@@ -1298,10 +1312,9 @@ class Download:
                 if lyrics_obj.subtitles:
                     lyrics_synced = lyrics_obj.subtitles
                     lyrics = lyrics_synced
-            except:
+            except Exception:
                 lyrics = ""
-                # TODO: Implement proper logging.
-                print(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
+                self.fn_logger.debug(f"Could not retrieve lyrics for `{name_builder_item(track)}`.")
 
         if lyrics and self.settings.data.lyrics_file:
             path_lyrics = self.lyrics_to_file(path_media.parent, lyrics)

@@ -81,6 +81,8 @@ def latest_version_information() -> ReleaseLatest:
 
     try:
         response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
+        response.raise_for_status()
+        
         release_info_json: dict = response.json()
 
         release_info = ReleaseLatest(
@@ -88,7 +90,7 @@ def latest_version_information() -> ReleaseLatest:
             url=release_info_json["html_url"],
             release_info=release_info_json["body"],
         )
-    except Exception:
+    except (requests.RequestException, KeyError, ValueError):
         release_info = ReleaseLatest(
             version="v0.0.0",
             url=url,

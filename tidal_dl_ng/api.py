@@ -110,10 +110,12 @@ try:
     respond = requests.get(
         "https://api.github.com/gists/48d01f5a24b4b7b37f19443977c22cd6", timeout=REQUESTS_TIMEOUT_SEC
     )
+    respond.raise_for_status()
+    
     if respond.status_code == 200:
         content = respond.json()["files"]["tidal-api-key.json"]["content"]
         __API_KEYS__ = json.loads(content)
-except Exception as e:
-    # TODO: Implement proper logging.
-    print(e)
+except requests.RequestException as e:
+    # Failed to load API keys from gist, will use fallback keys
+    print(f"Failed to load API keys from gist: {e}")
     pass
