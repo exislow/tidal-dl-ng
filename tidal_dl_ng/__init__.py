@@ -82,7 +82,7 @@ def latest_version_information() -> ReleaseLatest:
     try:
         response = requests.get(url, timeout=REQUESTS_TIMEOUT_SEC)
         response.raise_for_status()
-        
+
         release_info_json: dict = response.json()
 
         release_info = ReleaseLatest(

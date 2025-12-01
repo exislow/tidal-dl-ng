@@ -1702,9 +1702,9 @@ class Download:
             pathlib.Path: Path to the converted MP4 file.
         """
         path_file_out: pathlib.Path = path_file.with_suffix(AudioExtensions.MP4)
-        
+
         self.fn_logger.debug(f"Converting video: {path_file.name} -> {path_file_out.name}")
-        
+
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
             .option("y")
@@ -1715,7 +1715,7 @@ class Download:
         )
 
         ffmpeg.execute()
-        
+
         self.fn_logger.debug(f"Video conversion complete: {path_file_out.name}")
 
         return path_file_out
@@ -1730,9 +1730,9 @@ class Download:
             pathlib.Path: Path to the extracted FLAC file.
         """
         path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
-        
+
         self.fn_logger.debug(f"Extracting FLAC: {path_media_src.name} -> {path_media_out.name}")
-        
+
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
             .option("hide_banner")
@@ -1749,7 +1749,7 @@ class Download:
         )
 
         ffmpeg.execute()
-        
+
         self.fn_logger.debug(f"FLAC extraction complete: {path_media_out.name}")
 
         return path_media_out
