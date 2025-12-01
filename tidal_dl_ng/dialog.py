@@ -1,8 +1,9 @@
 import datetime
+import os
 import os.path
 import shutil
 import webbrowser
-from enum import Enum, StrEnum
+from enum import StrEnum
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui, QtWidgets
@@ -105,50 +106,86 @@ class DialogLogin(QtWidgets.QDialog):
 
 
 class DialogPreferences(QtWidgets.QDialog):
-    """Preferences dialog."""
+    """Preferences dialog (non-blocking, deferred population).
+
+    The macOS Text Services Manager (TSM) can emit CFMessagePortSendRequest failures
+    when text widgets (e.g., QLineEdit) are populated before the window is fully
+    registered with the window server. To avoid this, heavy UI population is deferred
+    until after the dialog is shown via an overridden showEvent using a QTimer.
+
+    All expensive or input-related operations (setting text, pixmaps) are performed
+    only once after first show to prevent premature IME/TSM activation.
+    """
 
     ui: Ui_DialogSettings
     settings: Settings
     data: ModelSettings
-    s_settings_save: QtCore.Signal
-    icon: QtGui.QIcon
+    s_settings_save: object  # Accept any signal-like object (loosened for runtime SignalInstance)
     help_settings: HelpSettings
-    parameters_checkboxes: [str]
-    parameters_combo: [(str, StrEnum)]
-    parameters_line_edit: [str]
-    parameters_spin_box: [str]
+    parameters_checkboxes: list[str]
+    parameters_combo: list[tuple[str, StrEnum]]
+    parameters_line_edit: list[str]
+    parameters_spin_box: list[str]
     prefix_checkbox: str = "cb_"
     prefix_label: str = "l_"
     prefix_icon: str = "icon_"
     prefix_line_edit: str = "le_"
     prefix_combo: str = "c_"
     prefix_spin_box: str = "sb_"
+    _icon: QtGui.QIcon | None = None
+    _populated: bool = False
 
-    def __init__(self, settings: Settings, settings_save: QtCore.Signal, parent=None):
+    def __init__(self, settings: Settings, settings_save: object, parent=None):
         super().__init__(parent)
 
         self.settings = settings
         self.data = settings.data
         self.s_settings_save = settings_save
         self.help_settings = HelpSettings()
-        pixmapi: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.SP_MessageBoxQuestion
-        self.icon = self.style().standardIcon(pixmapi)
 
         self._init_checkboxes()
         self._init_comboboxes()
         self._init_line_edit()
         self._init_spin_box()
 
-        # Create an instance of the GUI
+        # Create an instance of the GUI and perform lightweight UI setup only.
         self.ui = Ui_DialogSettings()
-
-        # Run the .setupUi() method to show the GUI
         self.ui.setupUi(self)
-        # Set data.
-        self.gui_populate()
-        # Post setup
 
-        self.exec()
+        # Non-blocking pattern: caller will invoke .show() / .open(); we do NOT call exec().
+        # Heavy population deferred to showEvent.
+
+    # ------------------------------
+    # Internal helpers
+    # ------------------------------
+    def ensure_main_thread(self) -> None:
+        """Ensure method runs on the main (GUI) thread."""
+        app = QtWidgets.QApplication.instance()
+        if app and QtCore.QThread.currentThread() is not app.thread():
+            raise RuntimeError
+
+    @property
+    def icon(self) -> QtGui.QIcon:
+        """Lazy-create and cache the dialog icon."""
+        if self._icon is None:
+            pixmapi: QtWidgets.QStyle.StandardPixmap = QtWidgets.QStyle.StandardPixmap.SP_MessageBoxQuestion
+            self._icon = self.style().standardIcon(pixmapi)
+        return self._icon
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        """On first show, defer population to avoid macOS TSM early activation."""
+        super().showEvent(event)
+        if not self._populated:
+            self._populated = True
+            # Slight delay on macOS to ensure window server registration.
+            delay_ms = 50 if os.name == "posix" and shutil.which("uname") and os.uname().sysname == "Darwin" else 0
+            QtCore.QTimer.singleShot(delay_ms, self._deferred_populate)
+
+    def _deferred_populate(self) -> None:
+        """Populate widgets after dialog is visible (safe for macOS TSM)."""
+        self.ensure_main_thread()
+        QtWidgets.QApplication.processEvents()
+        self.gui_populate()
 
     def _init_line_edit(self):
         self.parameters_line_edit = [
@@ -198,23 +235,23 @@ class DialogPreferences(QtWidgets.QDialog):
     def dialog_chose_file(
         self,
         obj_line_edit: QtWidgets.QLineEdit,
-        file_mode: QtWidgets.QFileDialog | QtWidgets.QFileDialog.FileMode = QtWidgets.QFileDialog.Directory,
-        path_default: str = None,
-    ):
+        file_mode: QtWidgets.QFileDialog.FileMode = QtWidgets.QFileDialog.FileMode.Directory,
+        path_default: str | None = None,
+    ) -> None:
         # If a path is set, use it otherwise the users home directory.
         path_settings: str = os.path.expanduser(obj_line_edit.text()) if obj_line_edit.text() else ""
         # Check if obj_line_edit is empty but path_default can be used instead
-        path_settings = (
-            path_settings if path_settings else os.path.expanduser(path_default) if path_default else path_settings
-        )
+        if not path_settings and path_default:
+            expanded_default = os.path.expanduser(path_default)
+            path_settings = expanded_default
         dir_current: str = path_settings if path_settings and os.path.exists(path_settings) else str(Path.home())
         dialog: QtWidgets.QFileDialog = QtWidgets.QFileDialog()
 
         # Set to directory mode only but show files.
         dialog.setFileMode(file_mode)
-        dialog.setViewMode(QtWidgets.QFileDialog.Detail)
-        dialog.setOption(QtWidgets.QFileDialog.ShowDirsOnly, False)
-        dialog.setOption(QtWidgets.QFileDialog.DontResolveSymlinks, True)
+        dialog.setViewMode(QtWidgets.QFileDialog.ViewMode.Detail)
+        dialog.setOption(QtWidgets.QFileDialog.Option.ShowDirsOnly, False)
+        dialog.setOption(QtWidgets.QFileDialog.Option.DontResolveSymlinks, True)
 
         # There is a bug in the PyQt implementation, which hides files in Directory mode.
         # Thus, we need to use the PyQt dialog instead of the native dialog.
@@ -238,22 +275,26 @@ class DialogPreferences(QtWidgets.QDialog):
             label_icon.setPixmap(QtGui.QPixmap(self.icon.pixmap(QtCore.QSize(16, 16))))
             label_icon.setToolTip(getattr(self.help_settings, pn))
             label.setText(pn)
+            # Safe line edit updates (suppress signals/UI updates during bulk setText)
+            line_edit.blockSignals(True)
+            line_edit.setUpdatesEnabled(False)
             line_edit.setText(str(getattr(self.data, pn)))
+            line_edit.setUpdatesEnabled(True)
+            line_edit.blockSignals(False)
 
         # Base Path File Dialog
         self.ui.pb_download_base_path.clicked.connect(lambda x: self.dialog_chose_file(self.ui.le_download_base_path))
+        # Defer shutil.which() call to prevent TSM errors during initialization
         self.ui.pb_path_binary_ffmpeg.clicked.connect(
             lambda x: self.dialog_chose_file(
                 self.ui.le_path_binary_ffmpeg,
                 file_mode=QtWidgets.QFileDialog.FileMode.ExistingFiles,
-                path_default=shutil.which("ffmpeg"),
+                path_default=self._get_ffmpeg_path(),
             )
         )
 
     def populate_combo(self):
-        for p in self.parameters_combo:
-            pn: str = p[0]
-            values: Enum = p[1]
+        for pn, values in self.parameters_combo:
             label_icon: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + self.prefix_icon + pn)
             label: QtWidgets.QLabel = getattr(self.ui, self.prefix_label + pn)
             combo: QtWidgets.QComboBox = getattr(self.ui, self.prefix_combo + pn)
@@ -263,16 +304,14 @@ class DialogPreferences(QtWidgets.QDialog):
             label_icon.setToolTip(getattr(self.help_settings, pn))
             label.setText(pn)
 
-            for index, v in enumerate(values):
+            for index, v in enumerate(list(values)):
                 combo.addItem(v.name, v)
-
                 if v == setting_current:
                     combo.setCurrentIndex(index)
 
     def populate_checkboxes(self):
         for pn in self.parameters_checkboxes:
             checkbox: QtWidgets.QCheckBox = getattr(self.ui, self.prefix_checkbox + pn)
-
             checkbox.setText(pn)
             checkbox.setToolTip(getattr(self.help_settings, pn))
             checkbox.setIcon(self.icon)
@@ -293,6 +332,17 @@ class DialogPreferences(QtWidgets.QDialog):
         # Get settings.
         self.to_settings()
         self.done(1)
+
+    def _get_ffmpeg_path(self) -> str | None:
+        """Get the ffmpeg binary path using shutil.which.
+
+        This method is called only when needed (when button is clicked),
+        not during initialization, to prevent TSM errors on macOS.
+
+        Returns:
+            str | None: Path to ffmpeg binary or None if not found.
+        """
+        return shutil.which("ffmpeg")
 
     def to_settings(self):
         for item in self.parameters_checkboxes:

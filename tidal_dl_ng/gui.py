@@ -148,6 +148,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     s_queue_download_item_failed: QtCore.Signal = QtCore.Signal(object)
     s_queue_download_item_skipped: QtCore.Signal = QtCore.Signal(object)
     converter_ansi_html: Ansi2HTMLConverter
+    dialog_preferences: DialogPreferences | None = None
 
     def __init__(self, tidal: Tidal | None = None) -> None:
         """Initialize the main window and all components.
@@ -2343,7 +2344,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def on_preferences(self) -> None:
         """Open the preferences dialog."""
-        DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
+        # Prevent multiple instances. Reuse existing dialog if still visible.
+        if self.dialog_preferences and self.dialog_preferences.isVisible():
+            # Bring existing dialog to front.
+            self.dialog_preferences.raise_()
+            self.dialog_preferences.activateWindow()
+            return
+
+        # Clear stale reference if dialog was closed.
+        if self.dialog_preferences and not self.dialog_preferences.isVisible():
+            self.dialog_preferences = None
+
+        # Create new non-blocking preferences dialog.
+        dlg = DialogPreferences(settings=self.settings, settings_save=self.s_settings_save, parent=self)
+        dlg.setAttribute(QtCore.Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        # Disable action while dialog open.
+        self.a_preferences.setEnabled(False)
+
+        def _on_destroyed():
+            self.dialog_preferences = None
+            self.a_preferences.setEnabled(True)
+
+        dlg.destroyed.connect(_on_destroyed)
+        self.dialog_preferences = dlg
+        dlg.show()
 
     def on_tr_results_expanded(self, index: QtCore.QModelIndex) -> None:
         """Handle the event when a result item group is expanded.
