@@ -21,7 +21,6 @@ from tidal_dl_ng.constants import (
     MediaType,
 )
 from tidal_dl_ng.helper.tidal import name_builder_album_artist, name_builder_artist, name_builder_title
-from tidal_dl_ng.logger import logger
 
 
 def path_home() -> str:
@@ -190,7 +189,7 @@ def format_str_media(
             if result is not None:
                 return result
     except (AttributeError, KeyError, TypeError, ValueError) as e:
-        logger.exception(f"Error formatting path for media attribute '{name}': {e}")
+        print(f"Error formatting path for media attribute '{name}': {e}")
 
     return name
 
