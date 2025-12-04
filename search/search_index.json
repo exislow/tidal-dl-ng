@@ -1,0 +1,1 @@
+{"config":{"lang":["en"],"separator":"[\\s\\-]+","pipeline":["stopWordFilter"],"fields":{"title":{"boost":1000.0},"text":{"boost":1.0},"tags":{"boost":1000000.0}}},"docs":[{"location":"","title":"tidal-dl-ng","text":"<p>tidal-dl-ng</p>"},{"location":"modules/","title":"Modules","text":""}]}
