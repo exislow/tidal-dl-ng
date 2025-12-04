@@ -2,6 +2,7 @@
 import signal
 import sys
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import urlparse
@@ -22,6 +23,7 @@ from tidal_dl_ng import __version__
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
 from tidal_dl_ng.constants import CTX_TIDAL, MediaType
 from tidal_dl_ng.download import Download
+from tidal_dl_ng.helper.cli import parse_timestamp
 from tidal_dl_ng.helper.path import get_format_template, path_file_settings
 from tidal_dl_ng.helper.tidal import (
     all_artist_album_ids,
@@ -406,11 +408,22 @@ def download(
     name="tracks",
     help="Download your favorite track collection.",
 )
-def download_fav_tracks(ctx: typer.Context) -> bool:
+def download_fav_tracks(
+    ctx: typer.Context,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            "--since",
+            "-s",
+            help="Download only tracks added to favorites after this timestamp (UTC). Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS or Unix timestamp.",
+        ),
+    ] = None,
+) -> bool:
     """Download your favorite track collection.
 
     Args:
         ctx (typer.Context): Typer context object.
+        since (str | None, optional): Timestamp filter (UTC) for incremental downloads. Defaults to None.
 
     Returns:
         bool: Download result.
@@ -418,18 +431,34 @@ def download_fav_tracks(ctx: typer.Context) -> bool:
     # Method name
     func_name_favorites: str = "tracks"
 
-    return _download_fav_factory(ctx, func_name_favorites)
+    # Parse timestamp if provided
+    since_datetime: datetime | None = None
+    if since:
+        since_datetime = parse_timestamp(since)
+
+    return _download_fav_factory(ctx, func_name_favorites, since_datetime)
 
 
 @app_dl_fav.command(
     name="artists",
     help="Download your favorite artist collection.",
 )
-def download_fav_artists(ctx: typer.Context) -> bool:
+def download_fav_artists(
+    ctx: typer.Context,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            "--since",
+            "-s",
+            help="Download only artists added to favorites after this timestamp (UTC). Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS or Unix timestamp.",
+        ),
+    ] = None,
+) -> bool:
     """Download your favorite artist collection.
 
     Args:
         ctx (typer.Context): Typer context object.
+        since (str | None, optional): Timestamp filter (UTC) for incremental downloads. Defaults to None.
 
     Returns:
         bool: Download result.
@@ -437,18 +466,34 @@ def download_fav_artists(ctx: typer.Context) -> bool:
     # Method name
     func_name_favorites: str = "artists"
 
-    return _download_fav_factory(ctx, func_name_favorites)
+    # Parse timestamp if provided
+    since_datetime: datetime | None = None
+    if since:
+        since_datetime = parse_timestamp(since)
+
+    return _download_fav_factory(ctx, func_name_favorites, since_datetime)
 
 
 @app_dl_fav.command(
     name="albums",
     help="Download your favorite album collection.",
 )
-def download_fav_albums(ctx: typer.Context) -> bool:
+def download_fav_albums(
+    ctx: typer.Context,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            "--since",
+            "-s",
+            help="Download only albums added to favorites after this timestamp (UTC). Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS or Unix timestamp.",
+        ),
+    ] = None,
+) -> bool:
     """Download your favorite album collection.
 
     Args:
         ctx (typer.Context): Typer context object.
+        since (str | None, optional): Timestamp filter (UTC) for incremental downloads. Defaults to None.
 
     Returns:
         bool: Download result.
@@ -456,18 +501,34 @@ def download_fav_albums(ctx: typer.Context) -> bool:
     # Method name
     func_name_favorites: str = "albums"
 
-    return _download_fav_factory(ctx, func_name_favorites)
+    # Parse timestamp if provided
+    since_datetime: datetime | None = None
+    if since:
+        since_datetime = parse_timestamp(since)
+
+    return _download_fav_factory(ctx, func_name_favorites, since_datetime)
 
 
 @app_dl_fav.command(
     name="videos",
     help="Download your favorite video collection.",
 )
-def download_fav_videos(ctx: typer.Context) -> bool:
+def download_fav_videos(
+    ctx: typer.Context,
+    since: Annotated[
+        str | None,
+        typer.Option(
+            "--since",
+            "-s",
+            help="Download only videos added to favorites after this timestamp (UTC). Format: YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS or Unix timestamp.",
+        ),
+    ] = None,
+) -> bool:
     """Download your favorite video collection.
 
     Args:
         ctx (typer.Context): Typer context object.
+        since (str | None, optional): Timestamp filter (UTC) for incremental downloads. Defaults to None.
 
     Returns:
         bool: Download result.
@@ -475,22 +536,51 @@ def download_fav_videos(ctx: typer.Context) -> bool:
     # Method name
     func_name_favorites: str = "videos"
 
-    return _download_fav_factory(ctx, func_name_favorites)
+    # Parse timestamp if provided
+    since_datetime: datetime | None = None
+    if since:
+        since_datetime = parse_timestamp(since)
+
+    return _download_fav_factory(ctx, func_name_favorites, since_datetime)
 
 
-def _download_fav_factory(ctx: typer.Context, func_name_favorites: str) -> bool:
+def _download_fav_factory(ctx: typer.Context, func_name_favorites: str, since: datetime | None = None) -> bool:
     """Factory which helps to download items from the favorites collections.
 
     Args:
         ctx (typer.Context): Typer context object.
         func_name_favorites (str): Method name to call from `tidalapi` favorites object.
+        since (datetime | None, optional): Only include items added after this timestamp. Defaults to None.
 
     Returns:
         bool: Download result.
     """
     ctx.invoke(login, ctx)
     func_favorites: Callable = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
-    media_urls: list[str] = [media.share_url for media in func_favorites()]
+
+    # Get all favorite items
+    all_media: list = list(func_favorites())
+
+    # Filter by timestamp if provided (only for items with user_date_added attribute)
+    if since is not None:
+        console: Console = Console()
+        console.print(f"[cyan]Filtering favorites added since: {since.strftime('%Y-%m-%d %H:%M:%S')}[/cyan]")
+
+        filtered_media: list = []
+        for media in all_media:
+            # Check if media has user_date_added attribute and it's after the since timestamp
+            if hasattr(media, "user_date_added") and media.user_date_added is not None:
+                if media.user_date_added >= since:
+                    filtered_media.append(media)
+            else:
+                # If no timestamp available, include the item (conservative approach)
+                filtered_media.append(media)
+
+        console.print(f"[cyan]Found {len(all_media)} total favorites, {len(filtered_media)} match filter[/cyan]")
+        media_urls: list[str] = [media.share_url for media in filtered_media]
+    else:
+        media_urls: list[str] = [media.share_url for media in all_media]
+
     return _download(ctx, media_urls, try_login=False)
 
 
