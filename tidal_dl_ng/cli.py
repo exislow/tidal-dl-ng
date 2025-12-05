@@ -559,7 +559,9 @@ def _download_fav_factory(ctx: typer.Context, func_name_favorites: str, since: d
     func_favorites: Callable = getattr(ctx.obj[CTX_TIDAL].session.user.favorites, func_name_favorites)
 
     # Get all favorite items
-    all_media: list = list(func_favorites())
+    # The maximum number of library items for Tidal seems to be 10k.
+    # This is also the maximum number for which the Tidal API does not respond with a Bad Request.
+    all_media: list = list(func_favorites(limit=10_000))
 
     # Filter by timestamp if provided (only for items with user_date_added attribute)
     if since is not None:
