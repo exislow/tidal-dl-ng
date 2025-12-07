@@ -220,6 +220,19 @@ class Ui_DialogSettings:
 
         self.lv_flags.addLayout(self.horizontalLayout_13)
 
+        self.horizontalLayout_14 = QHBoxLayout()
+        self.horizontalLayout_14.setObjectName("horizontalLayout_14")
+        self.lv_flag_convert_wav = QVBoxLayout()
+        self.lv_flag_convert_wav.setObjectName("lv_flag_convert_wav")
+        self.cb_convert_wav = QCheckBox(self.gb_flags)
+        self.cb_convert_wav.setObjectName("cb_convert_wav")
+
+        self.lv_flag_convert_wav.addWidget(self.cb_convert_wav)
+
+        self.horizontalLayout_14.addLayout(self.lv_flag_convert_wav)
+
+        self.lv_flags.addLayout(self.horizontalLayout_14)
+
         self.lv_main.addWidget(self.gb_flags)
 
         self.gb_choices = QGroupBox(DialogSettings)
@@ -627,6 +640,7 @@ class Ui_DialogSettings:
         self.cb_mark_explicit.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_use_primary_album_artist.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.cb_download_dolby_atmos.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
+        self.cb_convert_wav.setText(QCoreApplication.translate("DialogSettings", "CheckBox", None))
         self.gb_choices.setTitle(QCoreApplication.translate("DialogSettings", "Choices", None))
         self.l_icon_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))
         self.l_quality_audio.setText(QCoreApplication.translate("DialogSettings", "TextLabel", None))

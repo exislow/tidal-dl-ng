@@ -159,10 +159,11 @@ class Download:
         self.event_run = event_run
 
         if not self.settings.data.path_binary_ffmpeg and (
-            self.settings.data.video_convert_mp4 or self.settings.data.extract_flac
+            self.settings.data.video_convert_mp4 or self.settings.data.extract_flac or self.settings.data.convert_wav
         ):
             self.settings.data.video_convert_mp4 = False
             self.settings.data.extract_flac = False
+            self.settings.data.convert_wav = False
 
             self.fn_logger.error(
                 "FFmpeg path is not set. Videos can be downloaded but will not be processed. FLAC cannot be "
@@ -789,8 +790,11 @@ class Download:
             return False
 
         # Update path if extension changed
-        if path_media_dst.suffix != file_extension:
-            path_media_dst = path_media_dst.with_suffix(file_extension)
+        target_extension = (
+            AudioExtensions.WAV if self.settings.data.convert_wav and isinstance(media, Track) else file_extension
+        )
+        if path_media_dst.suffix != target_extension:
+            path_media_dst = path_media_dst.with_suffix(target_extension)
             path_media_dst = pathlib.Path(path_file_sanitize(path_media_dst, adapt=True))
 
         os.makedirs(path_media_dst.parent, exist_ok=True)
@@ -966,6 +970,10 @@ class Download:
             # Extract FLAC from MP4 container using ffmpeg
             if isinstance(media, Track) and self.settings.data.extract_flac and do_flac_extract:
                 tmp_path_file = self._extract_flac(tmp_path_file)
+
+            # Convert to WAV if configured
+            if isinstance(media, Track) and self.settings.data.convert_wav:
+                tmp_path_file = self._convert_audio_to_wav(tmp_path_file)
 
             # Handle metadata, lyrics, and cover
             self._handle_metadata_and_extras(media, tmp_path_file, path_media_dst, is_parent_album, media_stream)
@@ -1759,6 +1767,57 @@ class Download:
         self.fn_logger.debug(f"FLAC extraction complete: {path_media_out.name}")
 
         return path_media_out
+
+    def _convert_audio_to_wav(self, path_media_src: pathlib.Path) -> pathlib.Path:
+        """Convert media file to WAV using ffmpeg.
+
+        Args:
+            path_media_src (pathlib.Path): Path to the source media file.
+
+        Returns:
+            pathlib.Path: Path to the converted WAV file.
+        """
+        # Validate FFmpeg path is set
+        if not self.settings.data.path_binary_ffmpeg:
+            self.fn_logger.error("FFmpeg binary path is not set. Cannot convert to WAV. Returning original file.")
+            return path_media_src
+
+        # Define the output extension as .wav
+        path_media_out = path_media_src.with_suffix(AudioExtensions.WAV)
+
+        self.fn_logger.debug("Converting to WAV")
+
+        # Configuration of FFmpeg to convert to WAV (standard PCM 16-bit)
+        ffmpeg = (
+            FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
+            .option("hide_banner")
+            .option("nostdin")
+            .input(url=str(path_media_src))
+            .output(
+                url=str(path_media_out),
+                acodec="pcm_s16le",
+                map_metadata="0:g",
+                loglevel="quiet",
+            )
+        )
+
+        ffmpeg.execute()
+
+        # Delete the original file (FLAC or M4A) to keep only the WAV
+        # Use unlink with missing_ok to avoid errors if file doesn't exist
+        if path_media_src.exists() and path_media_src != path_media_out:
+            try:
+                path_media_src.unlink()
+            except OSError:
+                self.fn_logger.exception("Failed to delete source file")
+
+        self.fn_logger.debug("WAV conversion complete")
+
+        return path_media_out
+
+        self.fn_logger.exception("WAV conversion failed")
+        # If conversion fails, return the original file
+        return path_media_src
 
     def _extract_video_stream(self, m3u8_variant: m3u8.M3U8, quality: int) -> tuple[m3u8.M3U8 | bool, str]:
         """Extract the best matching video stream from an m3u8 variant playlist.

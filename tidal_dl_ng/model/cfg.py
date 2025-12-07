@@ -42,6 +42,7 @@ class Settings:
     mark_explicit: bool = False
     cover_album_file: bool = True
     extract_flac: bool = True
+    convert_wav: bool = False
     downloads_simultaneous_per_track_max: int = 20
     download_delay_sec_min: float = 3.0
     download_delay_sec_max: float = 5.0
@@ -107,6 +108,9 @@ class HelpSettings:
     mark_explicit: str = "Mark explicit tracks with '🅴' in track title (only applies to metadata)."
     cover_album_file: str = "Save cover to 'cover.jpg', if an album is downloaded."
     extract_flac: str = "Extract FLAC audio tracks from MP4 containers and save them as `*.flac` (uses FFmpeg)."
+    convert_wav: str = (
+        "Convert downloaded audio to WAV format after download finishes and save them as `*.wav` (uses FFmpeg)."
+    )
     downloads_simultaneous_per_track_max: str = "Maximum number of simultaneous chunk downloads per track."
     download_delay_sec_min: str = "Lower boundary for the calculation of the download delay in seconds."
     download_delay_sec_max: str = "Upper boundary for the calculation of the download delay in seconds."

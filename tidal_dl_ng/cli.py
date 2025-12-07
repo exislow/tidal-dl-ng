@@ -380,6 +380,13 @@ def download(
             help="File with URLs to download. One URL per line.",
         ),
     ] = None,
+    convert_wav: Annotated[
+        bool | None,
+        typer.Option(
+            "--convert-wav/--no-convert-wav",
+            help="Convert downloaded audio files to WAV format.",
+        ),
+    ] = None,
 ) -> bool:
     """Download media from provided URLs or a file containing URLs.
 
@@ -387,6 +394,7 @@ def download(
         ctx (typer.Context): Typer context object.
         urls (list[str] | None, optional): List of URLs to download. Defaults to None.
         file_urls (Path | None, optional): Path to file containing URLs. Defaults to None.
+        convert_wav (bool | None, optional): If set, overrides the global setting for WAV conversion. Defaults to None.
 
     Returns:
         bool: True if download was successful, False otherwise.
@@ -400,6 +408,9 @@ def download(
             print("Provide either URLs or a file containing URLs (one per line).")
 
             raise typer.Abort()
+
+    if convert_wav is not None:
+        ctx.obj[CTX_TIDAL].settings.data.convert_wav = convert_wav
 
     return _download(ctx, urls)
 

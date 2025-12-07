@@ -224,6 +224,7 @@ class DialogPreferences(QtWidgets.QDialog):
             "skip_existing",
             "symlink_to_track",
             "playlist_create",
+            "convert_wav",
         ]
 
     def gui_populate(self):
