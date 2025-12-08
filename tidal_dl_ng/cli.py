@@ -383,7 +383,7 @@ def download(
     convert_wav: Annotated[
         bool | None,
         typer.Option(
-            "--convert-wav/--no-convert-wav",
+            "--convert-wav",
             help="Convert downloaded audio files to WAV format.",
         ),
     ] = None,
