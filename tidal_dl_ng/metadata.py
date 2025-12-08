@@ -1,7 +1,7 @@
 import pathlib
 
 import mutagen
-from mutagen import flac, id3, mp4
+from mutagen import flac, id3, mp4, wave
 from mutagen.id3 import APIC, SYLT, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
 
 
@@ -32,7 +32,7 @@ class Metadata:
     upc: str
     target_upc: dict[str, str]
     explicit: bool
-    m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
+    m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC | mutagen.wave.WAVE
 
     def __init__(
         self,
@@ -106,6 +106,8 @@ class Metadata:
             elif isinstance(self.m, mutagen.mp4.MP4):
                 cover_mp4 = mp4.MP4Cover(self.cover_data)
                 self.m.tags["covr"] = [cover_mp4]
+            elif isinstance(self.m, mutagen.wave.WAVE):
+                self.m.tags.add(APIC(encoding=3, data=self.cover_data))
 
             result = True
 
@@ -121,6 +123,8 @@ class Metadata:
             self.set_mp3()
         elif isinstance(self.m, mutagen.mp4.MP4):
             self.set_mp4()
+        elif isinstance(self.m, wave.WAVE):
+            self.set_wav()
 
         self._cover()
         self.cleanup_tags()
@@ -198,6 +202,42 @@ class Metadata:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_PEAK"] = str(self.album_peak_amplitude).encode("utf-8")
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_GAIN"] = str(self.track_replay_gain).encode("utf-8")
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_TRACK_PEAK"] = str(self.track_peak_amplitude).encode("utf-8")
+
+    def set_wav(self):
+        self.m.tags.add(TIT2(encoding=3, text=self.title))
+        self.m.tags.add(TALB(encoding=3, text=self.album))
+        self.m.tags.add(TOPE(encoding=3, text=self.albumartist))
+        self.m.tags.add(TPE1(encoding=3, text=self.artists))
+        self.m.tags.add(TCOP(encoding=3, text=self.copy_right))
+
+        track_text: str = f"{self.tracknumber}/{self.totaltrack}" if self.totaltrack else str(self.tracknumber)
+        self.m.tags.add(TRCK(encoding=3, text=track_text))
+
+        disc_text: str = f"{self.discnumber}/{self.totaldisc}" if self.totaldisc else str(self.discnumber)
+        self.m.tags.add(id3.TPOS(encoding=3, text=disc_text))
+
+        if self.date:
+            self.m.tags.add(TDRC(encoding=3, text=self.date))
+        if self.composer:
+            self.m.tags.add(TCOM(encoding=3, text=self.composer))
+        if self.isrc:
+            self.m.tags.add(TSRC(encoding=3, text=self.isrc))
+
+        if self.lyrics:
+            self.m.tags.add(SYLT(encoding=3, desc="text", text=self.lyrics))
+        if self.lyrics_unsynced:
+            self.m.tags.add(USLT(encoding=3, desc="text", text=self.lyrics_unsynced))
+
+        if self.url_share:
+            self.m.tags.add(WOAS(encoding=3, text=self.url_share))
+
+        self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["WAV"], text=self.upc))
+
+        if self.replay_gain_write:
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_PEAK", text=str(self.album_peak_amplitude)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_GAIN", text=str(self.track_replay_gain)))
+            self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_TRACK_PEAK", text=str(self.track_peak_amplitude)))
 
     def cleanup_tags(self):
         # Collect keys to delete first to avoid RuntimeError during iteration

@@ -82,6 +82,7 @@ class AudioExtensionsValid(StrEnum):
     MP3 = ".mp3"
     OGG = ".ogg"
     ALAC = ".alac"
+    WAV = ".wav"
 
 
 class MetadataTargetUPC(StrEnum):
@@ -91,7 +92,7 @@ class MetadataTargetUPC(StrEnum):
 
 
 METADATA_LOOKUP_UPC: dict[str, dict[str, str]] = {
-    "UPC": {"MP3": "UPC", "MP4": "UPC", "FLAC": "UPC"},
-    "BARCODE": {"MP3": "BARCODE", "MP4": "BARCODE", "FLAC": "BARCODE"},
-    "EAN": {"MP3": "EAN", "MP4": "EAN", "FLAC": "EAN"},
+    "UPC": {"MP3": "UPC", "MP4": "UPC", "FLAC": "UPC", "WAV": "UPC"},
+    "BARCODE": {"MP3": "BARCODE", "MP4": "BARCODE", "FLAC": "BARCODE", "WAV": "BARCODE"},
+    "EAN": {"MP3": "EAN", "MP4": "EAN", "FLAC": "EAN", "WAV": "EAN"},
 }
