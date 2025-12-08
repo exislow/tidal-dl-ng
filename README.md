@@ -89,9 +89,17 @@ If you would like to use the GUI version as a binary, have a look at the
 - Metadata for songs
 - Adjustable audio and video download quality.
 - FLAC extraction from MP4 containers
+- Optional FLAC/M4A -> WAV conversion (16-bit PCM)
 - Lyrics and album art / cover download
 - Creates playlist files
 - Can symlink tracks instead of having several copies, if added to different playlists
+
+### WAV conversion
+
+- Enable via settings: `convert_wav` (set to `true`) - or toggle in the GUI.
+- FFmpeg required: set the binary path with `path_bineray_ffmpeg` (e.g. `/usr/bin/ffmpeg`).
+- Converted files are standard 16-bit PCM WAV; metadata are preserved where supported.
+- If `path_binary_ffmpeg` is missing, conversion is skipped and the original file is kept.
 
 ## ▶️ Getting started with development
 
