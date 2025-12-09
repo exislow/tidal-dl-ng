@@ -1737,8 +1737,6 @@ class Download:
         """
         path_media_out = path_media_src.with_suffix(AudioExtensions.FLAC)
 
-        self.fn_logger.debug(f"Extracting FLAC: {path_media_src.name} -> {path_media_out.name}")
-
         ffmpeg = (
             FFmpeg(executable=self.settings.data.path_binary_ffmpeg)
             .option("hide_banner")
@@ -1755,8 +1753,6 @@ class Download:
         )
 
         ffmpeg.execute()
-
-        self.fn_logger.debug(f"FLAC extraction complete: {path_media_out.name}")
 
         return path_media_out
 
