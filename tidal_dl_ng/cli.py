@@ -21,7 +21,7 @@ from rich.table import Table
 
 from tidal_dl_ng import __version__
 from tidal_dl_ng.config import HandlingApp, Settings, Tidal
-from tidal_dl_ng.constants import CTX_TIDAL, MediaType
+from tidal_dl_ng.constants import CTX_TIDAL, FAVORITES, MediaType
 from tidal_dl_ng.download import Download
 from tidal_dl_ng.helper.cli import parse_timestamp
 from tidal_dl_ng.helper.path import get_format_template, path_file_settings
@@ -429,7 +429,7 @@ def download_fav_tracks(
         bool: Download result.
     """
     # Method name
-    func_name_favorites: str = "tracks"
+    func_name_favorites: str = FAVORITES["fav_tracks"]["function_name"]
 
     # Parse timestamp if provided
     since_datetime: datetime | None = None
@@ -464,7 +464,7 @@ def download_fav_artists(
         bool: Download result.
     """
     # Method name
-    func_name_favorites: str = "artists"
+    func_name_favorites: str = FAVORITES["fav_artists"]["function_name"]
 
     # Parse timestamp if provided
     since_datetime: datetime | None = None
@@ -499,7 +499,7 @@ def download_fav_albums(
         bool: Download result.
     """
     # Method name
-    func_name_favorites: str = "albums"
+    func_name_favorites: str = FAVORITES["fav_albums"]["function_name"]
 
     # Parse timestamp if provided
     since_datetime: datetime | None = None
@@ -534,7 +534,7 @@ def download_fav_videos(
         bool: Download result.
     """
     # Method name
-    func_name_favorites: str = "videos"
+    func_name_favorites: str = FAVORITES["fav_videos"]["function_name"]
 
     # Parse timestamp if provided
     since_datetime: datetime | None = None
