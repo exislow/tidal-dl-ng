@@ -620,7 +620,7 @@ class Download:
                 media = instantiate_media(self.session, media_type, media_id)
             elif isinstance(media, Track | Video):
                 # Check if media is available not deactivated / removed from TIDAL.
-                if not media.available:
+                if not media.allow_streaming:
                     self.fn_logger.info(
                         f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_item(media)}"
                     )
@@ -630,7 +630,7 @@ class Download:
                     media = self.session.track(str(media.id), with_album=True)
             elif isinstance(media, Album):
                 # Check if media is available not deactivated / removed from TIDAL.
-                if not media.available:
+                if not media.allow_streaming:
                     self.fn_logger.info(
                         f"This item is not available for listening anymore on TIDAL. Skipping: {name_builder_title(media)}"
                     )
