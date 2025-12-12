@@ -202,8 +202,8 @@ class Metadata:
         self.m.tags["\xa9url"] = self.url_share
         self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
         self.m.tags["rtng"] = [1 if self.explicit else 0]
-        self.m.tags["tmpo"] = [self.bpm]
-        self.m.tags["----:com.apple.iTunes:INITIALKEY"] = self.initial_key.encode("utf-8")
+        self.m.tags["tmpo"] = self.bpm
+        self.m.tags["----:com.apple.iTunes:initialkey"] = self.initial_key.encode("utf-8")
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
