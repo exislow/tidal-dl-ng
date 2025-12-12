@@ -276,7 +276,7 @@ def format_initial_key(key: str, key_scale: str, initial_key_format: CamelotNota
         ''
     """
     # Early return for UNKNOWN values
-    if key == "UNKNOWN" or key_scale == "UNKNOWN":
+    if not key or not key_scale or key == "UNKNOWN" or key_scale == "UNKNOWN":
         return ""
 
     # Normalize format parameter to enum
