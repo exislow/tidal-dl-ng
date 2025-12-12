@@ -1329,7 +1329,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             ResultItem | None: The converted ResultItem or None if not valid.
         """
-        if not item or (hasattr(item, "available") and not item.available):
+        if not item or (hasattr(item, "allow_streaming") and not item.allow_streaming):
             return None
 
         # Prepare common data
@@ -1582,7 +1582,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Check if item is available on TIDAL.
         # Note: Some albums have available=None, which should be treated as available
-        if hasattr(media, "available") and media.available is False:
+        if hasattr(media, "allow_streaming") and not media.allow_streaming:
             return False
 
         # Set "Explicit" tag
