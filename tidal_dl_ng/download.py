@@ -54,6 +54,7 @@ from tidal_dl_ng.constants import (
     MetadataTargetUPC,
     QualityVideo,
 )
+from tidal_dl_ng.helper.camelot import format_initial_key
 from tidal_dl_ng.helper.decryption import decrypt_file, decrypt_security_token
 from tidal_dl_ng.helper.exceptions import MediaMissing
 from tidal_dl_ng.helper.path import (
@@ -1375,6 +1376,8 @@ class Download:
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
             explicit=explicit,
+            bpm=track.bpm,
+            initial_key=format_initial_key(track.key, track.key_scale, self.settings.data.initial_key_format),
         )
 
         m.save()
