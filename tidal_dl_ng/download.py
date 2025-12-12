@@ -1375,6 +1375,7 @@ class Download:
             replay_gain_write=self.settings.data.metadata_replay_gain,
             upc=track.album.upc if track.album and track.album.upc else "",
             explicit=explicit,
+            bpm=track.bpm,
         )
 
         m.save()

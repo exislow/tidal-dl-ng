@@ -2,7 +2,7 @@ import pathlib
 
 import mutagen
 from mutagen import flac, id3, mp4
-from mutagen.id3 import APIC, SYLT, TALB, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
+from mutagen.id3 import APIC, SYLT, TALB, TBPM, TCOM, TCOP, TDRC, TIT2, TOPE, TPE1, TRCK, TSRC, TXXX, USLT, WOAS
 
 
 class Metadata:
@@ -32,6 +32,7 @@ class Metadata:
     upc: str
     target_upc: dict[str, str]
     explicit: bool
+    bpm: int
     m: mutagen.mp4.MP4 | mutagen.mp4.MP4 | mutagen.flac.FLAC
 
     def __init__(
@@ -61,6 +62,7 @@ class Metadata:
         replay_gain_write: bool = True,
         upc: str = "",
         explicit: bool = False,
+        bpm: int = 0,
     ):
         self.path_file = path_file
         self.title = title
@@ -87,6 +89,7 @@ class Metadata:
         self.upc = upc
         self.target_upc = target_upc
         self.explicit = explicit
+        self.bpm = bpm
         self.m: mutagen.FileType = mutagen.File(self.path_file)
 
     def _cover(self) -> bool:
@@ -145,6 +148,7 @@ class Metadata:
         self.m.tags["UNSYNCEDLYRICS"] = self.lyrics_unsynced
         self.m.tags["URL"] = self.url_share
         self.m.tags[self.target_upc["FLAC"]] = self.upc
+        self.m.tags["BPM"] = str(self.bpm if self.bpm > 0 else "")
 
         if self.replay_gain_write:
             self.m.tags["REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain)
@@ -168,6 +172,7 @@ class Metadata:
         self.m.tags.add(USLT(encoding=3, desc="text", text=self.lyrics_unsynced))
         self.m.tags.add(WOAS(encoding=3, text=self.isrc))
         self.m.tags.add(TXXX(encoding=3, desc=self.target_upc["MP3"], text=self.upc))
+        self.m.tags.add(TBPM(encoding=3, text=str(self.bpm if self.bpm > 0 else "")))
 
         if self.replay_gain_write:
             self.m.tags.add(TXXX(encoding=3, desc="REPLAYGAIN_ALBUM_GAIN", text=str(self.album_replay_gain)))
@@ -192,6 +197,7 @@ class Metadata:
         self.m.tags["\xa9url"] = self.url_share
         self.m.tags[f"----:com.apple.iTunes:{self.target_upc['MP4']}"] = self.upc.encode("utf-8")
         self.m.tags["rtng"] = [1 if self.explicit else 0]
+        self.m.tags["tmpo"] = [self.bpm]
 
         if self.replay_gain_write:
             self.m.tags["----:com.apple.iTunes:REPLAYGAIN_ALBUM_GAIN"] = str(self.album_replay_gain).encode("utf-8")
