@@ -1,11 +1,13 @@
 """Tests for Camelot wheel notation conversions."""
 
 from tidal_dl_ng.helper.camelot import (
+    CamelotNotation,
     KeyScale,
     alphanumeric_to_classic,
     alphanumeric_to_key,
     classic_to_alphanumeric,
     classic_to_key,
+    format_initial_key,
     is_valid_alphanumeric,
     is_valid_classic,
     is_valid_key,
@@ -256,6 +258,61 @@ class TestValidationFunctions:
         assert is_valid_alphanumeric("12A") is True
         assert is_valid_alphanumeric("13A") is False
         assert is_valid_alphanumeric("0B") is False
+
+
+class TestFormatInitialKey:
+    """Test format_initial_key function."""
+
+    def test_format_classic_major(self):
+        """Test formatting to classic notation for major keys."""
+        assert format_initial_key("C", "MAJOR", CamelotNotation.CLASSIC) == "C"
+        assert format_initial_key("E", "MAJOR", "classic") == "E"
+
+    def test_format_classic_minor(self):
+        """Test formatting to classic notation for minor keys."""
+        assert format_initial_key("G", "MINOR", CamelotNotation.CLASSIC) == "Gm"
+        assert format_initial_key("A", "MINOR", "classic") == "Am"
+
+    def test_format_alphanumeric_major(self):
+        """Test formatting to alphanumeric notation for major keys."""
+        assert format_initial_key("C", "MAJOR", CamelotNotation.ALPHANUMERIC) == "8B"
+        assert format_initial_key("E", "MAJOR", "alphanumeric") == "12B"
+
+    def test_format_alphanumeric_minor(self):
+        """Test formatting to alphanumeric notation for minor keys."""
+        assert format_initial_key("G", "MINOR", CamelotNotation.ALPHANUMERIC) == "6A"
+        assert format_initial_key("A", "MINOR", "alphanumeric") == "8A"
+
+    def test_format_unknown_key(self):
+        """Test that UNKNOWN key returns empty string."""
+        assert format_initial_key("UNKNOWN", "MAJOR", CamelotNotation.CLASSIC) == ""
+        assert format_initial_key("UNKNOWN", "MINOR", CamelotNotation.ALPHANUMERIC) == ""
+
+    def test_format_unknown_scale(self):
+        """Test that UNKNOWN scale returns empty string."""
+        assert format_initial_key("C", "UNKNOWN", CamelotNotation.CLASSIC) == ""
+        assert format_initial_key("G", "UNKNOWN", CamelotNotation.ALPHANUMERIC) == ""
+
+    def test_format_both_unknown(self):
+        """Test that both UNKNOWN returns empty string."""
+        assert format_initial_key("UNKNOWN", "UNKNOWN", CamelotNotation.CLASSIC) == ""
+        assert format_initial_key("UNKNOWN", "UNKNOWN", CamelotNotation.ALPHANUMERIC) == ""
+
+    def test_format_invalid_key(self):
+        """Test that invalid key returns empty string."""
+        assert format_initial_key("InvalidKey", "MAJOR", CamelotNotation.CLASSIC) == ""
+        assert format_initial_key("H", "MINOR", CamelotNotation.ALPHANUMERIC) == ""
+
+    def test_format_invalid_format(self):
+        """Test that invalid format returns empty string."""
+        assert format_initial_key("C", "MAJOR", "invalid_format") == ""
+
+    def test_format_fsharp_keys(self):
+        """Test formatting FSharp keys in both notations."""
+        assert format_initial_key("FSharp", "MINOR", CamelotNotation.CLASSIC) == "F#m"
+        assert format_initial_key("FSharp", "MINOR", CamelotNotation.ALPHANUMERIC) == "11A"
+        assert format_initial_key("FSharp", "MAJOR", CamelotNotation.CLASSIC) == "Gb"
+        assert format_initial_key("FSharp", "MAJOR", CamelotNotation.ALPHANUMERIC) == "2B"
 
 
 class TestRoundTripConversions:

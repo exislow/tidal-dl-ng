@@ -250,6 +250,54 @@ def alphanumeric_to_classic(alphanumeric: str) -> str | None:
     return key_to_classic(key, scale)
 
 
+def format_initial_key(key: str, key_scale: str, initial_key_format: CamelotNotation | str) -> str:
+    """Format musical key according to specified notation system.
+
+    Converts a musical key and scale into the requested Camelot notation format.
+    Returns empty string if key or scale is UNKNOWN, or if conversion fails.
+
+    Args:
+        key (str): Musical key (e.g., 'C', 'Eb', 'FSharp') or 'UNKNOWN'.
+        key_scale (str): Scale type ('MAJOR', 'MINOR') or 'UNKNOWN'.
+        initial_key_format (CamelotNotation | str): Desired output format
+            ('classic' or 'alphanumeric').
+
+    Returns:
+        str: Formatted key string or empty string if invalid/unknown.
+
+    Example:
+        >>> format_initial_key("C", "MAJOR", CamelotNotation.CLASSIC)
+        'C'
+        >>> format_initial_key("C", "MAJOR", "alphanumeric")
+        '8B'
+        >>> format_initial_key("UNKNOWN", "MAJOR", CamelotNotation.CLASSIC)
+        ''
+        >>> format_initial_key("C", "UNKNOWN", CamelotNotation.CLASSIC)
+        ''
+    """
+    # Early return for UNKNOWN values
+    if key == "UNKNOWN" or key_scale == "UNKNOWN":
+        return ""
+
+    # Normalize format parameter to enum
+    if isinstance(initial_key_format, str):
+        try:
+            initial_key_format = CamelotNotation(initial_key_format.lower())
+        except ValueError:
+            return ""
+
+    # Convert to requested format
+    result: str | None = None
+
+    if initial_key_format == CamelotNotation.CLASSIC:
+        result = key_to_classic(key, key_scale)
+    elif initial_key_format == CamelotNotation.ALPHANUMERIC:
+        result = key_to_alphanumeric(key, key_scale)
+
+    # Return formatted string or empty string if conversion failed
+    return result if result is not None else ""
+
+
 def is_valid_key(key: str, key_scale: KeyScale | str) -> bool:
     """Check if key and scale combination is valid.
 
